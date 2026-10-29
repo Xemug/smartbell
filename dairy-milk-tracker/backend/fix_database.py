@@ -149,7 +149,7 @@ def check_and_fix_database(interactive=True):
         # Final check
         if interactive:
             print("\nDatabase structure looks good!")
-            print("\nIf you continue to experience issues, please refer to TROUBLESHOOTING-DB.md")
+            print("\nIf you continue to experience issues, please refer to TROUBLESHOOTING.md")
         
         return changes_made
     

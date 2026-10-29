@@ -54,7 +54,7 @@ run_command() {
 # Check prerequisites
 echo -e "\n${GREEN}Checking prerequisites...${NC}"
 
-if ! command_exists python; then
+if ! command_exists python3; then
   echo -e "${RED}Python is not installed. Please install Python and try again.${NC}"
   exit 1
 else
@@ -85,7 +85,7 @@ echo -e "\n${GREEN}Checking database...${NC}"
 if [ -f "backend/dairy_milk_tracker.db" ]; then
   echo -e "${YELLOW}Running database fix script...${NC}"
   cd backend
-  python fix_database.py
+  python3 fix_database.py
   cd ..
 else
   echo -e "${YELLOW}No existing database found. A new one will be created.${NC}"
@@ -93,7 +93,7 @@ fi
 
 # Start backend
 echo -e "\n${GREEN}Starting backend server...${NC}"
-echo -e "${YELLOW}If you encounter any issues with the backend, see TROUBLESHOOTING-DB.md${NC}"
+echo -e "${YELLOW}If you encounter any issues with the backend, see TROUBLESHOOTING.md${NC}"
 cd backend
 
 # Check if Poetry virtual environment exists
