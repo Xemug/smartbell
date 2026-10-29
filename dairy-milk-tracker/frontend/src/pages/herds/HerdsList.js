@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../services/api';
 
 const HerdsList = () => {
   const [herds, setHerds] = useState([]);
@@ -11,7 +11,7 @@ const HerdsList = () => {
     const fetchHerds = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('/api/herds/');
+        const response = await api.get('/api/herds/');
         setHerds(response.data);
         setLoading(false);
       } catch (error) {
@@ -27,7 +27,7 @@ const HerdsList = () => {
   const handleDeleteHerd = async (id) => {
     if (window.confirm('Are you sure you want to delete this herd?')) {
       try {
-        await axios.delete(`/api/herds/${id}`);
+        await api.delete(`/api/herds/${id}`);
         setHerds(herds.filter(herd => herd.id !== id));
       } catch (error) {
         console.error('Error deleting herd', error);

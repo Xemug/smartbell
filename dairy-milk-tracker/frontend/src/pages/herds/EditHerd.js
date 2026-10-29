@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../services/api';
 
 const EditHerd = () => {
   const [herdName, setHerdName] = useState('');
@@ -14,7 +14,7 @@ const EditHerd = () => {
   useEffect(() => {
     const fetchHerd = async () => {
       try {
-        const response = await axios.get(`/api/herds/${id}`);
+        const response = await api.get(`/api/herds/${id}`);
         setHerdName(response.data.name);
         setCowCount(response.data.cow_count.toString());
         setLoading(false);
@@ -39,7 +39,7 @@ const EditHerd = () => {
       setError('');
       setSaving(true);
       
-      await axios.put(`/api/herds/${id}`, {
+      await api.put(`/api/herds/${id}`, {
         name: herdName,
         cow_count: parseInt(cowCount)
       });

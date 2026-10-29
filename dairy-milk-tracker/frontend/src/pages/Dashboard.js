@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 
@@ -24,7 +24,7 @@ const Dashboard = () => {
         setLoading(true);
         
         // Fetch stats
-        const statsResponse = await axios.get('/api/milk-production/stats');
+        const statsResponse = await api.get('/api/milk-production/stats');
         setStats({
           totalLiters: statsResponse.data.total_liters,
           averagePerDay: statsResponse.data.average_per_day,
@@ -32,11 +32,11 @@ const Dashboard = () => {
         });
         
         // Fetch herds
-        const herdsResponse = await axios.get('/api/herds/');
+        const herdsResponse = await api.get('/api/herds/');
         setHerds(herdsResponse.data);
         
         // Fetch milk production data
-        const milkResponse = await axios.get('/api/milk-production/');
+        const milkResponse = await api.get('/api/milk-production/');
         setMilkProductions(milkResponse.data);
         
         setLoading(false);

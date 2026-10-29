@@ -1,67 +1,62 @@
+import asyncio
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-import os
-import asyncio
+from sqlalchemy.pool import NullPool
 
 from app.main import app
 from app.database import Base, get_db
 from app.auth import get_password_hash
 from app.models.user import User
 
-# Use an in-memory SQLite database for testing
-SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
-
-engine = create_async_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
-TestingSessionLocal = sessionmaker(
-    autocommit=False, autoflush=False, bind=engine, class_=AsyncSession
-)
-
-
-# Create a dependency that will override the original get_db dependency
-async def override_get_db():
-    async with TestingSessionLocal() as session:
-        yield session
-
-
-# Override the get_db dependency in the app
-app.dependency_overrides[get_db] = override_get_db
-
 
 @pytest.fixture
-async def test_db():
-    # Create the database and tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    
-    # Create a test user
-    async with TestingSessionLocal() as session:
-        test_user = User(
-            email="test@example.com",
-            hashed_password=get_password_hash("password123"),
-            is_active=True,
-        )
-        session.add(test_user)
-        await session.commit()
-    
+def test_db(tmp_path):
+    # Use a throwaway SQLite file per test: an in-memory aiosqlite database is not
+    # shared between connections, and TestClient runs requests on its own event loop.
+    engine = create_async_engine(
+        f"sqlite+aiosqlite:///{tmp_path / 'test.db'}", poolclass=NullPool
+    )
+    TestingSessionLocal = sessionmaker(
+        autocommit=False, autoflush=False, bind=engine, class_=AsyncSession
+    )
+
+    async def setup():
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        # Create a test user
+        async with TestingSessionLocal() as session:
+            session.add(
+                User(
+                    email="test@example.com",
+                    hashed_password=get_password_hash("password123"),
+                    is_active=True,
+                )
+            )
+            await session.commit()
+
+    asyncio.run(setup())
+
+    # Override the get_db dependency in the app
+    async def override_get_db():
+        async with TestingSessionLocal() as session:
+            yield session
+
+    app.dependency_overrides[get_db] = override_get_db
     yield
-    
-    # Drop all tables after the test is complete
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+    app.dependency_overrides.pop(get_db, None)
+    asyncio.run(engine.dispose())
 
 
 @pytest.fixture
-def client():
+def client(test_db):
     with TestClient(app) as c:
         yield c
 
 
-@pytest.mark.asyncio
-async def test_create_user(client, test_db):
+def test_create_user(client):
     response = client.post(
         "/api/auth/register",
         json={"email": "user@example.com", "password": "password123"},
@@ -72,8 +67,7 @@ async def test_create_user(client, test_db):
     assert "id" in data
 
 
-@pytest.mark.asyncio
-async def test_login(client, test_db):
+def test_login(client):
     # Authenticate and get access token
     response = client.post(
         "/api/auth/token",
@@ -85,8 +79,44 @@ async def test_login(client, test_db):
     assert data["token_type"] == "bearer"
 
 
-@pytest.mark.asyncio
-async def test_create_herd(client, test_db):
+def test_login_wrong_password_returns_401(client):
+    response = client.post(
+        "/api/auth/token",
+        data={"username": "test@example.com", "password": "wrong-password"},
+    )
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Incorrect email or password"
+
+
+@pytest.mark.parametrize("port", [3000, 3001, 3002])
+def test_login_cors_allows_any_local_dev_port(client, port):
+    # npm start falls back to 3001, 3002, ... when 3000 is taken
+    origin = f"http://localhost:{port}"
+    preflight = client.options(
+        "/api/auth/token",
+        headers={"Origin": origin, "Access-Control-Request-Method": "POST"},
+    )
+    assert preflight.status_code == 200
+    assert preflight.headers["access-control-allow-origin"] == origin
+
+    response = client.post(
+        "/api/auth/token",
+        data={"username": "test@example.com", "password": "password123"},
+        headers={"Origin": origin},
+    )
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == origin
+
+
+def test_cors_rejects_non_local_origin(client):
+    response = client.options(
+        "/api/auth/token",
+        headers={"Origin": "http://evil.example.com", "Access-Control-Request-Method": "POST"},
+    )
+    assert "access-control-allow-origin" not in response.headers
+
+
+def test_create_herd(client):
     # First login to get token
     response = client.post(
         "/api/auth/token",
@@ -107,8 +137,7 @@ async def test_create_herd(client, test_db):
     assert "id" in data
 
 
-@pytest.mark.asyncio
-async def test_create_milk_production(client, test_db):
+def test_create_milk_production(client):
     # First login to get token
     response = client.post(
         "/api/auth/token",

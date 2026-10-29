@@ -9,14 +9,11 @@ from app.database import Base, engine
 app = FastAPI(title="Dairy Milk Tracker API")
 
 # Set up CORS
-origins = [
-    "http://localhost",
-    "http://localhost:3000",  # React default port
-]
-
+# Allow the React dev server on any local port: `npm start` moves to 3001, 3002, ...
+# when 3000 is already taken, and a fixed list then blocks every API call (including login).
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

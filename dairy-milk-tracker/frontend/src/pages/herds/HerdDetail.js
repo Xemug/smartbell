@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../services/api';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 
@@ -20,11 +20,11 @@ const HerdDetail = () => {
         setLoading(true);
         
         // Fetch herd details
-        const herdResponse = await axios.get(`/api/herds/${id}`);
+        const herdResponse = await api.get(`/api/herds/${id}`);
         setHerd(herdResponse.data);
         
         // Fetch milk production data for this herd
-        const milkResponse = await axios.get(`/api/milk-production/?herd_id=${id}`);
+        const milkResponse = await api.get(`/api/milk-production/?herd_id=${id}`);
         setMilkProductions(milkResponse.data);
         
         setLoading(false);

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   Button, 
@@ -43,7 +43,7 @@ const ProfileNew = () => {
       if (field === 'email') data.email = email;
       if (field === 'password') data.password = password;
       
-      await axios.put('/api/users/profile', data);
+      await api.put('/api/users/profile', data);
       
       setIsEditing({ ...isEditing, [field]: false });
       if (field === 'password') setPassword('');
@@ -109,7 +109,7 @@ const ProfileNew = () => {
     
     try {
       setLoading(true);
-      await axios.delete('/api/users/');
+      await api.delete('/api/users/');
       logout();
       navigate('/login');
     } catch (error) {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../services/api';
 
 const AddMilkProduction = () => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -18,7 +18,7 @@ const AddMilkProduction = () => {
   useEffect(() => {
     const fetchHerds = async () => {
       try {
-        const response = await axios.get('/api/herds/');
+        const response = await api.get('/api/herds/');
         setHerds(response.data);
         
         // Check if herd_id is provided in query params
@@ -68,7 +68,7 @@ const AddMilkProduction = () => {
         payload.protein_percentage = parseFloat(proteinPercentage);
       }
       
-      await axios.post('/api/milk-production/', payload);
+      await api.post('/api/milk-production/', payload);
       
       navigate('/milk-production');
     } catch (error) {

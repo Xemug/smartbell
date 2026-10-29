@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 
 const Onboarding = () => {
   const [step, setStep] = useState(1);
@@ -21,7 +21,7 @@ const Onboarding = () => {
       setError('');
       setLoading(true);
       
-      await axios.post('/api/herds/', {
+      await api.post('/api/herds/', {
         name: herdName,
         cow_count: parseInt(cowCount)
       });

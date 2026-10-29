@@ -35,6 +35,9 @@ async def login_for_access_token(
             data={"sub": user.email}, expires_delta=access_token_expires
         )
         return {"access_token": access_token, "token_type": "bearer"}
+    except HTTPException:
+        # Re-raise HTTP exceptions (e.g. 401 for bad credentials)
+        raise
     except Exception as e:
         print(f"Login error: {str(e)}")
         raise HTTPException(

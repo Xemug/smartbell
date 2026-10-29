@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../services/api';
 
 const MilkProductionList = () => {
   const [milkProductions, setMilkProductions] = useState([]);
@@ -15,7 +15,7 @@ const MilkProductionList = () => {
         setLoading(true);
         
         // Fetch herds
-        const herdsResponse = await axios.get('/api/herds/');
+        const herdsResponse = await api.get('/api/herds/');
         setHerds(herdsResponse.data);
         
         // Fetch milk production data
@@ -23,7 +23,7 @@ const MilkProductionList = () => {
           ? '/api/milk-production/' 
           : `/api/milk-production/?herd_id=${selectedHerd}`;
         
-        const milkResponse = await axios.get(url);
+        const milkResponse = await api.get(url);
         setMilkProductions(milkResponse.data);
         
         setLoading(false);
@@ -40,7 +40,7 @@ const MilkProductionList = () => {
   const handleDeleteRecord = async (id) => {
     if (window.confirm('Are you sure you want to delete this record?')) {
       try {
-        await axios.delete(`/api/milk-production/${id}`);
+        await api.delete(`/api/milk-production/${id}`);
         setMilkProductions(milkProductions.filter(record => record.id !== id));
       } catch (error) {
         console.error('Error deleting record', error);

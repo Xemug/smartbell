@@ -7,7 +7,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, currentUser } = useAuth();
+  const { login, currentUser, error: authError } = useAuth();
   const navigate = useNavigate();
   
   // Redirect if user is already logged in
@@ -32,9 +32,8 @@ const Login = () => {
       
       if (success) {
         navigate('/dashboard');
-      } else {
-        setError('Failed to sign in');
       }
+      // On failure, AuthContext sets authError with the backend's message
     } catch (error) {
       setError('Failed to sign in');
       console.error(error);
@@ -47,7 +46,7 @@ const Login = () => {
     <div className="auth-container">
       <h2 className="auth-title">Login</h2>
       
-      {error && <div className="alert alert-error">{error}</div>}
+      {(error || authError) && <div className="alert alert-error">{error || authError}</div>}
       
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="form-group">

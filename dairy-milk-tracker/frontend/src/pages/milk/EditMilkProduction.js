@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../services/api';
 
 const EditMilkProduction = () => {
   const [date, setDate] = useState('');
@@ -19,11 +19,11 @@ const EditMilkProduction = () => {
     const fetchData = async () => {
       try {
         // Fetch herds
-        const herdsResponse = await axios.get('/api/herds/');
+        const herdsResponse = await api.get('/api/herds/');
         setHerds(herdsResponse.data);
         
         // Fetch milk production record
-        const recordResponse = await axios.get(`/api/milk-production/${id}`);
+        const recordResponse = await api.get(`/api/milk-production/${id}`);
         const record = recordResponse.data;
         
         // Format date to YYYY-MM-DD
@@ -78,7 +78,7 @@ const EditMilkProduction = () => {
         payload.protein_percentage = parseFloat(proteinPercentage);
       }
       
-      await axios.put(`/api/milk-production/${id}`, payload);
+      await api.put(`/api/milk-production/${id}`, payload);
       
       navigate('/milk-production');
     } catch (error) {
