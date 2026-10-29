@@ -1,0 +1,101 @@
+/**
+ * Header Component Styles
+ * A responsive header with logo and hamburger menu
+ */
+
+/* Base Header */
+.app-header {
+  background-color: #16a085;
+  color: white;
+  padding: 12px 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+/* Header Brand */
+.header-brand {
+  display: flex;
+  align-items: center;
+}
+
+/* Hamburger Menu */
+.header-hamburger-wrapper {
+  display: flex;
+  align-items: center;
+  margin-right: 12px;
+}
+
+.header-hamburger {
+  color: white;
+}
+
+/* Logo */
+.header-logo-link {
+  text-decoration: none;
+  color: white;
+  display: flex;
+  align-items: center;
+}
+
+.header-logo {
+  height: 32px;
+  width: auto;
+}
+
+.header-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+/* Desktop Navigation */
+.header-nav {
+  display: none;
+}
+
+.header-nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.header-nav-item {
+  margin-left: 24px;
+}
+
+.header-nav-link {
+  color: white;
+  text-decoration: none;
+  padding: 8px 0;
+  position: relative;
+  transition: color 0.2s ease;
+}
+
+.header-nav-link:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.header-nav-link.active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background-color: white;
+  border-radius: 1.5px 1.5px 0 0;
+}
+
+/* Responsive Adjustments */
+@media (min-width: 768px) {
+  .header-hamburger-wrapper {
+    display: none;
+  }
+  
+  .header-nav {
+    display: block;
+  }
+}

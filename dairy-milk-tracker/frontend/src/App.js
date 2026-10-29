@@ -1,12 +1,15 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import './App.css';
 import './Mobile.css'; // New mobile-friendly styles
 
-// Components
-import Header from './components/Header';
+// UI Components
+import { Header, MobileLayout } from './components/ui';
+
+// Original Components
 import Footer from './components/Footer';
 import MobileDetector from './components/MobileDetector';
+import AuthProvider from './components/AuthProvider';
 
 // Original Pages
 import Login from './pages/Login';
@@ -50,9 +53,45 @@ const ProtectedRoute = ({ children }) => {
 };
 
 function App() {
+  const location = useLocation();
+  
+  // Navigation configuration
+  const navItems = [
+    { 
+      path: '/dashboard', 
+      label: 'Dashboard', 
+      icon: <div className="icon">📊</div>,
+      isActive: location.pathname === '/dashboard'
+    },
+    { 
+      path: '/herds', 
+      label: 'My Ranch', 
+      icon: <div className="icon">🐄</div>,
+      isActive: location.pathname === '/herds' || location.pathname.startsWith('/herds/')
+    },
+    { 
+      path: '/milk-production', 
+      label: 'Milk Production', 
+      icon: <div className="icon">🥛</div>,
+      isActive: location.pathname === '/milk-production' || location.pathname.startsWith('/milk-production/')
+    },
+    { 
+      path: '/profile', 
+      label: 'Profile', 
+      icon: <div className="icon">👤</div>,
+      isActive: location.pathname === '/profile'
+    }
+  ];
+  
+  // Custom header for authenticated pages
+  const AuthenticatedHeader = () => (
+    <Header navItems={navItems} />
+  );
+  
   return (
-    <div className="app">
-      <Routes>
+    <AuthProvider>
+      <div className="app">
+        <Routes>
         {/* Public Routes - Login/Register can be used for both desktop and mobile */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -63,9 +102,16 @@ function App() {
           element={
             <ProtectedRoute>
               <MobileDetector
-                mobileComponent={<DashboardNew />}
+                mobileComponent={
+                  <>
+                    <AuthenticatedHeader />
+                    <MobileLayout>
+                      <DashboardNew />
+                    </MobileLayout>
+                  </>
+                }
               >
-                <Header />
+                <AuthenticatedHeader />
                 <main>
                   <Dashboard />
                 </main>
@@ -80,9 +126,16 @@ function App() {
           element={
             <ProtectedRoute>
               <MobileDetector
-                mobileComponent={<ProfileNew />}
+                mobileComponent={
+                  <>
+                    <AuthenticatedHeader />
+                    <MobileLayout>
+                      <ProfileNew />
+                    </MobileLayout>
+                  </>
+                }
               >
-                <Header />
+                <AuthenticatedHeader />
                 <main>
                   <Profile />
                 </main>
@@ -97,9 +150,16 @@ function App() {
           element={
             <ProtectedRoute>
               <MobileDetector
-                mobileComponent={<RanchNew />}
+                mobileComponent={
+                  <>
+                    <AuthenticatedHeader />
+                    <MobileLayout>
+                      <RanchNew />
+                    </MobileLayout>
+                  </>
+                }
               >
-                <Header />
+                <AuthenticatedHeader />
                 <main>
                   <HerdsList />
                 </main>
@@ -114,7 +174,7 @@ function App() {
           path="/onboarding" 
           element={
             <ProtectedRoute>
-              <Header />
+              <AuthenticatedHeader />
               <main>
                 <Onboarding />
               </main>
@@ -127,7 +187,7 @@ function App() {
           path="/herds/add" 
           element={
             <ProtectedRoute>
-              <Header />
+              <AuthenticatedHeader />
               <main>
                 <AddHerd />
               </main>
@@ -140,7 +200,7 @@ function App() {
           path="/herds/edit/:id" 
           element={
             <ProtectedRoute>
-              <Header />
+              <AuthenticatedHeader />
               <main>
                 <EditHerd />
               </main>
@@ -153,7 +213,7 @@ function App() {
           path="/herds/:id" 
           element={
             <ProtectedRoute>
-              <Header />
+              <AuthenticatedHeader />
               <main>
                 <HerdDetail />
               </main>
@@ -166,7 +226,7 @@ function App() {
           path="/milk-production" 
           element={
             <ProtectedRoute>
-              <Header />
+              <AuthenticatedHeader />
               <main>
                 <MilkProductionList />
               </main>
@@ -179,7 +239,7 @@ function App() {
           path="/milk-production/add" 
           element={
             <ProtectedRoute>
-              <Header />
+              <AuthenticatedHeader />
               <main>
                 <AddMilkProduction />
               </main>
@@ -192,7 +252,7 @@ function App() {
           path="/milk-production/edit/:id" 
           element={
             <ProtectedRoute>
-              <Header />
+              <AuthenticatedHeader />
               <main>
                 <EditMilkProduction />
               </main>
@@ -204,7 +264,8 @@ function App() {
         {/* Default Route */}
         <Route path="/" element={<Navigate to="/dashboard" />} />
       </Routes>
-    </div>
+      </div>
+      </AuthProvider>
   );
 }
 

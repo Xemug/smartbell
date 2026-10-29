@@ -5,6 +5,20 @@
   box-sizing: border-box;
 }
 
+/* Import UI Component Styles */
+@import './components/ui/Grid.css';
+@import './components/ui/Button.css';
+@import './components/ui/Form.css';
+@import './components/ui/Card.css';
+@import './components/ui/TabNavigation.css';
+@import './components/ui/Typography.css';
+@import './components/ui/Spacer.css';
+@import './components/ui/Hamburger.css';
+@import './components/ui/Sidebar.css';
+@import './components/ui/Header.css';
+@import './components/ui/MobileLayout.css';
+@import './components/ui/Logo.css';
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -25,8 +39,8 @@ code {
   padding: 0 20px;
 }
 
-/* Buttons */
-button {
+/* Legacy Buttons - Use UI Button Component for new development */
+button:not(.btn) {
   cursor: pointer;
   padding: 10px 15px;
   border: none;
@@ -34,22 +48,25 @@ button {
   font-size: 16px;
 }
 
-.btn-primary {
+/* These will be deprecated in favor of the Button component */
+.button-legacy .btn-primary {
   background-color: #4CAF50;
   color: white;
 }
 
-.btn-secondary {
+.button-legacy .btn-secondary {
   background-color: #2196F3;
   color: white;
 }
 
-.btn-danger {
+.button-legacy .btn-danger {
   background-color: #F44336;
   color: white;
 }
 
-.btn-primary:hover, .btn-secondary:hover, .btn-danger:hover {
+.button-legacy .btn-primary:hover, 
+.button-legacy .btn-secondary:hover, 
+.button-legacy .btn-danger:hover {
   opacity: 0.9;
 }
 
@@ -101,16 +118,16 @@ label {
   border: 1px solid #f5c6cb;
 }
 
-/* Grid Layout */
-.grid {
+/* Legacy Grid Layout - Use GridContainer/GridRow/GridCol components for new development */
+.grid-legacy {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
 }
 
-/* Responsive */
+/* Responsive for Legacy Grid */
 @media (max-width: 768px) {
-  .grid {
+  .grid-legacy {
     grid-template-columns: 1fr;
   }
 }

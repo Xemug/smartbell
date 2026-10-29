@@ -1,0 +1,186 @@
+/**
+ * Card Component Styles
+ * Consistent card styling across the application
+ */
+
+/* Base Card */
+.card {
+  background-color: #ffffff;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+/* Card variants */
+.card-outlined {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: none;
+}
+
+.card-filled {
+  background-color: #f5f7fa;
+}
+
+/* Card elevation levels */
+.card-elevation-0 {
+  box-shadow: none;
+}
+
+.card-elevation-1 {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.card-elevation-2 {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card-elevation-3 {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* Card Header */
+.card-header {
+  padding: 1.25rem 1.5rem 0.75rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.card-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #333;
+  line-height: 1.4;
+}
+
+.card-subtitle {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: #666;
+  line-height: 1.4;
+}
+
+/* Card Body */
+.card-body {
+  padding: 1.5rem;
+}
+
+/* Card Content */
+.card-content {
+  margin-bottom: 1.25rem;
+}
+
+.card-content:last-child {
+  margin-bottom: 0;
+}
+
+/* Card Actions */
+.card-actions {
+  display: flex;
+  padding: 0.75rem 1.5rem 1.25rem;
+  gap: 0.75rem;
+}
+
+.card-actions-left {
+  justify-content: flex-start;
+}
+
+.card-actions-center {
+  justify-content: center;
+}
+
+.card-actions-right {
+  justify-content: flex-end;
+}
+
+.card-actions-between {
+  justify-content: space-between;
+}
+
+/* Card Media */
+.card-media {
+  position: relative;
+  overflow: hidden;
+  height: 200px; /* Default height */
+}
+
+.card-media-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Card Hover Effects */
+.card:hover.card-hoverable {
+  transform: translateY(-4px);
+}
+
+.card-elevation-1:hover.card-hoverable {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.card-elevation-2:hover.card-hoverable {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.card-elevation-3:hover.card-hoverable {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* Card Groups */
+.card-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.card-group .card {
+  flex: 1 1 300px;
+  margin-bottom: 0;
+}
+
+/* Card Horizontal Layout */
+.card-horizontal {
+  display: flex;
+  flex-direction: row;
+}
+
+.card-horizontal .card-media {
+  width: 33.33%;
+  height: auto;
+}
+
+.card-horizontal .card-body {
+  flex: 1;
+}
+
+/* Card Grid Layout */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .card-horizontal {
+    flex-direction: column;
+  }
+  
+  .card-horizontal .card-media {
+    width: 100%;
+    height: 200px;
+  }
+  
+  .card-actions {
+    flex-direction: column;
+  }
+  
+  .card-actions button,
+  .card-actions a {
+    width: 100%;
+  }
+}

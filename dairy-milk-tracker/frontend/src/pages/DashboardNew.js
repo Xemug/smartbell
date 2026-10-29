@@ -1,9 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
+import { applyAuthToken } from '../services/authService';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
 import { useAuth } from '../contexts/AuthContext';
+import { 
+  Button, 
+  GridContainer, 
+  GridRow, 
+  GridCol, 
+  Input, 
+  Select, 
+  Form, 
+  Card, 
+  CardContent, 
+  TabNavigation,
+  Typography,
+  Spacer 
+} from '../components/ui';
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend);
@@ -30,22 +45,36 @@ const DashboardNew = () => {
   const [newProduction, setNewProduction] = useState('');
 
   useEffect(() => {
-    fetchInitialData();
-  }, []);
+    // Check if user is authenticated before fetching data
+    if (currentUser) {
+      // Apply token before fetching data
+      applyAuthToken();
+      fetchInitialData();
+    }
+  }, [currentUser]);
 
   useEffect(() => {
-    if (selectedHerd) {
+    if (selectedHerd && currentUser) {
       fetchStats();
       fetchMilkProductions();
     }
-  }, [selectedHerd, timeSpan]);
+  }, [selectedHerd, timeSpan, currentUser]);
+
+  // Track resize events to ensure token persistence during responsive testing
+  useEffect(() => {
+    // This is now handled by AuthProvider and MobileDetector
+    // No need for additional token handling here
+  }, [currentUser]);
 
   const fetchInitialData = async () => {
     try {
       setLoading(true);
       
+      // Ensure token is set before making request
+      applyAuthToken();
+      
       // Fetch herds
-      const herdsResponse = await axios.get('/api/herds/');
+      const herdsResponse = await api.get('/api/herds/');
       setHerds(herdsResponse.data);
       
       if (herdsResponse.data.length > 0) {
@@ -65,7 +94,10 @@ const DashboardNew = () => {
       setDataLoading(prev => ({ ...prev, stats: true }));
       setError('');
       
-      const statsResponse = await axios.get(`/api/milk-production/stats?herd_id=${selectedHerd}&time_span=${timeSpan}`);
+      // Ensure token is set before making request
+      applyAuthToken();
+      
+      const statsResponse = await api.get(`/api/milk-production/stats?herd_id=${selectedHerd}&time_span=${timeSpan}`);
       setStats({
         totalLiters: statsResponse.data.total_liters,
         averagePerDay: statsResponse.data.average_per_day,
@@ -82,7 +114,10 @@ const DashboardNew = () => {
 
   const fetchMilkProductions = async () => {
     try {
-      const milkResponse = await axios.get(`/api/milk-production/?herd_id=${selectedHerd}`);
+      // Ensure token is set before making request
+      applyAuthToken();
+      
+      const milkResponse = await api.get(`/api/milk-production/?herd_id=${selectedHerd}`);
       setMilkProductions(milkResponse.data);
     } catch (error) {
       console.error('Error fetching milk production data:', error);
@@ -124,7 +159,7 @@ const DashboardNew = () => {
         amount_liters: productionValue,
       };
       
-      await axios.post('/api/milk-production/', payload);
+      await api.post('/api/milk-production/', payload);
       
       // Refresh data
       fetchStats();
@@ -246,7 +281,17 @@ const DashboardNew = () => {
   if (loading) {
     return (
       <div className="milk-log-container">
-        <div className="loading">Loading...</div>
+        <GridContainer>
+          <GridRow>
+            <GridCol xs={12}>
+              <div className="loading">
+                <Typography variant="h5" align="center" color="secondary">
+                  Loading...
+                </Typography>
+              </div>
+            </GridCol>
+          </GridRow>
+        </GridContainer>
       </div>
     );
   }
@@ -254,92 +299,147 @@ const DashboardNew = () => {
   if (herds.length === 0) {
     return (
       <div className="milk-log-container">
-        <div className="empty-state">
-          <p>You don't have any herds yet. Create your first herd to start tracking milk production.</p>
-          <Link to="/herds/add" className="btn-primary">Add New Herd</Link>
-        </div>
+        <GridContainer>
+          <GridRow>
+            <GridCol xs={12}>
+              <div className="empty-state">
+                <Typography variant="body1" align="center" gutterBottom>
+                  You don't have any herds yet. Create your first herd to start tracking milk production.
+                </Typography>
+                <Button 
+                  variant="primary" 
+                  size="medium" 
+                  to="/herds/add"
+                >
+                  Add New Herd
+                </Button>
+              </div>
+            </GridCol>
+          </GridRow>
+        </GridContainer>
       </div>
     );
   }
 
   return (
     <div className="milk-log-container">
-      <div className="header-controls">
-        <div className="notification-icon">🔔</div>
-        <div className="herd-selector">
-          <select value={selectedHerd} onChange={handleHerdChange}>
-            {herds.map(herd => (
-              <option key={herd.id} value={herd.id}>{herd.name}</option>
-            ))}
-          </select>
-        </div>
-        <div className="profile-icon">👤</div>
-      </div>
-      
-      <div className="section-header">
-        <div className="icon">📈</div>
-        <span>Milk production</span>
-      </div>
-      
-      <div className="production-history">
-        <div className="time-span-filter">
-          <select value={timeSpan} onChange={handleTimeSpanChange}>
-            <option value="week">Last 7 days</option>
-            <option value="month">Last 30 days</option>
-            <option value="year">Last 365 days</option>
-          </select>
-        </div>
+      <GridContainer>
+        <GridRow>
+          <GridCol xs={12}>
+            <Card elevation={1}>
+              <CardContent>
+                <Select
+                  value={selectedHerd}
+                  onChange={handleHerdChange}
+                  options={herds.map(herd => ({
+                    value: herd.id,
+                    label: herd.name
+                  }))}
+                />
+              </CardContent>
+            </Card>
+            <Spacer size="md" />
+          </GridCol>
+        </GridRow>
+
+        <GridRow>
+          <GridCol xs={12}>
+            <div className="section-header">
+              <div className="icon">📈</div>
+              <Typography variant="h5" component="span">Milk production</Typography>
+            </div>
+          </GridCol>
+        </GridRow>
         
-        <div className="chart-container">
-          {chartData ? (
-            <Bar options={chartOptions} data={chartData} />
-          ) : (
-            <div className="empty-chart">No data available for the selected time period</div>
-          )}
-        </div>
-      </div>
-      
-      <div className="stats-card">
-        <div className="icon-container">
-          <div className="icon">🥛</div>
-          <span>Milk production</span>
-        </div>
-        <div className="stat-value">
-          <span className="number">{stats.litersPerCow.toFixed(1)}</span>
-          <span className="unit">lt/day per cow in average</span>
-        </div>
-      </div>
-      
-      <div className="add-production">
-        <h3>Log your today's herd milk production</h3>
-        <form onSubmit={handleSubmitProduction}>
-          <input
-            type="number"
-            step="0.1"
-            placeholder="1,000 liters produced today"
-            value={newProduction}
-            onChange={(e) => setNewProduction(e.target.value)}
-            required
-          />
-          <button type="submit" className="btn-primary">Log my today's production</button>
-        </form>
-        {error && <div className="error-message">{error}</div>}
-      </div>
-      
-      <div className="tab-navigation">
-        <Link to="/dashboard" className="tab active">
-          <div className="icon">📊</div>
-          <span>Milk Log</span>
-        </Link>
-        <Link to="/herds" className="tab">
-          <div className="icon">🐄</div>
-          <span>My Ranch</span>
-        </Link>
-        <Link to="/profile" className="tab">
-          <div className="icon">👤</div>
-          <span>Profile</span>
-        </Link>
-      </div>
+        <Spacer size="sm" />
+        
+        <GridRow>
+          <GridCol xs={12}>
+            <div className="production-history">
+              <div className="time-span-filter">
+                <Select
+                  value={timeSpan}
+                  onChange={handleTimeSpanChange}
+                  options={[
+                    { value: 'week', label: 'Last 7 days' },
+                    { value: 'month', label: 'Last 30 days' },
+                    { value: 'year', label: 'Last 365 days' }
+                  ]}
+                />
+              </div>
+              
+              <Spacer size="sm" />
+              
+              <Card elevation={1}>
+                <CardContent>
+                  {chartData ? (
+                    <Bar options={chartOptions} data={chartData} />
+                  ) : (
+                    <div className="empty-chart">
+                      <Typography variant="body2" align="center" color="secondary">
+                        No data available for the selected time period
+                      </Typography>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </GridCol>
+        </GridRow>
+        
+        <Spacer size="md" />
+        
+        <GridRow>
+          <GridCol xs={12}>
+            <Card elevation={1}>
+              <CardContent>
+                <div className="stats-card">
+                  <div className="icon-container">
+                    <div className="icon">🥛</div>
+                    <Typography variant="body2">Milk production</Typography>
+                  </div>
+                  <div className="stat-value">
+                    <Typography variant="h3" className="number">{stats.litersPerCow.toFixed(1)}</Typography>
+                    <Typography variant="caption" className="unit">lt/day per cow in average</Typography>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </GridCol>
+        </GridRow>
+        
+        <Spacer size="md" />
+        
+        <GridRow>
+          <GridCol xs={12}>
+            <Card title="Log your today's herd milk production" elevation={1}>
+              <CardContent>
+                <Form onSubmit={handleSubmitProduction}>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    placeholder="1,000 liters produced today"
+                    value={newProduction}
+                    onChange={(e) => setNewProduction(e.target.value)}
+                    required
+                  />
+                  <Button 
+                    variant="primary" 
+                    size="medium" 
+                    fullWidth 
+                    type="submit"
+                  >
+                    Log my today's production
+                  </Button>
+                </Form>
+                {error && <Typography variant="caption" color="error" className="error-message">{error}</Typography>}
+              </CardContent>
+            </Card>
+          </GridCol>
+        </GridRow>
+        
+        <Spacer size="md" />
+      </GridContainer>
     </div>
   );
 };

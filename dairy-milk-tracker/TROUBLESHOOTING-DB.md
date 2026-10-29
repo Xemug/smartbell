@@ -15,7 +15,7 @@ If you're having trouble accessing the application due to database issues, follo
 1. Stop the backend server by pressing Ctrl+C in the terminal running it
 2. Navigate to the backend directory:
    ```
-   cd /Users/juan/Documents/Inversiones/AI training/templates-main/Cursor MCP/dairy-milk-tracker/backend
+   cd /Users/juan/Documents/Inversiones/AI training/smartbell/dairy-milk-tracker/backend
    ```
 3. Delete the database file:
    ```
@@ -39,7 +39,7 @@ If you want to keep your data, you can manually add the missing columns:
    ```
 3. Connect to your database:
    ```
-   sqlite3 /Users/juan/Documents/Inversiones/AI\ training/templates-main/Cursor\ MCP/dairy-milk-tracker/backend/dairy_milk_tracker.db
+   sqlite3 /Users/juan/Documents/Inversiones/AI\ training/smartbell/dairy-milk-tracker/backend/dairy_milk_tracker.db
    ```
 4. Check the current schema:
    ```sql

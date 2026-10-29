@@ -1,0 +1,197 @@
+/**
+ * Typography Component Styles
+ * Consistent text styling across the application
+ */
+
+/* Base Typography */
+.typography {
+  margin: 0;
+  padding: 0;
+  line-height: 1.5;
+}
+
+/* Variants */
+.typography-h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01562em;
+  margin-bottom: 0.5em;
+}
+
+.typography-h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.00833em;
+  margin-bottom: 0.5em;
+}
+
+.typography-h3 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0em;
+  margin-bottom: 0.5em;
+}
+
+.typography-h4 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.00735em;
+  margin-bottom: 0.5em;
+}
+
+.typography-h5 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0em;
+  margin-bottom: 0.5em;
+}
+
+.typography-h6 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.0075em;
+  margin-bottom: 0.5em;
+}
+
+.typography-subtitle1 {
+  font-size: 1.125rem;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.00938em;
+  margin-bottom: 0.5em;
+}
+
+.typography-subtitle2 {
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: 0.00714em;
+  margin-bottom: 0.5em;
+}
+
+.typography-body1 {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.00938em;
+  margin-bottom: 1em;
+}
+
+.typography-body2 {
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.01071em;
+  margin-bottom: 1em;
+}
+
+.typography-caption {
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.03333em;
+  margin-bottom: 0.5em;
+}
+
+.typography-overline {
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: 0.16667em;
+  text-transform: uppercase;
+  margin-bottom: 0.5em;
+}
+
+/* Alignment */
+.typography-align-left {
+  text-align: left;
+}
+
+.typography-align-center {
+  text-align: center;
+}
+
+.typography-align-right {
+  text-align: right;
+}
+
+.typography-align-justify {
+  text-align: justify;
+}
+
+/* Colors */
+.typography-color-primary {
+  color: #16a085;
+}
+
+.typography-color-secondary {
+  color: #4285f4;
+}
+
+.typography-color-success {
+  color: #28a745;
+}
+
+.typography-color-error {
+  color: #e74c3c;
+}
+
+.typography-color-info {
+  color: #17a2b8;
+}
+
+.typography-color-warning {
+  color: #ffc107;
+}
+
+/* Modifiers */
+.typography-gutter-bottom {
+  margin-bottom: 0.35em;
+}
+
+.typography-no-wrap {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .typography-h1 {
+    font-size: 2rem;
+  }
+  
+  .typography-h2 {
+    font-size: 1.75rem;
+  }
+  
+  .typography-h3 {
+    font-size: 1.5rem;
+  }
+  
+  .typography-h4 {
+    font-size: 1.25rem;
+  }
+  
+  .typography-h5 {
+    font-size: 1.125rem;
+  }
+  
+  .typography-h6 {
+    font-size: 1rem;
+  }
+  
+  .typography-subtitle1 {
+    font-size: 1rem;
+  }
+  
+  .typography-subtitle2 {
+    font-size: 0.875rem;
+  }
+}

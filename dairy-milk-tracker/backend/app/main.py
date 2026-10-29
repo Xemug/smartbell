@@ -32,36 +32,19 @@ async def ensure_columns_exist():
         
         # Only run if database already exists
         if os.path.exists(db_path):
-            # Connect directly to SQLite to add columns if they don't exist
-            conn = sqlite3.connect(db_path)
-            cursor = conn.cursor()
+            # Import and run the fix_database script to handle all necessary migrations
+            import sys
+            sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from fix_database import check_and_fix_database
             
-            # Check users table for username column
-            cursor.execute("PRAGMA table_info(users)")
-            columns = [column[1] for column in cursor.fetchall()]
-            
-            if 'username' not in columns:
-                print("Adding username column to users table")
-                cursor.execute("ALTER TABLE users ADD COLUMN username TEXT")
-            
-            # Check herds table for location columns
-            cursor.execute("PRAGMA table_info(herds)")
-            columns = [column[1] for column in cursor.fetchall()]
-            
-            if 'location_line1' not in columns:
-                print("Adding location_line1 column to herds table")
-                cursor.execute("ALTER TABLE herds ADD COLUMN location_line1 TEXT")
-            
-            if 'location_line2' not in columns:
-                print("Adding location_line2 column to herds table")
-                cursor.execute("ALTER TABLE herds ADD COLUMN location_line2 TEXT")
-            
-            conn.commit()
-            conn.close()
-            print("Database schema updated successfully")
+            print("Running database migration checks...")
+            # Run the database fix function in a non-interactive mode
+            check_and_fix_database(interactive=False)
+            print("Database schema verification complete")
             
     except Exception as e:
-        print(f"Warning: Error updating database schema: {str(e)}")
+        print(f"Warning: Error checking database schema: {str(e)}")
+        print("If you encounter database issues, run 'python fix_database.py' manually")
         # Continue anyway - tables will be created by SQLAlchemy if missing
 
 

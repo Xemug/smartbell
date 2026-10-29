@@ -2,6 +2,23 @@
 
 # Dairy Milk Tracker Quick Start Script
 
+# Default values
+force_install=false
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --force-install)
+      force_install=true
+      shift
+      ;;
+    *)
+      # Unknown option
+      shift
+      ;;
+  esac
+done
+
 # Set colors for output
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -11,6 +28,13 @@ NC='\033[0m' # No Color
 echo -e "${GREEN}=======================================${NC}"
 echo -e "${GREEN}  Dairy Milk Tracker - Startup Script  ${NC}"
 echo -e "${GREEN}=======================================${NC}"
+
+# Print usage information
+echo -e "${YELLOW}Usage:${NC}"
+echo -e "  ./start.sh [options]"
+echo -e "${YELLOW}Options:${NC}"
+echo -e "  --force-install  Force reinstallation of dependencies"
+echo
 
 # Function to check if a command exists
 command_exists() {
@@ -87,7 +111,7 @@ echo -e "${GREEN}Backend started with PID $BACKEND_PID${NC}"
 cd ../frontend
 
 # Install frontend dependencies if needed
-if [ ! -d "node_modules" ]; then
+if [ ! -d "node_modules" ] || [ "$force_install" = "true" ]; then
   echo -e "\n${GREEN}Installing frontend dependencies...${NC}"
   run_command "npm install"
 fi

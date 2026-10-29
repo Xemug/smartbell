@@ -2,12 +2,22 @@
 
 A comprehensive application for tracking dairy milk production with a React frontend and FastAPI backend.
 
+> **Note:** This is the main README. See also:
+> - [UPDATED-README.md](./UPDATED-README.md) - Details about mobile UI updates
+> - [CLEAN-CODE-README.md](./CLEAN-CODE-README.md) - Code quality guidelines
+> - [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - General troubleshooting
+> - [TROUBLESHOOTING-DB.md](./TROUBLESHOOTING-DB.md) - Database troubleshooting
+> - [UI-IMPROVEMENTS.md](./UI-IMPROVEMENTS.md) - Details about UI component improvements
+> - [FRONTEND-TASK-LIST.md](./FRONTEND-TASK-LIST.md) - Frontend roadmap
+> - [MOBILE-NAVIGATION.md](./MOBILE-NAVIGATION.md) - Mobile hamburger menu and sidebar
+
 ## Project Structure
 
 The project is organized into two main directories:
 
 - `backend/`: Python FastAPI application
 - `frontend/`: React application
+  - `src/components/ui/`: Reusable UI components for consistent styling
 
 ## Backend
 

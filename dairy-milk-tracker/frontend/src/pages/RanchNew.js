@@ -1,9 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
 import { useAuth } from '../contexts/AuthContext';
+import { 
+  Button, 
+  GridContainer, 
+  GridRow, 
+  GridCol, 
+  Input, 
+  Select, 
+  Form, 
+  Card, 
+  CardContent, 
+  TabNavigation,
+  Typography,
+  Spacer 
+} from '../components/ui';
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend);
@@ -26,20 +40,28 @@ const RanchNew = () => {
   });
 
   useEffect(() => {
-    fetchHerds();
-  }, []);
+    if (currentUser) {
+      fetchHerds();
+    }
+  }, [currentUser]);
 
   useEffect(() => {
-    if (selectedHerd) {
+    if (selectedHerd && currentUser) {
       fetchHerdDetails();
     }
-  }, [selectedHerd]);
+  }, [selectedHerd, currentUser]);
 
   const fetchHerds = async () => {
     try {
       setLoading(true);
       
-      const response = await axios.get('/api/herds/');
+      // Ensure token is applied before request
+      const token = localStorage.getItem('token');
+      if (token) {
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await api.get('/api/herds/');
       setHerds(response.data);
       
       if (response.data.length > 0) {
@@ -56,7 +78,13 @@ const RanchNew = () => {
 
   const fetchHerdDetails = async () => {
     try {
-      const response = await axios.get(`/api/herds/${selectedHerd}`);
+      // Ensure token is applied before request
+      const token = localStorage.getItem('token');
+      if (token) {
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await api.get(`/api/herds/${selectedHerd}`);
       setHerdData(response.data);
       setCowCount(response.data.cow_count.toString());
       setRanchName(response.data.name);
@@ -103,7 +131,7 @@ const RanchNew = () => {
     try {
       setError('');
       
-      await axios.put(`/api/herds/${selectedHerd}`, {
+      await api.put(`/api/herds/${selectedHerd}`, {
         name: herdData.name,
         cow_count: cowCountValue,
         location_line1: herdData.location_line1 || null,
@@ -138,7 +166,7 @@ const RanchNew = () => {
     try {
       setError('');
       
-      await axios.put(`/api/herds/${selectedHerd}`, {
+      await api.put(`/api/herds/${selectedHerd}`, {
         name: ranchName,
         cow_count: herdData.cow_count,
         location_line1: herdData.location_line1,
@@ -158,7 +186,7 @@ const RanchNew = () => {
     try {
       setError('');
       
-      await axios.put(`/api/herds/${selectedHerd}`, {
+      await api.put(`/api/herds/${selectedHerd}`, {
         name: herdData.name,
         cow_count: herdData.cow_count,
         location_line1: locationLine1,
@@ -256,7 +284,17 @@ const RanchNew = () => {
   if (loading) {
     return (
       <div className="my-ranch-container">
-        <div className="loading">Loading...</div>
+        <GridContainer>
+          <GridRow>
+            <GridCol xs={12}>
+              <div className="loading">
+                <Typography variant="h5" align="center" color="secondary">
+                  Loading...
+                </Typography>
+              </div>
+            </GridCol>
+          </GridRow>
+        </GridContainer>
       </div>
     );
   }
@@ -264,135 +302,212 @@ const RanchNew = () => {
   if (herds.length === 0) {
     return (
       <div className="my-ranch-container">
-        <div className="empty-state">
-          <p>You don't have any herds yet. Create your first herd to start tracking milk production.</p>
-          <Link to="/herds/add" className="btn-primary">Add New Herd</Link>
-        </div>
+        <GridContainer>
+          <GridRow>
+            <GridCol xs={12}>
+              <div className="empty-state">
+                <Typography variant="body1" align="center" gutterBottom>
+                  You don't have any herds yet. Create your first herd to start tracking milk production.
+                </Typography>
+                <Button 
+                  variant="primary" 
+                  size="medium" 
+                  to="/herds/add"
+                >
+                  Add New Herd
+                </Button>
+              </div>
+            </GridCol>
+          </GridRow>
+        </GridContainer>
       </div>
     );
   }
 
   return (
     <div className="my-ranch-container">
-      <div className="header-controls">
-        <div className="notification-icon">🔔</div>
-        <div className="herd-selector">
-          <select value={selectedHerd} onChange={handleHerdChange}>
-            {herds.map(herd => (
-              <option key={herd.id} value={herd.id}>{herd.name}</option>
-            ))}
-          </select>
-        </div>
-        <div className="profile-icon">👤</div>
-      </div>
-      
-      <div className="section-header">
-        <div className="icon">🐄</div>
-        <span>Cows in production</span>
-      </div>
-      
-      <div className="production-history">
-        <div className="time-span-filter">
-          <select value={timeSpan} onChange={handleTimeSpanChange}>
-            <option value="week">Last 7 days</option>
-            <option value="month">Last 30 days</option>
-            <option value="year">Last 365 days</option>
-          </select>
-        </div>
+      <GridContainer>
+        <GridRow>
+          <GridCol xs={12}>
+            <Card elevation={1}>
+              <CardContent>
+                <Select
+                  value={selectedHerd}
+                  onChange={handleHerdChange}
+                  options={herds.map(herd => ({
+                    value: herd.id,
+                    label: herd.name
+                  }))}
+                />
+              </CardContent>
+            </Card>
+            <Spacer size="md" />
+          </GridCol>
+        </GridRow>
         
-        <div className="chart-container">
-          {chartData ? (
-            <Bar options={chartOptions} data={chartData} />
-          ) : (
-            <div className="empty-chart">No data available for the selected time period</div>
-          )}
-        </div>
-      </div>
-      
-      <div className="stats-card">
-        <div className="icon-container">
-          <div className="icon">🐄</div>
-          <span>Cows in production</span>
-        </div>
-        <div className="stat-value">
-          <span className="number">{herdData?.cow_count || 0}</span>
-        </div>
-      </div>
-      
-      <div className="cow-count-update">
-        <h3>Update my cows in production</h3>
-        <input
-          type="number"
-          value={cowCount}
-          onChange={(e) => setCowCount(e.target.value)}
-          placeholder="Number of cows"
-        />
-        <button className="btn-primary" onClick={handleUpdateCowCount}>
-          Update my cows in production
-        </button>
-      </div>
-      
-      <div className="ranch-form">
-        <div className="form-group">
-          <label>Ranch Name</label>
-          <div className="input-wrapper">
-            <input 
-              type="text" 
-              value={ranchName}
-              onChange={(e) => setRanchName(e.target.value)}
-              disabled={!isEditing.ranchName}
-            />
-            {!isEditing.ranchName ? (
-              <span className="edit-icon" onClick={() => setIsEditing({...isEditing, ranchName: true})}>✏️</span>
-            ) : (
-              <span className="edit-icon" onClick={handleUpdateRanchName}>✓</span>
-            )}
-          </div>
-        </div>
+        <GridRow>
+          <GridCol xs={12}>
+            <div className="section-header">
+              <div className="icon">🐄</div>
+              <Typography variant="h5" component="span">Cows in production</Typography>
+            </div>
+          </GridCol>
+        </GridRow>
         
-        <div className="form-group">
-          <label>Ranch Location</label>
-          <div className="input-wrapper">
-            <input 
-              type="text" 
-              value={locationLine1}
-              onChange={(e) => setLocationLine1(e.target.value)}
-              placeholder="Address line 1"
-              disabled={!isEditing.location}
-            />
-            {!isEditing.location ? (
-              <span className="edit-icon" onClick={() => setIsEditing({...isEditing, location: true})}>✏️</span>
-            ) : (
-              <span className="edit-icon" onClick={handleUpdateLocation}>✓</span>
-            )}
-          </div>
-          {isEditing.location && (
-            <input 
-              type="text" 
-              value={locationLine2}
-              onChange={(e) => setLocationLine2(e.target.value)}
-              placeholder="Address line 2 (optional)"
-            />
-          )}
-        </div>
-      </div>
-      
-      {error && <div className="error-message">{error}</div>}
-      
-      <div className="tab-navigation">
-        <Link to="/dashboard" className="tab">
-          <div className="icon">📊</div>
-          <span>Milk Log</span>
-        </Link>
-        <Link to="/herds" className="tab active">
-          <div className="icon">🐄</div>
-          <span>My Ranch</span>
-        </Link>
-        <Link to="/profile" className="tab">
-          <div className="icon">👤</div>
-          <span>Profile</span>
-        </Link>
-      </div>
+        <Spacer size="sm" />
+        
+        <GridRow>
+          <GridCol xs={12}>
+            <div className="production-history">
+              <div className="time-span-filter">
+                <Select
+                  value={timeSpan}
+                  onChange={handleTimeSpanChange}
+                  options={[
+                    { value: 'week', label: 'Last 7 days' },
+                    { value: 'month', label: 'Last 30 days' },
+                    { value: 'year', label: 'Last 365 days' }
+                  ]}
+                />
+              </div>
+              
+              <Spacer size="sm" />
+              
+              <Card elevation={1}>
+                <CardContent>
+                  {chartData ? (
+                    <Bar options={chartOptions} data={chartData} />
+                  ) : (
+                    <div className="empty-chart">
+                      <Typography variant="body2" align="center" color="secondary">
+                        No data available for the selected time period
+                      </Typography>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </GridCol>
+        </GridRow>
+        
+        <Spacer size="md" />
+        
+        <GridRow>
+          <GridCol xs={12}>
+            <Card elevation={1}>
+              <CardContent>
+                <div className="stats-card">
+                  <div className="icon-container">
+                    <div className="icon">🐄</div>
+                    <Typography variant="body2">Cows in production</Typography>
+                  </div>
+                  <div className="stat-value">
+                    <Typography variant="h3" className="number">{herdData?.cow_count || 0}</Typography>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </GridCol>
+        </GridRow>
+        
+        <Spacer size="md" />
+        
+        <GridRow>
+          <GridCol xs={12}>
+            <Card title="Update my cows in production" elevation={1}>
+              <CardContent>
+                <Form>
+                  <Input
+                    type="number"
+                    value={cowCount}
+                    onChange={(e) => setCowCount(e.target.value)}
+                    placeholder="Number of cows"
+                  />
+                  <Button 
+                    variant="primary" 
+                    size="medium" 
+                    fullWidth
+                    onClick={handleUpdateCowCount}
+                  >
+                    Update my cows in production
+                  </Button>
+                </Form>
+              </CardContent>
+            </Card>
+          </GridCol>
+        </GridRow>
+        
+        <Spacer size="md" />
+        
+        <GridRow>
+          <GridCol xs={12}>
+            <Card elevation={1}>
+              <CardContent>
+                <div className="ranch-form">
+                  <div className="form-group">
+                    <Typography variant="subtitle2" component="label">Ranch Name</Typography>
+                    <div className="input-wrapper">
+                      <Input 
+                        type="text" 
+                        value={ranchName}
+                        onChange={(e) => setRanchName(e.target.value)}
+                        disabled={!isEditing.ranchName}
+                      />
+                      {!isEditing.ranchName ? (
+                        <span className="edit-icon" onClick={() => setIsEditing({...isEditing, ranchName: true})}>✏️</span>
+                      ) : (
+                        <span className="edit-icon" onClick={handleUpdateRanchName}>✓</span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <Spacer size="sm" />
+                  
+                  <div className="form-group">
+                    <Typography variant="subtitle2" component="label">Ranch Location</Typography>
+                    <div className="input-wrapper">
+                      <Input 
+                        type="text" 
+                        value={locationLine1}
+                        onChange={(e) => setLocationLine1(e.target.value)}
+                        placeholder="Address line 1"
+                        disabled={!isEditing.location}
+                      />
+                      {!isEditing.location ? (
+                        <span className="edit-icon" onClick={() => setIsEditing({...isEditing, location: true})}>✏️</span>
+                      ) : (
+                        <span className="edit-icon" onClick={handleUpdateLocation}>✓</span>
+                      )}
+                    </div>
+                    {isEditing.location && (
+                      <div>
+                        <Spacer size="xs" />
+                        <Input 
+                          type="text" 
+                          value={locationLine2}
+                          onChange={(e) => setLocationLine2(e.target.value)}
+                          placeholder="Address line 2 (optional)"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </GridCol>
+        </GridRow>
+        
+        {error && (
+          <GridRow>
+            <GridCol xs={12}>
+              <Spacer size="sm" />
+              <Typography variant="caption" color="error" className="error-message">{error}</Typography>
+            </GridCol>
+          </GridRow>
+        )}
+        
+        <Spacer size="md" />
+      </GridContainer>
     </div>
   );
 };

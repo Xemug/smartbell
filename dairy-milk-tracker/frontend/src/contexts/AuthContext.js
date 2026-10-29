@@ -1,5 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import api from '../services/api';
+import { applyAuthToken, removeAuthToken, storeAuthToken } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext();
@@ -14,64 +16,53 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // Setup axios defaults and interceptors
+  // Setup auth check effect
   useEffect(() => {
-    // Request interceptor
-    axios.interceptors.request.use(
-      (config) => {
-        const token = localStorage.getItem('token');
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-      },
-      (error) => {
-        return Promise.reject(error);
-      }
-    );
-
-    // Response interceptor
-    axios.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        if (error.response && error.response.status === 401) {
-          // Handle token expiration
-          localStorage.removeItem('token');
-          setCurrentUser(null);
-          navigate('/login');
-        }
-        return Promise.reject(error);
-      }
-    );
+    // No need to set up interceptors here anymore - moved to api.js
   }, [navigate]);
 
-  // Check if user is already logged in
+  // Setup auth check effect - run when component mounts
   useEffect(() => {
     const checkAuthStatus = async () => {
       const token = localStorage.getItem('token');
       
       if (token) {
         try {
-          const response = await axios.get('/api/users/me');
+          // Make sure the token is properly set in the axios instance
+          applyAuthToken();
+          
+          // Validate token and get user data
+          const response = await api.get('/api/users/me');
           setCurrentUser(response.data);
         } catch (error) {
-          console.error('Auth check error:', error);
-          localStorage.removeItem('token');
+          // Clear invalid token
+          removeAuthToken();
+          setCurrentUser(null);
+          
+          // If we're not on the login page, redirect to login
+          if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+            navigate('/login');
+          }
         } finally {
           setLoading(false);
         }
       } else {
         setLoading(false);
+        // If we're not on the login page and there's no token, redirect to login
+        if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+          navigate('/login');
+        }
       }
     };
 
     checkAuthStatus();
-  }, []);
+  }, [navigate]);
 
   const login = async (email, password) => {
     try {
       setError('');
-      const response = await axios.post('/api/auth/token', new URLSearchParams({
+      // Use the correct backend URL
+      const response = await axios.post('http://localhost:8000/api/auth/token', new URLSearchParams({
         'username': email,
         'password': password
       }), {
@@ -83,7 +74,7 @@ export const AuthProvider = ({ children }) => {
       const { access_token } = response.data;
       
       // Store token in localStorage
-      localStorage.setItem('token', access_token);
+      storeAuthToken(access_token);
       
       // Fetch user data
       await fetchUserData();
@@ -98,7 +89,7 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUserData = async () => {
     try {
-      const response = await axios.get('/api/users/me');
+      const response = await api.get('/api/users/me');
       setCurrentUser(response.data);
       return response.data;
     } catch (error) {
@@ -110,7 +101,7 @@ export const AuthProvider = ({ children }) => {
   const register = async (email, password, username) => {
     try {
       setError('');
-      await axios.post('/api/auth/register', {
+      await api.post('/api/auth/register', {
         email,
         password,
         username: username || email // Use email as username if not provided
@@ -127,7 +118,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     // Remove token
-    localStorage.removeItem('token');
+    removeAuthToken();
     
     // Clear user
     setCurrentUser(null);
@@ -138,7 +129,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateMembership = async (membershipType) => {
     try {
-      const response = await axios.put(`/api/users/membership?membership_type=${membershipType}`);
+      const response = await api.put(`/api/users/membership?membership_type=${membershipType}`);
       setCurrentUser(response.data);
       return true;
     } catch (error) {
@@ -150,7 +141,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async (userData) => {
     try {
-      const response = await axios.put('/api/users/profile', userData);
+      const response = await api.put('/api/users/profile', userData);
       setCurrentUser(response.data);
       return true;
     } catch (error) {
@@ -162,7 +153,7 @@ export const AuthProvider = ({ children }) => {
 
   const deleteAccount = async () => {
     try {
-      await axios.delete('/api/users/');
+      await api.delete('/api/users/');
       localStorage.removeItem('token');
       setCurrentUser(null);
       navigate('/login');

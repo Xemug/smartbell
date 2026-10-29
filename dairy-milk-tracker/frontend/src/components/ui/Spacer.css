@@ -1,0 +1,79 @@
+/**
+ * Spacer Component Styles
+ * Utility for managing consistent spacing
+ */
+
+/* Base Spacer */
+.spacer {
+  display: block;
+}
+
+/* Vertical Spacers */
+.spacer-vertical {
+  width: 100%;
+}
+
+.spacer-vertical.spacer-xs {
+  height: 0.25rem; /* 4px */
+}
+
+.spacer-vertical.spacer-sm {
+  height: 0.5rem; /* 8px */
+}
+
+.spacer-vertical.spacer-md {
+  height: 1rem; /* 16px */
+}
+
+.spacer-vertical.spacer-lg {
+  height: 1.5rem; /* 24px */
+}
+
+.spacer-vertical.spacer-xl {
+  height: 2rem; /* 32px */
+}
+
+/* Horizontal Spacers */
+.spacer-horizontal {
+  height: 100%;
+  display: inline-block;
+}
+
+.spacer-horizontal.spacer-xs {
+  width: 0.25rem; /* 4px */
+}
+
+.spacer-horizontal.spacer-sm {
+  width: 0.5rem; /* 8px */
+}
+
+.spacer-horizontal.spacer-md {
+  width: 1rem; /* 16px */
+}
+
+.spacer-horizontal.spacer-lg {
+  width: 1.5rem; /* 24px */
+}
+
+.spacer-horizontal.spacer-xl {
+  width: 2rem; /* 32px */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .spacer-vertical.spacer-xl {
+    height: 1.5rem; /* 24px */
+  }
+  
+  .spacer-vertical.spacer-lg {
+    height: 1rem; /* 16px */
+  }
+  
+  .spacer-horizontal.spacer-xl {
+    width: 1.5rem; /* 24px */
+  }
+  
+  .spacer-horizontal.spacer-lg {
+    width: 1rem; /* 16px */
+  }
+}

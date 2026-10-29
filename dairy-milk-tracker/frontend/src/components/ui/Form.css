@@ -1,0 +1,265 @@
+/**
+ * Form Component Styles
+ * Consistent form styling across the application
+ */
+
+/* Form Container */
+.form {
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+/* Form Group */
+.form-group {
+  margin-bottom: 1.25rem;
+  position: relative;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+/* Form Label */
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #333;
+}
+
+.form-required {
+  color: #e74c3c;
+  margin-left: 0.25rem;
+}
+
+/* Form Input */
+.form-input {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #333;
+  background-color: #fff;
+  background-clip: padding-box;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-input:focus {
+  border-color: #16a085;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(22, 160, 133, 0.25);
+}
+
+.form-input::placeholder {
+  color: #aaa;
+  opacity: 1;
+}
+
+.form-input-error {
+  border-color: #e74c3c;
+}
+
+.form-input-error:focus {
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 0.2rem rgba(231, 76, 60, 0.25);
+}
+
+.form-input-disabled {
+  background-color: #f8f9fa;
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+/* Form Select */
+.form-select {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #333;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  appearance: none;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-select:focus {
+  border-color: #16a085;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(22, 160, 133, 0.25);
+}
+
+.form-select-error {
+  border-color: #e74c3c;
+}
+
+.form-select-error:focus {
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 0.2rem rgba(231, 76, 60, 0.25);
+}
+
+.form-select-disabled {
+  background-color: #f8f9fa;
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+/* Form Error Message */
+.form-error-message {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: #e74c3c;
+}
+
+/* Input Sizes */
+.form-input-sm,
+.form-select-sm {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.875rem;
+  border-radius: 6px;
+}
+
+.form-input-lg,
+.form-select-lg {
+  padding: 1rem 1.25rem;
+  font-size: 1.125rem;
+  border-radius: 10px;
+}
+
+/* Textarea */
+textarea.form-input {
+  min-height: 6.25rem;
+  resize: vertical;
+}
+
+/* Checkbox and Radio */
+.form-check {
+  position: relative;
+  display: block;
+  padding-left: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.form-check-input {
+  position: absolute;
+  margin-top: 0.25rem;
+  margin-left: -1.5rem;
+}
+
+.form-check-label {
+  margin-bottom: 0;
+  cursor: pointer;
+}
+
+.form-switch {
+  padding-left: 2.5rem;
+}
+
+.form-switch .form-check-input {
+  width: 2rem;
+  height: 1rem;
+  position: absolute;
+  margin-top: 0.25rem;
+  margin-left: -2.5rem;
+  background-color: #ccc;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Ccircle cx='6' cy='6' r='3' fill='%23fff'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left center;
+  border-radius: 2rem;
+  transition: background-position .15s ease-in-out;
+  appearance: none;
+}
+
+.form-switch .form-check-input:checked {
+  background-position: right center;
+  background-color: #16a085;
+}
+
+/* Number Input */
+/* Hide spinner buttons for Chrome, Safari, Edge, Opera */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+
+/* Hide spinner buttons for Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Form Grid Layout */
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-right: -0.5rem;
+  margin-left: -0.5rem;
+}
+
+.form-col {
+  padding-right: 0.5rem;
+  padding-left: 0.5rem;
+  flex: 1 0 0%;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+  gap: 0.75rem;
+}
+
+.form-actions-between {
+  justify-content: space-between;
+}
+
+/* Form Info Text */
+.form-text {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: #6c757d;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+  .form-input,
+  .form-select {
+    padding: 0.625rem 0.875rem;
+    font-size: 1rem;
+  }
+  
+  .form-row {
+    flex-direction: column;
+  }
+  
+  .form-col {
+    margin-bottom: 1rem;
+  }
+  
+  .form-col:last-child {
+    margin-bottom: 0;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .form-actions button {
+    width: 100%;
+  }
+}
