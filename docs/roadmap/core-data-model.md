@@ -59,4 +59,4 @@ M.
 - [x] Pydantic rejects an Event payload that doesn't match its type (tests per type).
 - [x] Unique constraints tested.
 - [x] Task, MilkHerdLog and MilkCowLog tables exist with the §7 fields.
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
