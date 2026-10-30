@@ -36,3 +36,7 @@ cd app/web && npm run lint && npm run typecheck && npm run test && npm run build
 API tests use in-memory SQLite unless `TEST_DATABASE_URL` points at Postgres (CI sets it); each
 test then gets its own schema. With the api running, `npm run api:gen` (in `app/web`) regenerates
 the typed client in `src/api/schema.d.ts` from `/openapi.json`.
+
+Design tokens live in `app/web/src/styles/tokens.json`. After editing it, run `npm run tokens` (in
+`app/web`) to regenerate `tokens.css`; a test fails while it is stale. http://localhost:5173/dev/tokens
+previews every token.

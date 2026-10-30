@@ -6,5 +6,20 @@
     "label": "Estado de la API",
     "loading": "Comprobando…",
     "error": "Sin conexión con la API"
+  },
+  "devTokens": {
+    "title": "Tokens de diseño",
+    "intro": "Todos los tokens de src/styles/tokens.json, pintados con las variables CSS generadas. Compáralos con la página Foundations del UI Kit.",
+    "tier": "Nivel actual",
+    "colors": "Colores",
+    "moon": "Alias de Moon",
+    "typography": "Estilos de texto",
+    "ramp": "Escala tipográfica",
+    "rampIntro": "Roles responsivos: sm por debajo de 600 px, md desde 600, lg desde 960. Cambia el ancho de la ventana para verlos cambiar.",
+    "spacing": "Espaciado y tamaños",
+    "radii": "Radios",
+    "shadows": "Sombras",
+    "breakpoints": "Puntos de quiebre",
+    "sample": "Vacas en sistema 128"
   }
 }

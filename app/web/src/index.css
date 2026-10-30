@@ -1,3 +1,11 @@
+@import './styles/tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-primary-background font-body text-primary-text;
+  }
+}
