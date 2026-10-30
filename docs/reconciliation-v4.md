@@ -86,3 +86,6 @@ Date: 2026-10-29. Status: **draft; the decisions in §4 need the user.**
 - **4.2 v1 scope:** confirmed. Milk + tasks parity, plus the reproductive core and the General dashboard. Reports, history, the vaccination plan and groups management are deferred.
 - **4.1 Stack:** still open; the user asked for clarification on Capacitor's native capabilities and on FlutterFlow sync.
 - Legacy security: the rules are managed in FlutterFlow (Firestore → Settings → Rules). The `Users` collection is publicly readable and writable in production (released 2026-05-27).
+- **4.1 Stack: APPROVED (2026-10-29), option A′.** React + TypeScript (Moon) as a PWA + Capacitor iOS/Android; FastAPI + Postgres; Firebase Auth kept for identity; RevenueCat kept.
+- **Store release: the new app ships as an update to the existing listings** (`com.juanbordesontiveros.smartbell`, iOS and Android). The Android upload key must be recovered from FlutterFlow or reset in the Play Console before `mobile-store-release`.
+- **Legacy `Users` rule fix:** the user is deferring it for now. The risk is recorded (345 user docs publicly readable and writable). Keep `legacy-firebase-lockdown` first in Backlog and raise it again before any marketing push or new sign-ups.
