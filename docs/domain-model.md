@@ -202,3 +202,12 @@ The DIET_CHANGE payload adds diet_type, daily_kg and daily_cost. The profile sho
 - `value_per_registered_cow_mxn` = 2,100 drives the home banner (registered × value; declared × value).
 - Ranch: auto-created at sign-up ⚙ ("Mi rancho", editable).
 - Membership: one basic plan ⚙ (pricing open, see the reconciliation §4.5).
+
+### 7.6 Confirmed by the user (2026-10-29)
+The ⚙ defaults in §1 and §7.5 are confirmed and become seeded defaults:
+- gestation 283 d, heat cycle 21 d, heat window 7 d, pregnancy check 35–45 d, re-checks at 90/180 d, close-up 21 d before calving;
+- tasks are the only alert surface;
+- the ranch is auto-created at sign-up;
+- pricing comes from the RevenueCat store products.
+
+Still open: the state after an abortion, a return to heat while SERVIDA, and the permission-matrix oddities (§6).

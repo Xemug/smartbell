@@ -3,6 +3,14 @@
 Status: **awaiting the user's decision. Revised 2026-10-29** after the Smartbell 4.0 and UI Kit analysis (`docs/reconciliation-v4.md`). No card that depends on the stack (F-01 onward) starts before this is answered.
 Date: 2026-10-28
 
+> **Plain-language summary (2026-10-29).**
+> - **What gets built:** a new app written from scratch, using the Figma files, the docs and the old app only as reference. The current FlutterFlow app is not modified and keeps running until the new one is ready.
+> - **What the new app is:** one codebase (React) that runs in the browser and is also packaged as a real iOS and Android app with Capacitor. It is installed from the App Store and Google Play like any app.
+> - **Native features:** push notifications, in-app purchases (RevenueCat), the camera for animal photos, offline storage and local notifications all work through native plugins.
+> - **The trade-off:** the screens are drawn by a web view rather than native widgets. For a forms-and-lists app like Smartbell the difference is small.
+> - **What is reused:** only accounts and services. The same Firebase sign-in (users keep their logins), the same RevenueCat, and the same store listing (decided at release time, see below).
+> - **Existing data:** copied into the new database, never modified.
+
 ## The question
 
 The Figma designs describe a reproductive-management app: about 470 mobile frames and as many web

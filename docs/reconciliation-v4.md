@@ -76,3 +76,13 @@ Date: 2026-10-29. Status: **draft; the decisions in §4 need the user.**
    - breakpoints 600/960/1280
    - no dark mode in v1
 9. F4 is labelled 93.5% but is 93.75%; development-stage age bands overlap (see v4-animal-registration-profile.md §5).
+
+## 5. User answers (2026-10-29)
+
+- **4.5 Pricing:** the store prices pulled by RevenueCat are canonical. The product identifiers and display names were left unchanged on purpose, to avoid touching references. Plans and billing build on the RevenueCat `Pro` entitlement (monthly, annual, lifetime) and the `User` add-on.
+- **4.3 Alerts:** shown only as tasks; Alert stays internal.
+- **4.4 Ranch:** "Mi rancho" is created automatically at sign-up and can be renamed.
+- **4.6 Reproductive constants:** confirmed. Gestation 283 d, cycle 21 d, pregnancy check 35–45 d, re-checks at 90/180 d, close-up 21 d before calving, heat window 7 d.
+- **4.2 v1 scope:** confirmed. Milk + tasks parity, plus the reproductive core and the General dashboard. Reports, history, the vaccination plan and groups management are deferred.
+- **4.1 Stack:** still open; the user asked for clarification on Capacitor's native capabilities and on FlutterFlow sync.
+- Legacy security: the rules are managed in FlutterFlow (Firestore → Settings → Rules). The `Users` collection is publicly readable and writable in production (released 2026-05-27).
