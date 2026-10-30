@@ -32,15 +32,28 @@ Stack A′ (approved): `app/web` Vite + React + TS + Tailwind (Moon's Tailwind p
 - `hyperspace.json` setup/run updated to start Postgres, api and web together. Keep `dairy-milk-tracker/` untouched.
 - Out of scope: any domain model, auth, UI components, Capacitor.
 
+### Decisions and assumptions made while building (2026-10-29)
+
+- **Package layout:** the api is the `smartbell` package (`app/api/smartbell/`), so the repro module the decision memo places at `app/api/domain/repro.py` belongs at `app/api/smartbell/domain/repro.py`.
+- **App factory only:** there is no module-level `app`. Run it with `uvicorn --factory smartbell.main:create_app`, so importing the package never reads env.
+- **Settings:** `ENV` is `dev` (default), `test` or `prod`. Outside `dev`, a missing `DATABASE_URL` or `SECRET_KEY` fails at startup. Dev defaults match `docker-compose.yml`.
+- **Test database:** pytest uses Postgres with one schema per test when `TEST_DATABASE_URL` is set (CI sets it), and in-memory SQLite otherwise. The `db_backend` fixture says which one a test got.
+- **Tooling:** Python 3.12 managed with `uv` (`uv.lock` committed). Tailwind 3.4, because Moon's preset targets v3. Vitest 3, because Vitest 2 bundles Vite 5 types and clashes with Vite 6.
+- **Typed client:** `openapi-typescript` generates the types and `openapi-fetch` calls the API. The generated `src/api/schema.d.ts` is committed so the build needs no running api.
+- **Run script:** `scripts/dev.sh` starts the compose Postgres only when `docker` exists. `SKIP_DOCKER=1` with `DATABASE_URL` uses another Postgres; `API_PORT` and `WEB_PORT` move the servers. `hyperspace.json` calls it.
+- **Playwright** is configured with one smoke spec (`e2e/health.spec.ts`) against a running stack. It is not in CI yet; `golden-path-e2e` adds that.
+- **Root `.gitignore`** added: it ignores `.env*` (except `.env.example`), venvs, caches and `node_modules/`. Already-tracked files under `dairy-milk-tracker/` are unaffected.
+- **Main checkout:** its untracked `hyperspace.json` (which still runs the old dairy-milk-tracker setup) blocks pulling this tracked one. Remove it before pulling. That old setup script is what ran `npm install` in `dairy-milk-tracker/frontend` when this worktree was created.
+
 ## Effort
 
 M.
 
 ## Acceptance
 
-- [ ] `docker compose up -d && <run script>` serves web on :5173 and api on :8000; web shows a placeholder page that calls `/api/health` and renders "ok".
-- [ ] `pytest`, `ruff`, `mypy`, `npm run lint`, `npm run test`, `npm run build` all pass locally and in CI on a PR.
-- [ ] `alembic upgrade head` runs against a fresh Postgres.
-- [ ] `npm run api:gen` produces a typed client from the running api.
-- [ ] Root README explains setup in under 10 commands.
-- [ ] Tests for the new code pass in CI.
+- [x] `docker compose up -d && ./scripts/dev.sh` serves web on :5173 and api on :8000; web shows a placeholder page that calls `/api/health` and renders "ok".
+- [x] `pytest`, `ruff`, `mypy`, `npm run lint`, `npm run test`, `npm run build` all pass locally and in CI on a PR.
+- [x] `alembic upgrade head` runs against a fresh Postgres.
+- [x] `npm run api:gen` produces a typed client from the running api.
+- [x] Root README explains setup in under 10 commands.
+- [x] Tests for the new code pass in CI.

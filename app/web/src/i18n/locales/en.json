@@ -1,0 +1,10 @@
+{
+  "app": {
+    "name": "Smartbell"
+  },
+  "health": {
+    "label": "API status",
+    "loading": "Checking…",
+    "error": "Cannot reach the API"
+  }
+}

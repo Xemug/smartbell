@@ -1,1 +1,38 @@
 # smartbell
+
+Reproductive-management app for dairy and beef ranches. The new app lives in `app/` (stack A′,
+see `docs/decision-memo-stack.md`):
+
+- `app/api`: FastAPI, SQLAlchemy 2 (async), Alembic, PostgreSQL 16.
+- `app/web`: Vite, React 18, TypeScript, Tailwind, TanStack Query, react-i18next (es-MX by
+  default), PWA.
+
+`dairy-milk-tracker/` is the earlier attempt, kept read-only as reference. Planning docs and the
+roadmap specs are in `docs/`.
+
+## Setup
+
+Needs Docker (for Postgres), [uv](https://docs.astral.sh/uv/) and Node 22.
+
+```bash
+docker compose up -d                   # Postgres 16 on :5432
+(cd app/api && uv sync)                # api dependencies
+(cd app/web && npm ci)                 # web dependencies
+./scripts/dev.sh                       # migrate, then api on :8000 and web on :5173
+```
+
+Open http://localhost:5173: the placeholder page shows the API health ("ok").
+
+Without Docker, point `DATABASE_URL` at any Postgres and run `SKIP_DOCKER=1 ./scripts/dev.sh`.
+`API_PORT` and `WEB_PORT` move the servers off 8000 and 5173.
+
+## Checks
+
+```bash
+cd app/api && uv run ruff check . && uv run mypy && uv run pytest
+cd app/web && npm run lint && npm run typecheck && npm run test && npm run build
+```
+
+API tests use in-memory SQLite unless `TEST_DATABASE_URL` points at Postgres (CI sets it); each
+test then gets its own schema. With the api running, `npm run api:gen` (in `app/web`) regenerates
+the typed client in `src/api/schema.d.ts` from `/openapi.json`.
