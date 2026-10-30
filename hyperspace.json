@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "setup": "cd app/api && uv sync && cd ../web && npm ci",
+    "run": "./scripts/dev.sh"
+  }
+}
