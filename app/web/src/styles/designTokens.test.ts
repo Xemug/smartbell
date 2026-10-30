@@ -180,6 +180,19 @@ describe('tokens.css', () => {
     expect(generatedCss).toContain('--shadow-md: 0 0 1px #00000033, 0 12px 12px -6px #00000029;');
   });
 
+  it('puts the type classes in the components layer, with tracking in em', () => {
+    expect(generatedCss).toMatch(
+      /@layer components \{[\s\S]*\.type-display-lg \{[^}]*letter-spacing: -0\.0268em;/,
+    );
+  });
+
+  it('matches the hand-written theme colour in index.html', () => {
+    const html = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
+    expect(html).toContain(
+      `<meta name="theme-color" content="${byName(colors, 'primary')?.value}" />`,
+    );
+  });
+
   it('switches the type ramp at 600 and 960', () => {
     const [mobile, tablet, desktop] = generatedCss.split(/@media \(min-width: (?:600|960)px\)/);
     expect(generatedCss).toMatch(/@media \(min-width: 600px\)[\s\S]*@media \(min-width: 960px\)/);
@@ -199,6 +212,7 @@ describe('colour helpers', () => {
   it('paints opaque and translucent colours from their variables', () => {
     expect(cssColor('primary')).toBe('rgb(var(--color-primary))');
     expect(cssColor('scrim')).toBe('var(--color-scrim)');
+    expect(cssColor('primary', '--piccolo')).toBe('rgb(var(--piccolo))');
   });
 });
 
@@ -213,6 +227,9 @@ describe('tailwindTheme', () => {
     expect(theme.borderRadius.interactive).toBe('var(--radius-i-sm)');
     expect(theme.borderRadius.surface).toBe('var(--radius-s-md)');
     expect(theme.boxShadow['moon-md']).toBe('var(--shadow-md)');
+    expect(theme.borderRadius.DEFAULT).toBe('var(--radius-i-sm)');
+    expect(theme.boxShadow.DEFAULT).toBe('var(--shadow-sm)');
+    expect(theme.extend.borderColor.DEFAULT).toBe('rgb(var(--color-neutral-2) / <alpha-value>)');
   });
 
   it('uses the token breakpoints as screens', () => {

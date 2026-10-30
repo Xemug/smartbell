@@ -2,6 +2,10 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 import { VitePWA } from 'vite-plugin-pwa';
 
+import { colors } from './src/styles/designTokens';
+
+const color = (name: string) => colors.find((c) => c.name === name)?.value;
+
 // The dev server proxies /api to the FastAPI app. API_URL overrides the target, e.g. when
 // port 8000 is already taken.
 const apiUrl = process.env.API_URL ?? 'http://localhost:8000';
@@ -12,16 +16,21 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
-      // Navigations to the api (same origin in production) must not get the cached SPA shell.
-      workbox: { navigateFallbackDenylist: [/^\/api\//, /^\/openapi\.json$/, /^\/docs/] },
+      workbox: {
+        // Also the Latin subset of the self-hosted fonts (es-MX and en need no other), so text
+        // keeps its typeface offline.
+        globPatterns: ['**/*.{js,css,html}', '**/*-latin-[0-9]*-normal-*.woff2'],
+        // Navigations to the api (same origin in production) must not get the cached SPA shell.
+        navigateFallbackDenylist: [/^\/api\//, /^\/openapi\.json$/, /^\/docs/],
+      },
       manifest: {
         name: 'Smartbell',
         short_name: 'Smartbell',
         lang: 'es-MX',
         start_url: '/',
         display: 'standalone',
-        theme_color: '#1460AA',
-        background_color: '#F9F9F9',
+        theme_color: color('primary'),
+        background_color: color('primary-background'),
         // Placeholder icons; the real set lands with the design tokens.
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },

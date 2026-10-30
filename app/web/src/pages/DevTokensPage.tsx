@@ -88,7 +88,7 @@ export function DevTokensPage() {
               <li key={m.name} className="flex items-center gap-2">
                 <span
                   className="h-8 w-8 shrink-0 rounded-full border border-neutral-2"
-                  style={{ background: `rgb(var(--${m.name}))` }}
+                  style={{ background: cssColor(m.color, `--${m.name}`) }}
                 />
                 <span className="flex flex-col">
                   <span className="type-label-sm">{m.name}</span>

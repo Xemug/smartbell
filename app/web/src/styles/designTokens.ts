@@ -144,7 +144,8 @@ export const breakpoints = dimensions(tokens.breakpoint);
 
 export const shadows: Shadow[] = entries(tokens.shadow).map(([name, node]) => {
   const token = node as RawToken;
-  return { name, value: token.$value as string, dark: token.$extensions?.dark ?? '' };
+  const value = token.$value as string;
+  return { name, value, dark: token.$extensions?.dark ?? value };
 });
 
 export function breakpointPx(name: 'md' | 'lg' | 'xl'): number {
@@ -175,9 +176,11 @@ function colorByName(name: string): ColorToken {
   return found;
 }
 
-// The CSS value to paint with a colour token, e.g. in an inline style.
-export function cssColor(name: string): string {
-  return isOpaque(colorByName(name).value) ? `rgb(var(--color-${name}))` : `var(--color-${name})`;
+// The CSS value that paints colour token `name` through the variable `cssVar` (its own, or a
+// Moon alias of it). With `alpha`, opaque colours take Tailwind's opacity placeholder.
+export function cssColor(name: string, cssVar = `--color-${name}`, alpha?: string): string {
+  if (!isOpaque(colorByName(name).value)) return `var(${cssVar})`;
+  return alpha ? `rgb(var(${cssVar}) / ${alpha})` : `rgb(var(${cssVar}))`;
 }
 
 const rem = (px: number) => `${px / 16}rem`;
@@ -190,7 +193,8 @@ function typeDeclarations(styleName: string): string {
     `font-weight: ${style.fontWeight};`,
     `font-size: ${rem(style.fontSize)};`,
     `line-height: ${rem(style.lineHeight)};`,
-    `letter-spacing: ${style.letterSpacing}px;`,
+    // In em so tracking scales with the text when the OS text size changes.
+    `letter-spacing: ${Math.round((style.letterSpacing / style.fontSize) * 10000) / 10000}em;`,
   ].join(' ');
 }
 
@@ -219,6 +223,8 @@ export function buildCss(): string {
     ...vars.map((v) => `  ${v}`),
     '}',
     '',
+    // In Tailwind's components layer, so @apply and variants work with them.
+    '@layer components {',
     '/* Type styles (UI Kit scale). */',
     ...typeStyles.map((s) => `.type-${s.name} { ${typeDeclarations(s.name)} }`),
     '',
@@ -226,6 +232,7 @@ export function buildCss(): string {
     ...ramp('sm'),
     ...media('md', 'md'),
     ...media('lg', 'lg'),
+    '}',
     '',
   ].join('\n');
 }
@@ -238,12 +245,11 @@ export interface TokenTheme {
   fontFamily: Scale;
   borderRadius: Scale;
   boxShadow: Scale;
-  extend: { spacing: Scale; maxWidth: Scale };
+  extend: { spacing: Scale; maxWidth: Scale; borderColor: Scale };
 }
 
 export function tailwindTheme(): TokenTheme {
-  const colorValue = (name: string, cssVar: string) =>
-    isOpaque(colorByName(name).value) ? `rgb(var(${cssVar}) / <alpha-value>)` : `var(${cssVar})`;
+  const colorValue = (name: string, cssVar: string) => cssColor(name, cssVar, '<alpha-value>');
   const px = (b: Dimension) => `${b.px}px`;
   return {
     screens: Object.fromEntries(breakpoints.map((b) => [b.name, px(b)])),
@@ -259,8 +265,10 @@ export function tailwindTheme(): TokenTheme {
       display: 'var(--font-display)',
       body: 'var(--font-body)',
     },
+    // DEFAULT keys keep bare `rounded`, `shadow` and `border` working with token values.
     borderRadius: {
       none: '0',
+      DEFAULT: 'var(--radius-i-sm)',
       interactive: 'var(--radius-i-sm)',
       surface: 'var(--radius-s-md)',
       full: 'var(--radius-full)',
@@ -272,6 +280,7 @@ export function tailwindTheme(): TokenTheme {
     },
     boxShadow: {
       none: 'none',
+      DEFAULT: 'var(--shadow-sm)',
       ...Object.fromEntries(shadows.map((s) => [`moon-${s.name}`, `var(--shadow-${s.name})`])),
     },
     extend: {
@@ -280,6 +289,7 @@ export function tailwindTheme(): TokenTheme {
         ...Object.fromEntries(sizes.map((s) => [s.name, `var(--size-${s.name})`])),
       },
       maxWidth: { container: 'var(--size-container)' },
+      borderColor: { DEFAULT: colorValue('neutral-2', '--color-neutral-2') },
     },
   };
 }
