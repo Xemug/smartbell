@@ -7,13 +7,9 @@ For the planner that continues Smartbell planning in a smartbell pane. Read this
   - Stack A′: React + TypeScript + Moon, PWA + Capacitor; FastAPI + Postgres; Firebase Auth kept; RevenueCat kept.
   - Ship as an update to the existing store listings.
   - The constants and scope in `docs/reconciliation-v4.md` §5.
-- **Board:** 51 spec'd cards in Backlog (`docs/backlog.md` is the order; specs are in `docs/roadmap/`).
-- **Board cleanup:** 4 stale cards from earlier drafts need archiving: `alerts-screens`, `reminders`, `milk-records`, `flutterflow-audit`.
-- **Next action (the user said "let's do it"):**
-  1. Archive the 4 stale cards.
-  2. `hc roadmap reorder` the Backlog to match `docs/backlog.md`.
-  3. Move `app-scaffold`, then `design-tokens` and `core-data-model`, to Up Next.
-  4. Start `app-scaffold`.
+- **Board (updated 2026-10-29):** Backlog is reordered to match `docs/backlog.md`. Every card's type and effort come from that file. The 4 stale cards (`alerts-screens`, `reminders`, `milk-records`, `flutterflow-audit`) are already off the board.
+- **In flight:** `app-scaffold` is Building (workspace `chore/app-scaffold`, finish = reviewed ready PR). `design-tokens` and `core-data-model` are in Up Next and both depend on it.
+- **Next action:** steer `app-scaffold` to a ready PR. Once it merges, start `design-tokens` and `core-data-model`; they can run in parallel. Then refill Up Next from `docs/backlog.md`.
   - `legacy-firebase-lockdown` stays first in Backlog; the user deferred it.
 
 ## Where things are
