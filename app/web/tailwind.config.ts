@@ -1,8 +1,11 @@
 import type { Config } from 'tailwindcss';
 
-// Moon's Tailwind preset is added by the design-tokens card.
+import { tailwindTheme } from './src/styles/designTokens';
+
+// The theme comes from src/styles/tokens.json; the CSS variables it points at are in tokens.css.
+// Colours, radii and shadows replace Tailwind's defaults so only token names are available.
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
-  theme: { extend: {} },
+  theme: tailwindTheme(),
   plugins: [],
 } satisfies Config;

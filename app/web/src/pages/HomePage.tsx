@@ -12,8 +12,8 @@ export function HomePage() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-4 p-4">
-      <h1 className="text-3xl font-bold text-[#1460AA]">{t('app.name')}</h1>
-      <p className="text-gray-700">
+      <h1 className="ramp-page-title text-primary">{t('app.name')}</h1>
+      <p className="ramp-body text-secondary-text">
         {t('health.label')}: <span data-testid="api-health">{status}</span>
       </p>
     </main>

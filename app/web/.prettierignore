@@ -3,3 +3,4 @@ dev-dist
 playwright-report
 test-results
 package-lock.json
+src/styles/tokens.css
