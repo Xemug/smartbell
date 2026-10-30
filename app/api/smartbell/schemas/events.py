@@ -1,7 +1,8 @@
 """Event payloads: one Pydantic model per event type (docs/domain-model.md §1, §7.4).
 
-`validate_event_payload` is the single entry point; `smartbell.models.Event` runs it on every
-insert and update, so a payload that doesn't match its type never reaches the database.
+`validate_event_payload` is the single entry point. `smartbell.models.Event` runs it whenever the
+ORM unit of work writes a payload. Bulk `insert()`/`update()` statements skip those hooks, so
+write events with `session.add`, or call this first.
 """
 
 from collections.abc import Mapping

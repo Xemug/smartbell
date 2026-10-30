@@ -40,9 +40,15 @@ def _in(values: tuple[str, ...]) -> str:
 
 
 def derive_kind(sex: Sex, stage: DevelopmentStage, *, has_calved: bool) -> AnimalKind:
-    """The list tab an animal falls in (§7.1). `kind` is stored only so lists can filter on it."""
+    """The list tab an animal falls in (§7.1). `kind` is stored only so lists can filter on it.
+
+    A male's kind depends on his stage, so AUTO must be resolved first (the repro engine does it
+    from age, sex and state).
+    """
     if sex is Sex.HEMBRA:
         return AnimalKind.VACA if has_calved else AnimalKind.VAQUILLA
+    if stage is DevelopmentStage.AUTO:
+        raise ValueError("resolve an AUTO stage before deriving a male's kind")
     if stage is DevelopmentStage.TORO:
         return AnimalKind.TORO
     return AnimalKind.NOVILLO if stage is DevelopmentStage.NOVILLO else AnimalKind.BECERRO
@@ -51,6 +57,14 @@ def derive_kind(sex: Sex, stage: DevelopmentStage, *, has_calved: bool) -> Anima
 class Group(Base):
     __tablename__ = "groups"
     __table_args__ = (
+        Index(
+            "uq_groups_ranch_id_preset",
+            "ranch_id",
+            "preset",
+            unique=True,
+            postgresql_where=text("preset IS NOT NULL"),
+            sqlite_where=text("preset IS NOT NULL"),
+        ),
         CheckConstraint("(type = 'PRESET') = (preset IS NOT NULL)", name="preset_iff_type_preset"),
     )
 

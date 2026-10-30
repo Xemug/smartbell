@@ -4,7 +4,7 @@ import datetime as dt
 import uuid
 from typing import Any
 
-from sqlalchemy import ForeignKey, Index, String, event
+from sqlalchemy import ForeignKey, Index, String, event, inspect
 from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Mapped, Mapper, mapped_column
 
@@ -22,7 +22,7 @@ class Event(Base):
     ranch_id: Mapped[RanchId]
     animal_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("animals.id", ondelete="CASCADE"))
     type: Mapped[EventType] = mapped_column(str_enum(EventType, "type"))
-    occurred_on: Mapped[dt.date] = mapped_column(default=dt.date.today)
+    occurred_on: Mapped[dt.date]  # No default: "today" is the ranch's, which the caller knows.
     # SET NULL: deleting a user keeps their history.
     recorded_by: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL")
@@ -40,6 +40,9 @@ class Event(Base):
 @event.listens_for(Event, "before_insert")
 @event.listens_for(Event, "before_update")
 def _validate_payload(_mapper: Mapper[Event], _connection: Connection, target: Event) -> None:
+    attrs = inspect(target).attrs
+    if not (attrs.payload.history.has_changes() or attrs.type.history.has_changes()):
+        return  # Editing a comment must not re-judge an old payload against today's schema.
     parsed = validate_event_payload(target.type, target.payload)
     target.payload = parsed.model_dump(mode="json", exclude_none=True)
 

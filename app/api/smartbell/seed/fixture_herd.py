@@ -178,6 +178,14 @@ class Herd:
         fresh = days_ago < self.settings.vwp_days
         cow.repro_state = ReproState.RECIEN_PARIDA if fresh else ReproState.ABIERTA
 
+    def link_calf(self, dam: Animal, calf: Animal) -> None:
+        calving = next(
+            event
+            for event in self.events
+            if event.animal_id == dam.id and event.type is EventType.CALVING
+        )
+        calving.payload |= {"calf_registered": True, "calf_animal_id": str(calf.id)}
+
     def served(self, cow: Animal, days_ago: int, *, bull: Animal) -> dt.date:
         on = self.ago(days_ago)
         self.record(
@@ -399,18 +407,21 @@ def male_stock(herd: Herd) -> None:
 
 
 def young_stock(herd: Herd, bull: Animal) -> None:
-    dams = herd.females[:4]
-    for index, dam in enumerate(dams):  # Calves of the prototype cows, with a weight history.
+    # Prototype cows that calved within a calf's first 6 months, with a weight history.
+    dams = [cow for cow in herd.females if cow.control_id in ("00001", "00003", "00004", "00006")]
+    for index, dam in enumerate(dams):
+        assert dam.last_calving_date is not None  # noqa: S101 - calved() ran for all of them
         calf = herd.animal(
             Sex.HEMBRA,
             DevelopmentStage.TERNERA,
-            60 + index * 25,
+            (herd.today - dam.last_calving_date).days,
             dam_id=dam.id,
             sire_id=bull.id,
             birth_length_cm=Decimal(78),
             weight_birth_kg=Decimal(38),
         )
         herd.calves.append(calf)
+        herd.link_calf(dam, calf)
         herd.record(calf, EventType.WEIGHT, herd.ago(14), kg=75 + index * 12)
     for months in (7, 8):
         calf = herd.animal(Sex.HEMBRA, DevelopmentStage.DESTETADA, months * 30)
@@ -487,7 +498,14 @@ def milking_herd(herd: Herd, bulls: list[Animal]) -> None:
 
     aborted = herd.cow()
     herd.calved(aborted, 250, lactation=2)
-    herd.served(aborted, 145, bull=bull)
+    service_on = herd.served(aborted, 145, bull=bull)
+    herd.record(
+        aborted,
+        EventType.PREGNANCY_CHECK,
+        service_on + dt.timedelta(days=40),
+        method=PregnancyCheckMethod.TACTO,
+        result=PregnancyCheckResult.POSITIVE,
+    )
     herd.record(
         aborted,
         EventType.ABORTION,
@@ -550,6 +568,8 @@ def milk_logs(herd: Herd) -> None:
             )
         )
         for cow in milking[:6]:
+            if cow.last_calving_date is None or on < cow.last_calving_date:
+                continue
             until = cow.milk_withdrawal_until
             withheld = until is not None and herd.ago(5) <= on <= until
             herd.milk.append(

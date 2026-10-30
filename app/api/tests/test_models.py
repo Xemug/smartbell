@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 from pydantic import ValidationError
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -48,6 +48,7 @@ from smartbell.models import (
 )
 
 BIRTH = dt.date(2022, 1, 15)
+DAY = dt.date(2026, 10, 1)
 Cow = Callable[..., Animal]
 
 
@@ -191,11 +192,15 @@ async def test_enum_columns_are_check_constrained(session: AsyncSession, cow: Co
         (Sex.MACHO, DevelopmentStage.TORO, False, AnimalKind.TORO),
         (Sex.MACHO, DevelopmentStage.NOVILLO, False, AnimalKind.NOVILLO),
         (Sex.MACHO, DevelopmentStage.BECERRO, False, AnimalKind.BECERRO),
-        (Sex.MACHO, DevelopmentStage.AUTO, False, AnimalKind.BECERRO),
     ],
 )
 def test_derive_kind(sex: Sex, stage: DevelopmentStage, has_calved: bool, kind: AnimalKind) -> None:
     assert derive_kind(sex, stage, has_calved=has_calved) is kind
+
+
+def test_derive_kind_refuses_an_unresolved_male_stage() -> None:
+    with pytest.raises(ValueError, match="AUTO"):
+        derive_kind(Sex.MACHO, DevelopmentStage.AUTO, has_calved=False)
 
 
 async def test_ranch_settings_defaults(
@@ -233,12 +238,12 @@ async def test_event_round_trip_normalises_payload(session: AsyncSession, cow: C
         ranch_id=animal.ranch_id,
         animal_id=animal.id,
         type=EventType.WEIGHT,
+        occurred_on=DAY,
         payload={"kg": "410.5"},
     )
     await add(session, event)
 
     assert event.payload == {"type": "WEIGHT", "kg": 410.5}
-    assert event.occurred_on == dt.date.today()
 
 
 async def test_event_with_a_mismatched_payload_is_never_written(
@@ -247,7 +252,11 @@ async def test_event_with_a_mismatched_payload_is_never_written(
     animal = cow()
     await add(session, animal)
     event = Event(
-        ranch_id=animal.ranch_id, animal_id=animal.id, type=EventType.WEIGHT, payload={"kg": -1}
+        ranch_id=animal.ranch_id,
+        animal_id=animal.id,
+        type=EventType.WEIGHT,
+        occurred_on=DAY,
+        payload={"kg": -1},
     )
 
     with pytest.raises(ValidationError):
@@ -258,13 +267,41 @@ async def test_event_update_is_validated_too(session: AsyncSession, cow: Cow) ->
     animal = cow()
     await add(session, animal)
     event = Event(
-        ranch_id=animal.ranch_id, animal_id=animal.id, type=EventType.WEIGHT, payload={"kg": 400}
+        ranch_id=animal.ranch_id,
+        animal_id=animal.id,
+        type=EventType.WEIGHT,
+        occurred_on=DAY,
+        payload={"kg": 400},
     )
     await add(session, event)
 
     event.payload = {"reason": "MUERTE"}
     with pytest.raises(ValidationError):
         await session.flush()
+
+
+async def test_editing_comments_doesnt_rejudge_an_old_payload(
+    session: AsyncSession, cow: Cow
+) -> None:
+    animal = cow()
+    await add(session, animal)
+    event = Event(
+        ranch_id=animal.ranch_id,
+        animal_id=animal.id,
+        type=EventType.WEIGHT,
+        occurred_on=DAY,
+        payload={"kg": 400},
+    )
+    await add(session, event)
+    await session.execute(text("""UPDATE events SET payload = '{"kg": -1}'"""))
+    await session.refresh(event)
+
+    event.comments = "Pesada en báscula nueva"
+    await session.flush()
+
+    await session.refresh(event)
+    assert event.comments == "Pesada en báscula nueva"
+    assert event.payload == {"kg": -1}
 
 
 @pytest.mark.parametrize(
@@ -296,6 +333,7 @@ async def test_comments_limit_on_postgres(session: AsyncSession, cow: Cow, db_ba
                 ranch_id=animal.ranch_id,
                 animal_id=animal.id,
                 type=EventType.WEIGHT,
+                occurred_on=DAY,
                 payload={"kg": 400},
                 comments="x" * 161,
             ),
@@ -398,6 +436,28 @@ async def test_preset_group_needs_its_preset(session: AsyncSession, ranch: Ranch
     await assert_refused(session, Group(ranch_id=ranch.id, name="X", type=GroupType.PRESET))
 
 
+async def test_one_group_per_preset_per_ranch(session: AsyncSession, ranch: Ranch) -> None:
+    def general() -> Group:
+        return Group(
+            ranch_id=ranch.id, name="General", type=GroupType.PRESET, preset=GroupPreset.GENERAL
+        )
+
+    await add(session, general())
+
+    await assert_refused(session, general())
+
+
+async def test_none_in_a_json_column_is_sql_null(session: AsyncSession, ranch: Ranch) -> None:
+    await add(
+        session, Group(ranch_id=ranch.id, name="Mis vacas", type=GroupType.CUSTOM, auto_filter=None)
+    )
+
+    nulls = await session.scalar(
+        select(func.count()).select_from(Group).where(Group.auto_filter.is_(None))
+    )
+    assert nulls == 1
+
+
 @pytest.fixture
 def enforced_fks(db_backend: str) -> None:
     if db_backend == "sqlite":
@@ -412,7 +472,11 @@ async def test_hard_delete_takes_the_animals_records_but_not_its_offspring(
     await add(session, dam)
     calf = cow("00002", dam_id=dam.id)
     event = Event(
-        ranch_id=dam.ranch_id, animal_id=dam.id, type=EventType.WEIGHT, payload={"kg": 400}
+        ranch_id=dam.ranch_id,
+        animal_id=dam.id,
+        type=EventType.WEIGHT,
+        occurred_on=DAY,
+        payload={"kg": 400},
     )
     await add(session, calf, event)
 
@@ -435,6 +499,7 @@ async def test_deleting_a_user_keeps_their_history(
         ranch_id=ranch.id,
         animal_id=animal.id,
         type=EventType.WEIGHT,
+        occurred_on=DAY,
         payload={"kg": 400},
         recorded_by=worker.id,
     )

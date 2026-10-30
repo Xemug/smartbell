@@ -9,7 +9,8 @@ from sqlalchemy import JSON, DateTime, Enum, ForeignKey, Uuid, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
-Json = JSON().with_variant(JSONB(), "postgresql")
+# none_as_null: an explicit None is SQL NULL, not the JSON value null.
+Json = JSON(none_as_null=True).with_variant(JSONB(none_as_null=True), "postgresql")
 
 UuidPk = Annotated[uuid.UUID, mapped_column(Uuid, primary_key=True, default=uuid.uuid4)]
 RanchId = Annotated[

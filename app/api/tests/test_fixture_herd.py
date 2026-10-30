@@ -9,6 +9,7 @@ from smartbell.models import (
     Animal,
     Event,
     Membership,
+    MilkCowLog,
     MilkHerdLog,
     Ranch,
     RanchSettings,
@@ -104,3 +105,48 @@ async def test_seeding_twice_changes_nothing(session: AsyncSession) -> None:
 
     assert await seed_fixture_herd(session, TODAY) is False
     assert await session.scalar(select(func.count()).select_from(Animal)) == before
+
+
+async def test_calves_match_their_dams_calvings(session: AsyncSession) -> None:
+    await seed_fixture_herd(session, TODAY)
+    herd = await _by_control_id(session)
+    calvings = {
+        event.payload["calf_animal_id"]: event
+        for event in await session.scalars(select(Event).where(Event.type == EventType.CALVING))
+        if event.payload["calf_registered"]
+    }
+    calves = [animal for animal in herd.values() if animal.dam_id]
+
+    assert len(calves) == len(calvings) == 4
+    for calf in calves:
+        calving = calvings[str(calf.id)]
+        assert calving.animal_id == calf.dam_id
+        assert calving.occurred_on == calf.birth_date
+
+
+async def test_abortions_follow_a_positive_check(session: AsyncSession) -> None:
+    await seed_fixture_herd(session, TODAY)
+    events = (await session.scalars(select(Event))).all()
+
+    abortion = next(event for event in events if event.type is EventType.ABORTION)
+
+    assert any(
+        event.animal_id == abortion.animal_id
+        and event.type is EventType.PREGNANCY_CHECK
+        and event.payload["result"] == "POSITIVE"
+        and event.occurred_on < abortion.occurred_on
+        for event in events
+    )
+
+
+async def test_no_cow_gives_milk_before_she_calves(session: AsyncSession) -> None:
+    await seed_fixture_herd(session, TODAY)
+    herd = {animal.id: animal for animal in (await _by_control_id(session)).values()}
+
+    logs = (await session.scalars(select(MilkCowLog))).all()
+
+    assert logs
+    for log in logs:
+        last_calving = herd[log.animal_id].last_calving_date
+        assert last_calving is not None
+        assert log.date >= last_calving

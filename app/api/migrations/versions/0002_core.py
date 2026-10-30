@@ -502,6 +502,14 @@ def upgrade() -> None:
     op.create_index(
         op.f("ix_vaccination_plans_ranch_id"), "vaccination_plans", ["ranch_id"], unique=False
     )
+    op.create_index(
+        "uq_groups_ranch_id_preset",
+        "groups",
+        ["ranch_id", "preset"],
+        unique=True,
+        postgresql_where=sa.text("preset IS NOT NULL"),
+        sqlite_where=sa.text("preset IS NOT NULL"),
+    )
     op.create_table(
         "animals",
         sa.Column("id", sa.Uuid(), nullable=False),

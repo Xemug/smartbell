@@ -39,6 +39,10 @@ Implement `docs/domain-model.md` §1 exactly (names in English, enums as Postgre
 - **Constraints that back later cards' idempotency:** one alert per (animal, kind, window); one OPEN task per alert.
 - **`MilkCowLog` has no uniqueness rule:** §7.3 asks for one per day only on the herd log.
 - **Delete rules.** Hard-deleting an animal cascades its events, alerts, tasks and milk logs and nulls parent references. Deleting a user nulls authorship and removes memberships. A ranch owner can't be deleted until ownership moves.
+- **`occurred_on` has no column default:** "today" is the ranch's date, so `events-api` fills it in.
+- **Payload validation runs in the ORM unit of work.** Bulk `insert()`/`update()` statements skip it, so bulk writers such as `legacy-firestore-import` must call `validate_event_payload` themselves. It only re-runs when `payload` or `type` changes.
+- **One group per preset per ranch**, so General is always a single row.
+- **`derive_kind` refuses a male with stage AUTO:** `repro-engine` resolves AUTO first.
 - **Validation left to the service cards:** `occurred_on` not in the future, control_id charset, SINIIGA format and tenant checks on cross-references (depend on "today" or on other rows).
 - **`MEDICAL_TREATMENT.treatment` is required**, as §1 says, though event-flows 1.8 draws only kind, date and description. Loosening it is a Pydantic change if `events-api` needs that.
 - **Fixture herd.** Dates are relative to the day of seeding, so each prototype cow starts its flow. The projection fields are written by the seed until `repro-engine` exists. It refuses `ENV=prod` and does nothing on a second run. `membership.permissions` is empty until `ranch-tenancy-permissions` defines the codes. It writes no HistoryEntry rows: the keys belong to `history-writer`.
