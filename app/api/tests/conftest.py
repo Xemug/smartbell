@@ -33,7 +33,11 @@ def settings() -> Settings:
 @pytest.fixture
 async def client(settings: Settings) -> AsyncIterator[AsyncClient]:
     app = create_app(settings)
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    # ASGITransport does not run the lifespan, which is what sets up the engine and sessions.
+    async with (
+        app.router.lifespan_context(app),
+        AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client,
+    ):
         yield client
 
 

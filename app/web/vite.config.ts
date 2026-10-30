@@ -12,6 +12,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
+      // Navigations to the api (same origin in production) must not get the cached SPA shell.
+      workbox: { navigateFallbackDenylist: [/^\/api\//, /^\/openapi\.json$/, /^\/docs/] },
       manifest: {
         name: 'Smartbell',
         short_name: 'Smartbell',

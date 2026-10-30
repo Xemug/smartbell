@@ -3,8 +3,13 @@
 # FastAPI app and the Vite dev server. Ctrl-C stops everything.
 #
 #   API_PORT / WEB_PORT   override 8000 / 5173
+#   POSTGRES_PORT         move the compose Postgres off 5432 (DATABASE_URL follows it)
 #   DATABASE_URL          use another Postgres (set SKIP_DOCKER=1 to not start the compose one)
 set -euo pipefail
+
+if [[ -n "${POSTGRES_PORT:-}" && -z "${DATABASE_URL:-}" ]]; then
+  export DATABASE_URL="postgresql+asyncpg://smartbell:smartbell@localhost:$POSTGRES_PORT/smartbell"
+fi
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 api_port="${API_PORT:-8000}"
