@@ -12,7 +12,7 @@ There is no codebase that matches the designs; dairy-milk-tracker is CRA + SQLit
 
 ## Why
 
-Every other card builds on this skeleton. Blocked on the user's stack decision in `docs/decision-memo-stack.md`.
+Every other card builds on this skeleton. The user approved stack A′ in `docs/decision-memo-stack.md`.
 
 **Depends on:** none.
 
@@ -25,12 +25,12 @@ New `app/web/`, `app/api/`, `docker-compose.yml` (Postgres 16), `hyperspace.json
 
 ## Approach
 
-Stack per `docs/decision-memo-stack.md` (recommended A: `app/web` Vite+React+TS+Tailwind, `app/api` FastAPI+SQLAlchemy 2+Alembic+Postgres). Feature cards are stack-neutral in intent; if the user picked another stack, keep the same boundaries.
+Stack A′ (approved): `app/web` Vite + React + TS + Tailwind (Moon's Tailwind preset lands in `design-tokens`), PWA now and Capacitor later (`mobile-store-release`); `app/api` FastAPI + SQLAlchemy 2 + Alembic + Postgres; Firebase Auth for identity (`firebase-admin` in the api, wired in `auth`).
 - `app/api`: FastAPI app factory, settings from env (`DATABASE_URL`, `SECRET_KEY` required outside dev), SQLAlchemy 2 async engine, Alembic initialised with an empty baseline, `/api/health`, pytest with a per-test Postgres schema (or SQLite fallback flagged in tests only), ruff + mypy.
 - `app/web`: Vite + React 18 + TS strict, React Router, TanStack Query, Tailwind, `react-i18next` with an `es-MX` catalog (default) and `en` stub, vitest + Testing Library, Playwright config, ESLint + Prettier. PWA manifest (name Smartbell, icons placeholder).
 - OpenAPI → TS client generation script (`npm run api:gen`) wired to the api's `/openapi.json`.
 - `hyperspace.json` setup/run updated to start Postgres, api and web together. Keep `dairy-milk-tracker/` untouched.
-- Out of scope: any domain model, auth, UI components. Use the stack recommended in the memo after the audit (A′): one React + TypeScript app (PWA + Capacitor), FastAPI + Postgres; Firebase Auth for identity (`firebase-admin` in the api).
+- Out of scope: any domain model, auth, UI components, Capacitor.
 
 ## Effort
 
