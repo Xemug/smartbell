@@ -45,7 +45,30 @@
     "rangePlaceholder": "Pick a period",
     "clear": "Clear",
     "cancel": "Cancel",
-    "calendar": "Calendar"
+    "calendar": "Calendar",
+    "close": "Close",
+    "back": "Back",
+    "next": "Continue",
+    "finish": "Save",
+    "seeMore": "See more",
+    "actions": "Actions",
+    "pagination": "Pagination",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "goToPage": "Go to page {{page}}",
+    "selectPage": "Select this page",
+    "selectRow": "Select {{row}}",
+    "noFilterResults": "No animals match this filter",
+    "filtersTitle": "Available filters",
+    "filterCategory": "Category",
+    "filterVariable": "Variable",
+    "filterVariableStep": "Pick a filter value",
+    "applyFilter": "Apply filter",
+    "noFilter": "No filter",
+    "discardTitle": "Discard changes?",
+    "discardBody": "If you go back, everything you entered will be lost.",
+    "discardConfirm": "Yes, discard",
+    "keepEditing": "Keep editing"
   },
   "validation": {
     "required": "This field is required",
@@ -65,6 +88,13 @@
     "progress": "Progress",
     "form": "Sample form",
     "sample": "Button",
-    "saved": "Saved: {{values}}"
+    "saved": "Saved: {{values}}",
+    "surfaces": "Dialogs and sheets",
+    "feedback": "Feedback",
+    "cards": "Cards and KPIs",
+    "table": "Data table",
+    "tabs": "Tabs",
+    "filters": "Filters",
+    "wizard": "Wizard"
   }
 }

@@ -45,7 +45,30 @@
     "rangePlaceholder": "Selecciona un periodo",
     "clear": "Borrar",
     "cancel": "Cancelar",
-    "calendar": "Calendario"
+    "calendar": "Calendario",
+    "close": "Cerrar",
+    "back": "Regresar",
+    "next": "Continuar",
+    "finish": "Registrar",
+    "seeMore": "Ver más",
+    "actions": "Acciones",
+    "pagination": "Paginación",
+    "previousPage": "Página anterior",
+    "nextPage": "Página siguiente",
+    "goToPage": "Ir a la página {{page}}",
+    "selectPage": "Seleccionar los de esta página",
+    "selectRow": "Seleccionar {{row}}",
+    "noFilterResults": "No encontramos animales con el filtro aplicado",
+    "filtersTitle": "Filtros disponibles",
+    "filterCategory": "Categoría",
+    "filterVariable": "Variable",
+    "filterVariableStep": "Selecciona variable de filtro",
+    "applyFilter": "Aplicar filtro",
+    "noFilter": "Sin filtro",
+    "discardTitle": "¿Descartar los cambios?",
+    "discardBody": "Si regresas, se perderán todos los datos que capturaste.",
+    "discardConfirm": "Sí, descartar",
+    "keepEditing": "Seguir editando"
   },
   "validation": {
     "required": "Este campo es obligatorio",
@@ -65,6 +88,13 @@
     "progress": "Progreso",
     "form": "Formulario de ejemplo",
     "sample": "Botón",
-    "saved": "Guardado: {{values}}"
+    "saved": "Guardado: {{values}}",
+    "surfaces": "Modales y hojas",
+    "feedback": "Avisos",
+    "cards": "Tarjetas e indicadores",
+    "table": "Tabla de datos",
+    "tabs": "Pestañas",
+    "filters": "Filtros",
+    "wizard": "Asistente"
   }
 }
