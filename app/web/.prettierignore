@@ -5,6 +5,7 @@ test-results
 package-lock.json
 src/styles/tokens.css
 src/ui/icons/index.ts
+src/ui/icons/glyphs.ts
 src/ui/icons/line
 src/ui/icons/color
 public/illustrations

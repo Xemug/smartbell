@@ -28,5 +28,43 @@
     "line": "Íconos de línea",
     "color": "Íconos a color",
     "illustrations": "Ilustraciones y logos"
+  },
+  "ui": {
+    "showPassword": "Mostrar contraseña",
+    "hidePassword": "Ocultar contraseña",
+    "dialCode": "Código de país",
+    "decrease": "Disminuir {{label}}",
+    "increase": "Aumentar {{label}}",
+    "step": "Paso {{step}} de {{total}}",
+    "datePlaceholder": "DD/MM/AAAA",
+    "openCalendar": "Abrir calendario",
+    "dateInvalid": "Escribe una fecha válida (DD/MM/AAAA)",
+    "dateFuture": "La fecha no puede ser futura",
+    "dateAfter": "La fecha no puede ser posterior al {{date}}",
+    "dateBefore": "La fecha no puede ser anterior al {{date}}",
+    "rangePlaceholder": "Selecciona un periodo",
+    "clear": "Borrar",
+    "cancel": "Cancelar",
+    "calendar": "Calendario"
+  },
+  "validation": {
+    "required": "Este campo es obligatorio",
+    "phone": "Escribe un teléfono de 10 dígitos",
+    "positive": "Escribe un número mayor que 0"
+  },
+  "devUi": {
+    "title": "Componentes base",
+    "intro": "Vista previa interna del kit. Recorre la página con el teclado: cada control debe mostrar el anillo de foco.",
+    "buttons": "Botones",
+    "iconButtons": "Botones de ícono",
+    "textFields": "Campos de texto",
+    "dateFields": "Fechas",
+    "selects": "Listas y teléfono",
+    "selection": "Casillas, opciones e interruptores",
+    "chips": "Chips y contadores",
+    "progress": "Progreso",
+    "form": "Formulario de ejemplo",
+    "sample": "Botón",
+    "saved": "Guardado: {{values}}"
   }
 }

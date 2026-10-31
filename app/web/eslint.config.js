@@ -17,5 +17,24 @@ export default tseslint.config(
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },
+  {
+    // index.ts carries every icon; app code imports the ones it uses from glyphs.ts.
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/pages/DevIconsPage*', 'src/**/*.test.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '(^|/)icons(/index)?$|^\\./index$',
+              allowTypeImports: true,
+              message: 'Import icons from glyphs.ts, or every icon ships in the bundle.',
+            },
+          ],
+        },
+      ],
+    },
+  },
   prettier,
 );
