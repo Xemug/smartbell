@@ -458,12 +458,6 @@ async def test_none_in_a_json_column_is_sql_null(session: AsyncSession, ranch: R
     assert nulls == 1
 
 
-@pytest.fixture
-def enforced_fks(db_backend: str) -> None:
-    if db_backend == "sqlite":
-        pytest.skip("SQLite doesn't enforce foreign keys here")
-
-
 @pytest.mark.usefixtures("enforced_fks")
 async def test_hard_delete_takes_the_animals_records_but_not_its_offspring(
     session: AsyncSession, cow: Cow

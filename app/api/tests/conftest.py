@@ -54,6 +54,12 @@ def db_backend() -> str:
 
 
 @pytest.fixture
+def enforced_fks(db_backend: str) -> None:
+    if db_backend == "sqlite":
+        pytest.skip("SQLite doesn't enforce foreign keys here")
+
+
+@pytest.fixture
 async def db_engine() -> AsyncIterator[AsyncEngine]:
     if not TEST_DATABASE_URL:
         engine = create_async_engine("sqlite+aiosqlite:///:memory:")

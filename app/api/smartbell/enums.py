@@ -405,3 +405,48 @@ class HistoryCategory(_Name):
     REPORTES = auto()
     FINANZAS = auto()
     RANCHO = auto()
+
+
+class HistoryCard(_Name):
+    A = auto()  # count plus a list of cow IDs
+    B = auto()  # one entity with a link
+    C = auto()  # list of users with avatars
+
+
+class HistoryKey(_Name):
+    """`HistoryEntry.event_key`. Stored, so renaming one needs a data migration."""
+
+    # Con Ganado
+    ANIMALS_ADDED = auto()
+    ANIMALS_REMOVED_SLAUGHTER = auto()
+    ANIMALS_REMOVED_SOLD = auto()
+    ANIMALS_REMOVED_DEATH = auto()
+    ANIMALS_REMOVED_ERROR = auto()
+    ANIMALS_EDITED = auto()
+    GROUP_ANIMALS_ADDED = auto()
+    GROUP_EDITED = auto()
+    GROUP_DELETED = auto()
+    GROUP_ANIMALS_MOVED = auto()
+    # Con Usuarios
+    USERS_ADDED = auto()
+    USERS_REMOVED = auto()
+    USERS_EDITED = auto()
+    # De Salud
+    DIET_CHANGED = auto()
+    ANIMALS_ILL = auto()
+    ANIMALS_INJURED = auto()
+    TREATMENT_APPLIED = auto()
+    HEAT_IDENTIFIED = auto()
+    PREGNANCY_DIAGNOSED = auto()
+    CALVED = auto()
+    TREATMENT_CHANGED = auto()
+    ANIMALS_CURED = auto()
+    # De Salud, not in §3.5: the event types it has no template for.
+    PREGNANCY_NEGATIVE = auto()
+    ABORTED = auto()
+    VACCINATED = auto()
+    WEIGHED = auto()
+    # De Rancho
+    RANCH_ADDED = auto()
+    RANCH_REMOVED = auto()
+    RANCH_EDITED = auto()
