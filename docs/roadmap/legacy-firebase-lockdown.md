@@ -85,5 +85,5 @@ M. A FlutterFlow app release is part of this.
 - [ ] A purchase sets `premium` and a lapse or refund clears it, with no client write, tested in RevenueCat sandbox (human: the logic passes on the emulator with a fake RevenueCat; sandbox needs the deployed webhook).
 - [ ] The app's own flows (login, milk log, animals, tasks, invites, purchase) still work against the emulator (human: needs the FlutterFlow release; the rules tests cover the same reads and writes at SDK level, not the app itself).
 - [ ] The tamper check is reported (human: run `scripts/audit-live.mjs --tamper`; live reads were blocked here).
-- [ ] CI is green.
+- [x] CI is green.
 - [ ] The user has deployed the rules and released the app (human).
