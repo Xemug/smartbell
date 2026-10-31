@@ -81,8 +81,8 @@ COPY: dict[HistoryKey, tuple[str, str | None]] = {
     ),
     HistoryKey.HEAT_NOT_OBSERVED: ("1 animal no entró en celo", "5 animales no entraron en celo"),
     HistoryKey.PREGNANCY_NEGATIVE: (
-        "1 animal se diagnosticó vacía",
-        "5 animales se diagnosticaron vacías",
+        "1 vaca se diagnosticó vacía",
+        "5 vacas se diagnosticaron vacías",
     ),
     HistoryKey.ABORTED: ("1 vaca tuvo aborto", "5 vacas tuvieron aborto"),
     HistoryKey.VACCINATED: ("Se vacunó 1 animal", "Se vacunaron 5 animales"),

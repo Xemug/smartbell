@@ -121,7 +121,7 @@ TEMPLATES: dict[HistoryKey, HistoryTemplate] = {
         "1 animal no entró en celo", "{n} animales no entraron en celo"
     ),
     HistoryKey.PREGNANCY_NEGATIVE: _salud(
-        "1 animal se diagnosticó vacía", "{n} animales se diagnosticaron vacías"
+        "1 vaca se diagnosticó vacía", "{n} vacas se diagnosticaron vacías"
     ),
     HistoryKey.ABORTED: _salud("1 vaca tuvo aborto", "{n} vacas tuvieron aborto"),
     HistoryKey.VACCINATED: _salud("Se vacunó 1 animal", "Se vacunaron {n} animales"),
