@@ -2,6 +2,7 @@
 id: ui-surfaces-feedback
 title: UI surfaces and feedback: modal, bottom sheet, snackbar, cards, table, tabs, filters
 summary: Second half of the kit: Modal/Dialog, BottomSheet, Snackbar, Banner, Card, KPI tile, EmptyState, DataTable (sort, paging 10/page, selection), Tabs, FilterPanel (Categoría → Variable).
+verifiedAt: 2026-10-31
 ---
 
 # UI surfaces and feedback: modal, bottom sheet, snackbar, cards, table, tabs, filters
