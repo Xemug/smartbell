@@ -171,7 +171,7 @@ Every field is nullable. `ref` means DocumentReference. Most collections carry `
   - No restore button.
   - No webhook. Nothing ever sets `premium` back to false, so lapses and refunds are never reflected.
   - `premium` is client-writable (§6), so anyone can set it.
-- **Gating:** effectively none. Nothing in the app checks `premium`; it is only sent as an analytics property. The entry points to the paywall are:
+- **Gating (corrected 2026-10-31):** `premium` does gate features, in the client only: invite users (`floating_menu`, `floating_menu_milk`, `user_list`), add a ranch (`ranchlist`), the four CSV exports (`export_documents`) and the WhatsApp community link (`my_profile`). Reproduction and health stay fake doors. The entry points to the paywall are:
   - the "Feature under development → See Plans" dialogs on the cow and bull profile Reproduction/Health cards;
   - the PayOption entries in `components/floating_menu*`;
   - the `KPIMembershipProfile` card on MyProfile;

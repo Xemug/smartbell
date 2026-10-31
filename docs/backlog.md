@@ -5,7 +5,7 @@ Ordered by dependency. Each row is one card; its spec is `docs/roadmap/<slug>.md
 | # | Card | Type | Effort | Depends on |
 |---|---|---|---|---|
 | | **0 Urgent (live app security)** | | | |
-| 1 | `legacy-firebase-lockdown`: Lock down the live FlutterFlow app's Firebase (security) | bug | S | — |
+| 1 | `legacy-firebase-lockdown`: Lock down the live FlutterFlow app's Firebase (security) | bug | M | — |
 | | **1 Foundations** | | | |
 | 2 | `app-scaffold`: Scaffold the new Smartbell app (web + api) | chore | M | — |
 | 3 | `design-tokens`: Design tokens from the Smartbell UI Kit (Moon) | feature | M | app-scaffold |
