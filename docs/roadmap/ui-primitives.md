@@ -62,4 +62,4 @@ L.
 - [x] Keyboard: every control is reachable and operable; focus ring visible (axe has no violations on `/dev/ui`).
 - [x] DateField rejects future dates when `maxDate=today`; PhoneField strips non-digits except +.
 - [ ] Visual check against Symbols buttons frame M 80-574 (human).
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
