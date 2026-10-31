@@ -41,11 +41,16 @@ Real users' personal data is exposed today, independent of the rebuild.
 
 **OneSignal: dropped from scope.** The keys live in FlutterFlow's integration settings and in the generated Cloud Function. They aren't in the shipped app. Moving them wouldn't last, because FlutterFlow regenerates that file. The functions check the caller. Rotate them only if the exported code was shared.
 
-Make a Firestore export before any rule or data change. Cross-ranch reads of the `Ranches` doc stay allowed for invites. Background: `docs/spikes/flutterflow-audit.md` §4, §6.
+Make a Firestore export before any rule or data change. Background: `docs/spikes/flutterflow-audit.md` §4, §6.
 
 **Decided by the user (2026-10-31):** all ranch members can write ranch data; per-role limits come later. Only the owner can delete a ranch. Members can delete cows and tasks.
 
-**Still open:** whether people who aren't members can read a ranch's data beyond its `Ranches` doc. Don't start until the user answers.
+**Ranch visibility (user, 2026-10-31):** nobody sees a ranch they don't belong to. There is no ranch search in the app, so the 2026-10-29 note that cross-ranch reads are intended is wrong and is replaced by this. Only owners, members and users in that ranch's `invitedUsers` can read the `Ranches` doc; an invited user sees that doc until they accept, and no cows or production data.
+
+**Found in the code on 2026-10-31:**
+- **Invites write another user's doc.** `invite_user` looks the invitee up in `Users` by exact email, updates the ranch, then adds to the invitee's `invitedRanchesList`. The own-doc-only rule should refuse that last write, so invites may be failing partway today. Confirm it first. The invitee's list reads `Ranches.invitedUsers`, so check whether `invitedRanchesList` is needed at all. Invites must work when this ships.
+- **`Users` read:** the email lookup needs a way to find one user by exact email without letting anyone list every user. A callable function is the likely answer.
+- **Algolia bypasses Firestore rules.** Cows and Bulls are searched through Algolia with a key shipped in the app (8 cow screens, 1 bull). Rules don't apply there, so report what's indexed and whether results are limited by ranch on the server. Without that, cow data stays readable across ranches.
 
 ## Effort
 
@@ -53,7 +58,9 @@ M. A FlutterFlow app release is part of this.
 
 ## Acceptance
 
-- [ ] Emulator tests: a non-member can't write or delete another ranch's data; a member can do what the user decided; ranch search for invites still works.
+- [ ] Emulator tests: a non-member can't write or delete another ranch's data; a member can do what the user decided; a non-member can't read another ranch, including its `Ranches` doc.
+- [ ] Inviting by email and accepting both work end to end, and an invited user can't read the ranch's animals before accepting.
+- [ ] The Algolia exposure is closed, or reported with a fix.
 - [ ] Emulator tests: a client can't create a `Users` doc for another uid or set `premium`.
 - [ ] A purchase sets `premium` and a lapse or refund clears it, with no client write, tested in RevenueCat sandbox.
 - [ ] The app's own flows (login, milk log, animals, tasks, invites, purchase) still work against the emulator.
