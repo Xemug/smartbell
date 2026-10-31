@@ -93,6 +93,7 @@ class AltaPayload(_Strict):
     repro_stage_date: date | None = None
     lactation_number: int | None = Field(default=None, ge=0)
     last_calving_date: date | None = None
+    last_service_date: date | None = None
     group_id: UUID | None = None
 
 
