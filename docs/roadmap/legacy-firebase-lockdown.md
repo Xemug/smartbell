@@ -43,7 +43,9 @@ Real users' personal data is exposed today, independent of the rebuild.
 
 Make a Firestore export before any rule or data change. Cross-ranch reads of the `Ranches` doc stay allowed for invites. Background: `docs/spikes/flutterflow-audit.md` §4, §6.
 
-**Decisions needed before building:** whether all ranch members can write, or only some roles; who can delete; whether ranch reads beyond the `Ranches` doc must stay open.
+**Decided by the user (2026-10-31):** all ranch members can write ranch data; per-role limits come later. Only the owner can delete a ranch. Members can delete cows and tasks.
+
+**Still open:** whether people who aren't members can read a ranch's data beyond its `Ranches` doc. Don't start until the user answers.
 
 ## Effort
 
