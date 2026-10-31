@@ -65,4 +65,4 @@ L.
 - [x] FilterPanel emits a typed filter object; Aplicar disabled until a value is chosen.
 - [x] Wizard back with dirty data opens the discard confirmation.
 - [ ] Snackbar matches W 3807-170164 (human).
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
