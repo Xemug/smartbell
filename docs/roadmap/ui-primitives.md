@@ -62,5 +62,5 @@ L.
 - [x] Each component in design-system.md §2.1–2.2 exists with its Figma variants as props, shown on `/dev/ui`.
 - [x] Keyboard: every control is reachable and operable; focus ring visible (axe has no violations on `/dev/ui`).
 - [x] DateField rejects future dates when `maxDate=today`; PhoneField strips non-digits except +.
-- [ ] Visual check against Symbols buttons frame M 80-574 (human).
+- [x] Visual check against Symbols buttons frame M 80-574 (human).
 - [x] Tests for the new code pass in CI.
