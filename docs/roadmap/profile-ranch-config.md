@@ -18,7 +18,7 @@ Ranch name/location appear across the app and the email digest.
 
 ## What it touches
 
-`app/api/app/api/users.py`, `ranches.py` (update/delete), photo upload endpoint (JPG/PNG ≤2MB to local/S3-compatible storage), `app/web/src/features/config/{account,ranch}/*`.
+`app/api/smartbell/api/users.py`, `ranches.py` (update/delete), photo upload endpoint (JPG/PNG ≤2MB to local/S3-compatible storage), `app/web/src/features/config/{account,ranch}/*`.
 
 **Figma:** [M 1691-104](https://www.figma.com/design/gv5ugNqVKPF8N2Ol5cQCyV/x?node-id=1691-104), [M 1691-824](https://www.figma.com/design/gv5ugNqVKPF8N2Ol5cQCyV/x?node-id=1691-824), [M 1697-93765](https://www.figma.com/design/gv5ugNqVKPF8N2Ol5cQCyV/x?node-id=1697-93765), [M 2524-149062](https://www.figma.com/design/gv5ugNqVKPF8N2Ol5cQCyV/x?node-id=2524-149062), [M 2524-148618](https://www.figma.com/design/gv5ugNqVKPF8N2Ol5cQCyV/x?node-id=2524-148618), [W 49-1365](https://www.figma.com/design/6UCRP77ZAdWb1ut1A91yJX/x?node-id=49-1365), [W 1315-56000](https://www.figma.com/design/6UCRP77ZAdWb1ut1A91yJX/x?node-id=1315-56000)
 **Inventory:** mobile-core.md A12–A14, E2, E6; web-onboarding-registry.md 1.4–1.5 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.

@@ -29,7 +29,7 @@ Implement `docs/domain-model.md` §1 exactly (names in English, enums as Postgre
 
 ### Assumptions and decisions (groomed 2026-10-30)
 
-- **Paths.** The scaffold's package is `smartbell` and its migrations live in `migrations/`, so the original `app/api/app/...` and `alembic/` paths were stale. Other cards still use the old prefix; read it as `smartbell/`.
+- **Paths.** The scaffold's package is `smartbell` and its migrations live in `migrations/`, so the original `app/api/smartbell/...` and `alembic/` paths were stale. Other cards still use the old prefix; read it as `smartbell/`.
 - **Enums** are check-constrained strings, not Postgres enums: same safety, and they run on the test suite's SQLite fallback. Adding a value needs a migration either way.
 - **No `password_hash`.** §1 lists it, but the approved stack (reconciliation §5) and the `auth` card keep identity in Firebase, so `users` has a nullable, unique `firebase_uid` instead.
 - **`heat_window_days` = 7 is the total width** (§7.6), not the ± of §3.3: 7 means 3 days either side. `repro-engine` must read it that way.

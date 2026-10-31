@@ -7,10 +7,11 @@ For the planner that continues Smartbell planning in a smartbell pane. Read this
   - Stack A′: React + TypeScript + Moon, PWA + Capacitor; FastAPI + Postgres; Firebase Auth kept; RevenueCat kept.
   - Ship as an update to the existing store listings.
   - The constants and scope in `docs/reconciliation-v4.md` §5.
-- **Board (updated 2026-10-29):** Backlog is reordered to match `docs/backlog.md`. Every card's type and effort come from that file. The 4 stale cards (`alerts-screens`, `reminders`, `milk-records`, `flutterflow-audit`) are already off the board.
-- **In flight:** `app-scaffold` is Building (workspace `chore/app-scaffold`, finish = reviewed ready PR). `design-tokens` and `core-data-model` are in Up Next and both depend on it.
-- **Next action:** steer `app-scaffold` to a ready PR. Once it merges, start `design-tokens` and `core-data-model`; they can run in parallel. Then refill Up Next from `docs/backlog.md`.
+- **Board (updated 2026-10-30):** `app-scaffold`, `design-tokens` and `core-data-model` are merged (PRs #1 to #3). Backlog order and card types come from `docs/backlog.md`. Specs now use the real api package path, `app/api/smartbell/`.
+- **In flight:** `icons-export` and `history-writer` are Building, finish = reviewed ready PR. `repro-engine` is in Up Next, waiting on the user's answers.
+- **Next action:** get the user's answers on the state after an abortion and a return to heat while SERVIDA, record them in `docs/domain-model.md` §7, then start `repro-engine`. Steer the two workers to ready PRs, then refill Up Next from `docs/backlog.md`.
   - `legacy-firebase-lockdown` stays first in Backlog; the user deferred it.
+- **Worker briefs:** tick the "pass in CI" acceptance item once CI is green, before marking the PR ready. Put copy-paste terminal test commands in the PR. This machine has no Docker: use the Homebrew Postgres 14 with `DATABASE_URL=postgresql+asyncpg://juan@localhost:5432/<db>` and `SKIP_DOCKER=1`.
 
 ## Where things are
 | Topic | File |

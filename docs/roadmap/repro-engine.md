@@ -18,7 +18,7 @@ Events, alerts, dashboard and reports all read from it; getting it right once av
 
 ## What it touches
 
-`app/api/app/domain/repro.py`, `app/api/app/domain/withdrawal.py`, `app/api/tests/domain/test_repro_*.py`, a projection writer `app/api/app/services/projection.py`.
+`app/api/smartbell/domain/repro.py`, `app/api/smartbell/domain/withdrawal.py`, `app/api/tests/domain/test_repro_*.py`, a projection writer `app/api/smartbell/services/projection.py`.
 
 **Figma:** n/a (no UI)
 **Inventory:** domain-model.md §2–4, §7; event-flows.md §3.3–3.7 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.

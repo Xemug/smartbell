@@ -18,7 +18,7 @@ Writing it before the feature APIs means each API card just calls one function.
 
 ## What it touches
 
-`app/api/app/services/history.py`, templates in `app/api/app/i18n/history_es.py`, tests.
+`app/api/smartbell/services/history.py`, templates in `app/api/smartbell/i18n/history_es.py`, tests.
 
 **Figma:** n/a (no UI)
 **Inventory:** alerts-dashboard-reports.md §3.5 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.

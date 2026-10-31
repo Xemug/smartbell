@@ -18,7 +18,7 @@ Cheap demand signal for the deferred modules.
 
 ## What it touches
 
-`app/api/app/api/support.py` (fake-door event log), config for the number and copy, used by app-shell's modal.
+`app/api/smartbell/api/support.py` (fake-door event log), config for the number and copy, used by app-shell's modal.
 
 **Figma:** [V 3133-9276](https://www.figma.com/design/hmrArjwi6iI4cOlPkR5hQD/x?node-id=3133-9276), [V 3133-9263](https://www.figma.com/design/hmrArjwi6iI4cOlPkR5hQD/x?node-id=3133-9263), [V 3557-9789](https://www.figma.com/design/hmrArjwi6iI4cOlPkR5hQD/x?node-id=3557-9789)
 **Inventory:** v4-onboarding-dashboard-tasks.md §1.13–1.14, §3.5 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.

@@ -18,7 +18,7 @@ The Grupos tab, stall-change events and dashboard group KPIs depend on it.
 
 ## What it touches
 
-`app/api/app/api/groups.py`, `app/web/src/features/groups/*`.
+`app/api/smartbell/api/groups.py`, `app/web/src/features/groups/*`.
 
 **Figma:** [M 1658-94285](https://www.figma.com/design/gv5ugNqVKPF8N2Ol5cQCyV/x?node-id=1658-94285), [M 1968-104045](https://www.figma.com/design/gv5ugNqVKPF8N2Ol5cQCyV/x?node-id=1968-104045), [M 1976-103201](https://www.figma.com/design/gv5ugNqVKPF8N2Ol5cQCyV/x?node-id=1976-103201), [M 1946-1757](https://www.figma.com/design/gv5ugNqVKPF8N2Ol5cQCyV/x?node-id=1946-1757), [M 1975-306](https://www.figma.com/design/gv5ugNqVKPF8N2Ol5cQCyV/x?node-id=1975-306), [M 2005-2848](https://www.figma.com/design/gv5ugNqVKPF8N2Ol5cQCyV/x?node-id=2005-2848), [W 129-1430](https://www.figma.com/design/6UCRP77ZAdWb1ut1A91yJX/x?node-id=129-1430), [W 164-629](https://www.figma.com/design/6UCRP77ZAdWb1ut1A91yJX/x?node-id=164-629), [W 164-1426](https://www.figma.com/design/6UCRP77ZAdWb1ut1A91yJX/x?node-id=164-1426), [W 164-2822](https://www.figma.com/design/6UCRP77ZAdWb1ut1A91yJX/x?node-id=164-2822), [W 4163-164994](https://www.figma.com/design/6UCRP77ZAdWb1ut1A91yJX/x?node-id=4163-164994)
 **Inventory:** mobile-core.md A11, C1–C7; web-onboarding-registry.md 1.10–1.13 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.

@@ -18,7 +18,7 @@ Every write endpoint after this declares a permission code instead of inventing 
 
 ## What it touches
 
-`app/api/app/api/ranches.py`, `app/api/app/security/permissions.py` (codes + role presets), `require(permission)` dependency, `app/web/src/app/ActiveRanchProvider.tsx`, tests.
+`app/api/smartbell/api/ranches.py`, `app/api/smartbell/security/permissions.py` (codes + role presets), `require(permission)` dependency, `app/web/src/app/ActiveRanchProvider.tsx`, tests.
 
 **Figma:** n/a (no UI)
 **Inventory:** mobile-core.md E1, E10; web-onboarding-registry.md 1.17 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.

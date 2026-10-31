@@ -18,7 +18,7 @@ Powers the alert list, dashboard, reminders and notifications.
 
 ## What it touches
 
-`app/api/app/jobs/daily.py` (APScheduler, ranch timezone aware), `app/api/app/services/alerts.py`, `/alerts` list + resolve endpoints, tests with frozen time.
+`app/api/smartbell/jobs/daily.py` (APScheduler, ranch timezone aware), `app/api/smartbell/services/alerts.py`, `/alerts` list + resolve endpoints, tests with frozen time.
 
 **Figma:** n/a (no UI)
 **Inventory:** domain-model.md §4; alerts-dashboard-reports.md §3.1–3.2 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.

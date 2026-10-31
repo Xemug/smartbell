@@ -18,7 +18,7 @@ Every screen with a cow depends on this API.
 
 ## What it touches
 
-`app/api/app/api/animals.py`, `app/api/app/services/animals.py`, tests.
+`app/api/smartbell/api/animals.py`, `app/api/smartbell/services/animals.py`, tests.
 
 **Figma:** n/a (no UI)
 **Inventory:** domain-model.md §1, §3.11, §7.1; v4-animal-registration-profile.md §3; web-onboarding-registry.md 1.9 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.

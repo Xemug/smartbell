@@ -18,7 +18,7 @@ Surfaces the history writer's entries.
 
 ## What it touches
 
-`app/api/app/api/history.py`, `app/web/src/features/history/*`.
+`app/api/smartbell/api/history.py`, `app/web/src/features/history/*`.
 
 **Figma:** [M 1442-69867](https://www.figma.com/design/gv5ugNqVKPF8N2Ol5cQCyV/x?node-id=1442-69867), [W 960-41601](https://www.figma.com/design/6UCRP77ZAdWb1ut1A91yJX/x?node-id=960-41601)
 **Inventory:** alerts-dashboard-reports.md 1.7, §3.5; web-onboarding-registry.md 1.20 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.

@@ -18,7 +18,7 @@ Feeds VACCINE_DUE alerts and the "Próximo evento según edad" banner.
 
 ## What it touches
 
-`app/api/app/api/vaccination_plan.py`, models VaccinationPlan/PlanVaccine (from core model), `app/web/src/features/config/vaccination/*`.
+`app/api/smartbell/api/vaccination_plan.py`, models VaccinationPlan/PlanVaccine (from core model), `app/web/src/features/config/vaccination/*`.
 
 **Figma:** [M 1698-94138](https://www.figma.com/design/gv5ugNqVKPF8N2Ol5cQCyV/x?node-id=1698-94138), [M 1698-94257](https://www.figma.com/design/gv5ugNqVKPF8N2Ol5cQCyV/x?node-id=1698-94257), [M 2524-147738](https://www.figma.com/design/gv5ugNqVKPF8N2Ol5cQCyV/x?node-id=2524-147738), [W 1416-52](https://www.figma.com/design/6UCRP77ZAdWb1ut1A91yJX/x?node-id=1416-52), [W 1416-218](https://www.figma.com/design/6UCRP77ZAdWb1ut1A91yJX/x?node-id=1416-218), [W 1426-53248](https://www.figma.com/design/6UCRP77ZAdWb1ut1A91yJX/x?node-id=1426-53248)
 **Inventory:** web-onboarding-registry.md 1.6; mobile-core.md A15, B6, E7 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.

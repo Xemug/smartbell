@@ -18,7 +18,7 @@ Multi-user ranches are core to the product.
 
 ## What it touches
 
-`app/api/app/api/members.py` (invite by email, accept link), `app/web/src/features/config/users/*`.
+`app/api/smartbell/api/members.py` (invite by email, accept link), `app/web/src/features/config/users/*`.
 
 **Figma:** [M 2573-152259](https://www.figma.com/design/gv5ugNqVKPF8N2Ol5cQCyV/x?node-id=2573-152259), [M 2579-28](https://www.figma.com/design/gv5ugNqVKPF8N2Ol5cQCyV/x?node-id=2579-28), [M 1457-137410](https://www.figma.com/design/gv5ugNqVKPF8N2Ol5cQCyV/x?node-id=1457-137410), [W 871-28](https://www.figma.com/design/6UCRP77ZAdWb1ut1A91yJX/x?node-id=871-28), [W 894-37699](https://www.figma.com/design/6UCRP77ZAdWb1ut1A91yJX/x?node-id=894-37699), [W 906-38180](https://www.figma.com/design/6UCRP77ZAdWb1ut1A91yJX/x?node-id=906-38180)
 **Inventory:** mobile-core.md E8, E10; web-onboarding-registry.md 1.17 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.

@@ -18,7 +18,7 @@ Each event-flow card then only builds UI.
 
 ## What it touches
 
-`app/api/app/api/events.py`, `app/api/app/services/events.py`, `app/api/app/services/alert_sync.py`, tests.
+`app/api/smartbell/api/events.py`, `app/api/smartbell/services/events.py`, `app/api/smartbell/services/alert_sync.py`, tests.
 
 **Figma:** n/a (no UI)
 **Inventory:** domain-model.md §1, §4; event-flows.md §3 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.

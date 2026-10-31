@@ -18,7 +18,7 @@ It lets the new app ship as an update under the same bundle id, without data los
 
 ## What it touches
 
-`app/api/app/migrations/legacy_firestore/*` (read-only Firestore reader, mappers, dry-run report).
+`app/api/alembic/legacy_firestore/*` (read-only Firestore reader, mappers, dry-run report).
 
 **Figma:** n/a (no UI)
 **Inventory:** spikes/flutterflow-audit.md §2, §8 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.

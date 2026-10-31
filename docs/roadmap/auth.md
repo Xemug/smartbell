@@ -18,7 +18,7 @@ Gate for every authenticated card.
 
 ## What it touches
 
-`app/api/app/api/auth.py`, `app/api/app/security.py`, `app/web/src/features/auth/*`, `AuthProvider`, protected routes.
+`app/api/smartbell/api/auth.py`, `app/api/smartbell/security.py`, `app/web/src/features/auth/*`, `AuthProvider`, protected routes.
 
 **Figma:** [V 2901-5671](https://www.figma.com/design/hmrArjwi6iI4cOlPkR5hQD/x?node-id=2901-5671), [V 2901-5663](https://www.figma.com/design/hmrArjwi6iI4cOlPkR5hQD/x?node-id=2901-5663), [V 2901-5565](https://www.figma.com/design/hmrArjwi6iI4cOlPkR5hQD/x?node-id=2901-5565), [V 3291-9399](https://www.figma.com/design/hmrArjwi6iI4cOlPkR5hQD/x?node-id=3291-9399), [W 1-146](https://www.figma.com/design/6UCRP77ZAdWb1ut1A91yJX/x?node-id=1-146)
 **Inventory:** v4-onboarding-dashboard-tasks.md §1.1–1.5 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.

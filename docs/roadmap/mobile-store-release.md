@@ -18,7 +18,7 @@ Keeps the listings, installs and subscribers.
 
 ## What it touches
 
-`app/web/capacitor.config.ts`, `app/web/ios`, `app/web/android`, `app/api/app/api/revenuecat_webhook.py`, the paywall screen.
+`app/web/capacitor.config.ts`, `app/web/ios`, `app/web/android`, `app/api/smartbell/api/revenuecat_webhook.py`, the paywall screen.
 
 **Figma:** n/a (no UI)
 **Inventory:** spikes/flutterflow-audit.md §4, §10 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.

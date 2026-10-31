@@ -18,7 +18,7 @@ Home, onboarding and every automatic prompt (heat, pregnancy, dry-off, calving, 
 
 ## What it touches
 
-`app/api/app/api/tasks.py`, `app/api/app/services/tasks.py` (generator from Alert rows and the onboarding/promo rules), tests.
+`app/api/smartbell/api/tasks.py`, `app/api/smartbell/services/tasks.py` (generator from Alert rows and the onboarding/promo rules), tests.
 
 **Figma:** n/a (no UI)
 **Inventory:** domain-model.md §7.2; v4-onboarding-dashboard-tasks.md §3 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.
