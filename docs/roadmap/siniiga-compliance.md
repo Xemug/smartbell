@@ -1,7 +1,7 @@
 ---
 id: siniiga-compliance
 title: Flag animals with no SINIIGA and ask at onboarding if the ranch has them all
-summary: SINIIGA stays optional, but ranches see which animals are missing it: onboarding keeps the legacy yes-or-no question, lists mark and filter animals without one, and ranches that said they have them all get a task to finish.
+summary: "SINIIGA stays optional, but ranches see which animals are missing it: onboarding keeps the legacy yes-or-no question, lists mark and filter animals without one, and ranches that said yes get a task to finish."
 ---
 
 # Flag animals with no SINIIGA and ask at onboarding if the ranch has them all
