@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 30" fill="none"><g transform="translate(0 -172)">
 <g>
 <g>
-<mask style="mask-type:alpha" maskUnits="userSpaceOnUse" x="1" y="172" width="30" height="30">
+<mask id="heat-0" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="1" y="172" width="30" height="30">
 <g>
 <path d="M16 202C24.2843 202 31 195.284 31 187C31 178.716 24.2843 172 16 172C7.71573 172 1 178.716 1 187C1 195.284 7.71573 202 16 202Z" fill="white"/>
 </g>
 </mask>
-<g mask="url(#mask0_3633_95078)">
+<g mask="url(#heat-0)">
 <g>
 <path d="M16 202C24.2843 202 31 195.284 31 187C31 178.716 24.2843 172 16 172C7.71573 172 1 178.716 1 187C1 195.284 7.71573 202 16 202Z" fill="black"/>
 </g>

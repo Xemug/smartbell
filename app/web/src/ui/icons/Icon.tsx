@@ -1,8 +1,8 @@
-import type { SVGProps } from 'react';
+import { useId, type ComponentPropsWithoutRef } from 'react';
 
 import { icons, type IconName } from './index';
 
-type IconProps = Omit<SVGProps<SVGSVGElement>, 'name' | 'children' | 'width' | 'height'> & {
+type IconProps = Omit<ComponentPropsWithoutRef<'svg'>, 'children' | 'width' | 'height'> & {
   name: IconName;
   /** Height in px; width follows the icon's own proportions. */
   size?: number;
@@ -14,6 +14,9 @@ type IconProps = Omit<SVGProps<SVGSVGElement>, 'name' | 'children' | 'width' | '
 // brand colours from Figma. The markup comes from our own SVG files, never from user input.
 export function Icon({ name, size = 24, title, ...props }: IconProps) {
   const { viewBox, body } = icons[name];
+  // Masks and clip paths are found by id, which must stay unique when an icon repeats on a page.
+  const instance = useId().replace(/:/g, '');
+  const html = body.replace(/( id="|url\(#)([^")]+)/g, `$1$2-${instance}`);
   const [, , width = 1, height = 1] = viewBox.split(' ').map(Number);
   return (
     <svg
@@ -22,9 +25,11 @@ export function Icon({ name, size = 24, title, ...props }: IconProps) {
       width={(size * width) / height}
       height={size}
       fill="none"
-      {...(title ? { role: 'img', 'aria-label': title } : { 'aria-hidden': true })}
+      {...(title
+        ? { role: 'img', 'aria-label': title }
+        : { 'aria-hidden': props['aria-label'] ? undefined : true })}
       {...props}
-      dangerouslySetInnerHTML={{ __html: body }}
+      dangerouslySetInnerHTML={{ __html: html }}
     />
   );
 }

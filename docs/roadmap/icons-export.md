@@ -35,6 +35,8 @@ Interface icons come from the UI Kit Icons page (K 31916-36672, 1,179 Untitled-U
 - **Two kinds.** `line/` paints with `currentColor`; `color/` keeps Figma's colours. Line icons keep a red or green accent where the accent carries the meaning (`animal-reproduction`, `animal-additional`, `channel-*`).
 - **Heat, pregnant, calving and health are colour icons.** design-system.md §3.3 lists them as line icons, but the Icons page art (M 3633-95078) is multi-colour, so recolouring would lose the art. The grey placeholder tiles are stripped.
 - **Viewboxes.** Kit icons are 24×24. Icons page icons keep their 32×30 artboards, the rest their own size; `size` sets the height and the width follows.
+- **Masks.** `heat` and `disc-heat` use a mask; `Icon` suffixes ids per rendered copy so repeats do not share one.
+- **Offline.** Illustrations are added to the PWA precache, as the fonts already are.
 - **Drop shadows removed.** Figma's shadow filters clipped to grey corners at the icon bounds; elevation belongs to the shadow tokens.
 - **Illustrations.** Mascots, logos and the avatar are files in `public/illustrations/`, shown by a typed `<Illustration name alt/>`. The avatar embeds its raster photo fill (Figma has no vector for it).
 - **Export method.** One whole-page SVG per source (K page, M 83-790, M 3633-95078) cut by group id, which kept Figma use to about 15 calls. The SVG files are now the source of truth; the slicer was a one-off and is not in the repo.
@@ -52,7 +54,7 @@ Interface icons come from the UI Kit Icons page (K 31916-36672, 1,179 Untitled-U
 | Icon_Cow_Calf, line Icon_Vaccine, Diet_Icon, Reply, Answer, Alerts_Icon, expand/contract and `_2` | `line/` (`calf`, `vaccine`, `diet`, `reply`, `answer`, `alerts`, `expand`, `contract`, `expand-large`, `contract-large`) |
 | Search, Show / No show, Pencil, Garbage, Email, arrows, ImageIcon, Save, Logout, Download, Filter_Icon, more_info_icon | Not exported from M: replaced by the kit's `search`, `eye`, `eye-off`, `pencil`, `trash`, `mail`, `chevron-*`, `image`, `save`, `log-out`, `download`, `filter`, `info-circle`, since the kit is canonical for generic icons |
 | Icon_Cow_Adult, Icon_Bull, Stall, Report_Icon | Not exported: §3.3 step 5 prefers the Icons page versions (`cow`, `bull`, `groups`, `report`) |
-| favicon | Not exported: the app already ships its favicon and PWA icons |
+| favicon | Missing: `public/favicon.svg` and the PWA icons are still scaffold placeholders. Replacing them changes the installed app, so it needs its own card (§3.3 step 3 has the sizes) |
 | Web `calf_blue 1`, `Vaca adulta` | Missing: they live in the web file, which this card does not link; `calf` and `cow` cover the same subjects |
 
 Not in §3 but mentioned elsewhere, and left out: payment logos (§3.3 wants official brand kits) and a WhatsApp icon (no asset in K or M).

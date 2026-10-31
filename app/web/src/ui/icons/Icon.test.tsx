@@ -27,6 +27,25 @@ describe('Icon', () => {
     expect(screen.getByRole('img', { name: 'Celo' })).toBeInTheDocument();
   });
 
+  it('stays exposed when labelled with aria-label', () => {
+    render(<Icon name="trash" aria-label="Borrar" />);
+    expect(screen.getByLabelText('Borrar')).not.toHaveAttribute('aria-hidden');
+  });
+
+  it('gives each rendered copy of a masked icon its own ids', () => {
+    const { container } = render(
+      <>
+        <Icon name="heat" />
+        <Icon name="heat" />
+      </>,
+    );
+    const ids = [...container.querySelectorAll('mask')].map((m) => m.id);
+    expect(ids).toHaveLength(2);
+    expect(ids[0]).not.toBe(ids[1]);
+    const first = container.querySelector('svg');
+    expect(first?.querySelector(`[mask="url(#${ids[0]})"]`)).not.toBeNull();
+  });
+
   it('keeps the proportions of non-square icons', () => {
     const { container } = render(<Icon name="cow" size={30} />);
     expect(container.querySelector('svg')).toHaveAttribute('width', '32');
@@ -46,6 +65,14 @@ describe('icon set', () => {
   it('keeps brand colours in colour icons', () => {
     expect(icons['disc-heat'].body).toContain('#EB004E');
     expect(icons['disc-heat'].body).not.toContain('currentColor');
+  });
+
+  it('only references ids defined in the same icon', () => {
+    for (const name of iconNames) {
+      const { body } = icons[name];
+      const ids = [...body.matchAll(/ id="([^"]+)"/g)].map((m) => m[1]);
+      for (const [, ref] of body.matchAll(/url\(#([^)]+)\)/g)) expect(ids).toContain(ref);
+    }
   });
 
   it('has no ids that two different icons could share on one page', () => {
