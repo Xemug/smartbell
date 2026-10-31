@@ -43,4 +43,4 @@ S.
 
 - [x] Every template in §3.5 marked A/B/C has a key and a rendering test (singular/plural).
 - [x] `record` is called inside the caller's transaction (rollback leaves no entry).
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
