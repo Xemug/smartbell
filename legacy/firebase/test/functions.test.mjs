@@ -111,8 +111,10 @@ describe('checkSiniiga', () => {
   const TAG = '484-00-14-1234-5678';
   const ranch = (id) => db.collection('Ranches').doc(id);
   const check = (data, uid = USER, now = NOW) => checkSiniiga(db, uid, { siniiga: TAG, ranchId: 'r1', ...data }, now);
-  const addAnimal = (collection, id, ranchId, siniiga = TAG) =>
-    db.collection(collection).doc(id).set({ SINIIGA: siniiga, ranch_id: ranch(ranchId), name: 'Private name' });
+  const addAnimal = (collection, id, ranchId, siniiga = TAG, extra = {}) =>
+    db.collection(collection).doc(id).set({ SINIIGA: siniiga, ranch_id: ranch(ranchId), name: 'Private name', ...extra });
+  const SOLD_EN = { isDead: true, delete_Reason: 'Sold', sold_type: 'Sold to other ranch' };
+  const SOLD_ES = { isDead: true, delete_Reason: 'Vendida', sold_type: 'Venta a otro rancho' };
 
   beforeEach(async () => {
     await ranch('r1').update({ memberIds: [USER] });
@@ -154,6 +156,48 @@ describe('checkSiniiga', () => {
   test('another ranch\'s animal id excuses nothing, so a caller cannot test what it holds', async () => {
     await addAnimal('Cows', 'foreign-cow', 'r2');
     assert.deepEqual(await check({ animalId: 'foreign-cow' }), { status: 'taken' });
+  });
+
+  test('a number sold to another ranch is available, in English and Spanish', async () => {
+    await addAnimal('Cows', 'sold-en', 'r2', TAG, SOLD_EN);
+    await addAnimal('Bulls', 'sold-es', 'r2', TAG, SOLD_ES);
+    assert.deepEqual(await check(), { status: 'available' });
+  });
+
+  test('stored values are trimmed', async () => {
+    await addAnimal('Cows', 'sold', 'r2', TAG, { isDead: true, delete_Reason: ' Vendida ', sold_type: ' Sold to other ranch\n' });
+    assert.deepEqual(await check(), { status: 'available' });
+  });
+
+  test('an active holder is found behind several sold docs', async () => {
+    for (const id of ['a-sold', 'b-sold', 'c-sold']) await addAnimal('Cows', id, 'r2', TAG, SOLD_EN);
+    await addAnimal('Cows', 'z-active', 'r2');
+    assert.deepEqual(await check(), { status: 'taken' });
+    await db.collection('Cows').doc('z-active').delete();
+    await addAnimal('Bulls', 'z-active-bull', 'r2');
+    assert.deepEqual(await check(), { status: 'taken' });
+  });
+
+  for (const [label, fields] of [
+    ['sold to slaughter (English)', { isDead: true, delete_Reason: 'Sold', sold_type: 'Sold to slaughterhouse' }],
+    ['sold to slaughter (Spanish)', { isDead: true, delete_Reason: 'Vendida', sold_type: 'Venta al rastro' }],
+    ['dead', { isDead: true, delete_Reason: 'Died' }],
+    ['a data error (English)', { isDead: true, delete_Reason: 'Data error at log' }],
+    ['a data error (Spanish)', { isDead: true, delete_Reason: 'Error al registrar datos' }],
+    ['sold with no sale type', { isDead: true, delete_Reason: 'Sold' }],
+    ['a stale sale type on a dead animal', { isDead: true, delete_Reason: 'Died', sold_type: 'Sold to other ranch' }],
+    ['sale fields on a live animal', { isDead: false, delete_Reason: 'Sold', sold_type: 'Sold to other ranch' }],
+  ]) {
+    test(`${label} stays taken`, async () => {
+      await addAnimal('Cows', 'held', 'r2', TAG, fields);
+      assert.deepEqual(await check(), { status: 'taken' });
+    });
+  }
+
+  test('editing an animal is available when only sold docs share its number', async () => {
+    await addAnimal('Cows', 'my-cow', 'r1');
+    await addAnimal('Cows', 'sold', 'r2', TAG, SOLD_ES);
+    assert.deepEqual(await check({ animalId: 'my-cow' }), { status: 'available' });
   });
 
   test('the answer leaks no ranch, owner or animal data', async () => {

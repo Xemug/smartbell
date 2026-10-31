@@ -38,7 +38,9 @@ Everything built lives in `legacy/firebase/` in this repo. The legacy app (`/Use
 - `inviteUserByEmail` requires `premium` on the server too, and caps at 20 tries an hour so it can't be used to probe emails (assumption).
 - New invites must go through `inviteUserByEmail` once the final rules are live, so premium and the rate limit can't be skipped from a client (assumption).
 - SINIIGA duplicates are caught across all ranches, because the number is national. Rules can't allow a client lookup, so a throttled `checkSiniiga` callable does it and answers only available or taken (user).
-- `checkSiniiga` shares the invite throttle's mechanism with its own count and a limit of 60 an hour, because someone entering a herd by hand checks one number per animal (assumption).
+- `checkSiniiga` shares the invite throttle's mechanism with its own count and a limit of 60 an hour, because someone entering a herd by hand checks one number per animal (user).
+- The number stays with the animal for life: a match sold to another ranch doesn't count as taken, so the buyer can register it. Sold to slaughter, dead and every other match stay taken (user).
+- "Taken" is one neutral message with no cow or bull, `animalId` only excuses an animal in the caller's ranch, and a throttled check stops the form with no message (user).
 - The stage 1 backfill runs once. Stage 3 runs `--reconcile`, which only removes. Disabled workers never become members, and disabling one in the release cuts access; bringing them back means a new invite (assumption).
 - `onRanchChanged` removes access whenever a worker row goes or is disabled, so old-app owners are covered, and tombstones deleted ranch ids (assumption).
 - Clearing false `premium` values stays a manual step after the tamper check, because the user must approve each change (spec).

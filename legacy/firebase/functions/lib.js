@@ -10,6 +10,9 @@ const HOUR_MS = 60 * 60 * 1000;
 const WORKER_STATUSES = ['Active', 'Activo'];
 const PREMIUM_ENTITLEMENT = 'Pro';
 const SINIIGA_FORMAT = /^484-00-(\d{2})-\d{4}-\d{4}$/;
+// The delete_cow and delete_bull forms store the label in the app's language.
+const SOLD_REASONS = ['Sold', 'Vendida'];
+const SOLD_TO_RANCH = ['Sold to other ranch', 'Venta a otro rancho'];
 const isDocId = (id) => typeof id === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(id);
 
 class CallError extends Error {
@@ -90,6 +93,13 @@ async function inviteUser(db, auth, callerUid, data, now = Date.now()) {
   return { status: 'invited' };
 }
 
+const trimmed = (value) => (typeof value === 'string' ? value.trim() : '');
+
+/** A number stays with the animal for life, so a sale to another ranch frees it for the buyer. */
+const wasSoldToRanch = (doc) => doc.get('isDead') === true
+  && SOLD_REASONS.includes(trimmed(doc.get('delete_Reason')))
+  && SOLD_TO_RANCH.includes(trimmed(doc.get('sold_type')));
+
 /**
  * Says whether a SINIIGA number is free across every ranch. It's a national id, and the
  * final rules can't let a client look across ranches, so the check runs here.
@@ -121,9 +131,9 @@ async function checkSiniiga(db, callerUid, data, now = Date.now()) {
 
   const isOwnAnimal = (doc) => doc.id === animalId && doc.get('ranch_id')?.path === ranchRef.path;
   for (const name of ['Cows', 'Bulls']) {
-    // Two, so a duplicate still shows when one of the matches is the animal being edited.
-    const matches = await db.collection(name).where('SINIIGA', '==', siniiga).limit(2).get();
-    if (matches.docs.some((doc) => !isOwnAnimal(doc))) return { status: 'taken' };
+    // No limit: an active holder can sit behind any number of sold docs for the same number.
+    const matches = await db.collection(name).where('SINIIGA', '==', siniiga).get();
+    if (matches.docs.some((doc) => !isOwnAnimal(doc) && !wasSoldToRanch(doc))) return { status: 'taken' };
   }
   return { status: 'available' };
 }
