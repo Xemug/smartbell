@@ -4,7 +4,7 @@ For the planner that continues Smartbell planning in a smartbell pane. Read this
 
 ## State
 - **Decided:**
-  - Stack A′: React + TypeScript + Moon, PWA + Capacitor; FastAPI + Postgres; Firebase Auth kept; RevenueCat kept.
+  - Stack A′: React + TypeScript with Moon's design and tokens (the Moon library was dropped, see the memo), PWA + Capacitor; FastAPI + Postgres; Firebase Auth kept; RevenueCat kept.
   - Ship as an update to the existing store listings.
   - The constants and scope in `docs/reconciliation-v4.md` §5.
 - **Board (updated 2026-10-31):** `app-scaffold`, `design-tokens`, `core-data-model` and `icons-export` are merged (PRs #1, #2, #3, #5). `history-writer` is PR #4, waiting on the user. Backlog order and card types come from `docs/backlog.md`. Specs now use the real api package path, `app/api/smartbell/`.
@@ -37,5 +37,4 @@ For the planner that continues Smartbell planning in a smartbell pane. Read this
   - the terminals where the user runs smartbell dev servers (spawn workers in new terminals).
 
 ## Open questions still with the user
-- The permission-matrix oddities.
-- The design defaults in `docs/design-inventory/uikit-design-system.md` §6.6 (proposed defaults are in reconciliation §4.8).
+- The permission-matrix oddities. The user tabled this on 2026-10-31; raise it before `ranch-tenancy-permissions`.

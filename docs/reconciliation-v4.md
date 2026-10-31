@@ -62,6 +62,8 @@ Date: 2026-10-29. Status: **draft; the decisions in §4 need the user.**
 6. **Reproductive constants:** gestation 283 d, cycle 21 d, check 35–45 d, re-checks 90/180 d, close-up 21 d before calving, heat window 7 d (V4) vs ±2 d.
 7. **Abortion → ABIERTA?** Yes. Return-to-heat while SERVIDA? The service failed, back to ABIERTA. Confirmed 2026-10-31, see domain-model §7.6.
 
+**Design defaults confirmed by the user on 2026-10-31:** what shipped in `ui-primitives` (PR #7) is the decision, including 4px buttons.
+
 **Design** (the full list is in uikit-design-system.md §6.6; defaults proposed)
 8. Is the UI Kit canonical? Proposed **yes**, with these defaults:
    - navy `#063664`

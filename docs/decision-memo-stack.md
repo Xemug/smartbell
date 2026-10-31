@@ -129,6 +129,8 @@ Facts (`docs/spikes/flutterflow-audit.md`):
 - Open security rules.
 - Exported code that is not a viable base: pages up to 4,300 lines, 143 widgets querying Firestore directly, no tests. Cleanup is about the cost of a rewrite.
 
+**Update 2026-10-31: the Moon library was dropped, confirmed by the user.** `ui-primitives` found that `@heathmont/moon-core-tw` conflicts with the Radix primitives, so components are built on Radix with Tailwind and the tokens from the Smartbell UI Kit. The app keeps Moon's design and token names but doesn't use Moon's code. Read "with Moon" below in that sense.
+
 **Recommendation: A′.** Build one React + TypeScript app with Moon, served as a PWA on the web and wrapped with Capacitor for iOS and Android. Behind it, a FastAPI + Postgres backend.
 - **Keep the store presence:** ship under the same bundle id `com.juanbordesontiveros.smartbell`, so existing installs update in place.
 - **Keep the RevenueCat project:** use `@revenuecat/purchases-capacitor` for purchases. The backend checks entitlements through RevenueCat webhooks and its REST API, never a client-side flag.
