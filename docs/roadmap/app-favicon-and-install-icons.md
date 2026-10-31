@@ -2,6 +2,7 @@
 id: app-favicon-and-install-icons
 title: App favicon and install icons
 summary: Replace the scaffold placeholder favicon and PWA icons with the real Smartbell brand art, and add the iOS and Android app icons for the store build.
+verifiedAt: 2026-10-31
 ---
 
 # App favicon and install icons
