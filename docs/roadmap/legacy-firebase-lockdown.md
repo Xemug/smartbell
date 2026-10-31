@@ -1,7 +1,7 @@
 ---
 id: legacy-firebase-lockdown
 title: Lock down the live FlutterFlow app's Firebase (security)
-summary: Users writes are fixed. Remaining: scope ranch data to ranch members, limit Users create and read, and make premium server-set so only paying users get it.
+summary: Rules, functions and tests are ready in legacy/firebase. The user deploys in stages, with a FlutterFlow release in the middle.
 verifiedAt: 2026-10-31
 ---
 
@@ -19,10 +19,33 @@ Real users' personal data is exposed today, independent of the rebuild.
 
 ## What it touches
 
-`/Users/juan/Development/smartbell-flutterflow/smartbell/firebase/firestore.rules`, the FlutterFlow project, Firebase and RevenueCat consoles (outside this repo).
+Everything built lives in `legacy/firebase/` in this repo. The legacy app (`/Users/juan/Development/smartbell-flutterflow/smartbell`) is read-only input and isn't a git repo; its local `firebase/firestore.rules` is older than the deployed rules. The FlutterFlow project and the Firebase and RevenueCat consoles are changed by the user.
 
 **Figma:** n/a (no UI)
 **Inventory:** spikes/flutterflow-audit.md §3, §6 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.
+
+## Status
+
+**Built 2026-10-31, nothing deployed.** Start with `legacy/firebase/notes/deploy-runbook.md` (order of work and exact steps), `notes/findings.md` (what was confirmed and how) and `notes/query-changes.md` (every query to change).
+
+**Decided while building:**
+- Tapping an invited ranch is the accept action; there's no new screen. The release adds the writes to that tap (orchestrator).
+- Existing workers are backfilled into `memberIds` so nobody loses access (orchestrator).
+- Strict rules ship only after the release. Until then `firestore.stage1.rules` closes cross-ranch writes and leaves reads open for today's app (orchestrator asked for a staged plan).
+- Live reads were blocked in the working session, so read-only scripts replace them (orchestrator).
+- The owner can remove members but can't add them; members join only through accept. Members can't edit `workesList`, `invitedUsers` or `memberIds`, or the owner field (assumption).
+- Members can delete all ranch data the app deletes, not only cows and tasks, because the app's delete flows cascade to logs, groups and bulls (assumption).
+- `inviteUserByEmail` requires `premium` on the server too, and caps at 20 tries an hour so it can't be used to probe emails (assumption).
+- New invites must go through `inviteUserByEmail` once the final rules are live, so premium and the rate limit can't be skipped from a client (assumption).
+- SINIIGA duplicates are caught across all ranches, because the number is national. Rules can't allow a client lookup, so a throttled `checkSiniiga` callable does it and answers only available or taken (user).
+- `checkSiniiga` shares the invite throttle's mechanism with its own count and a limit of 60 an hour, because someone entering a herd by hand checks one number per animal (user).
+- The number stays with the animal for life: a match sold to another ranch doesn't count as taken, so the buyer can register it. Sold to slaughter, dead and every other match stay taken (user).
+- "Taken" is one neutral message with no cow or bull, `animalId` only excuses an animal in the caller's ranch, and a throttled check stops the form with no message (user).
+- The stage 1 backfill runs once. Stage 3 runs `--reconcile`, which only removes. Disabled workers never become members, and disabling one in the release cuts access; bringing them back means a new invite (assumption).
+- `onRanchChanged` removes access whenever a worker row goes or is disabled, so old-app owners are covered, and tombstones deleted ranch ids (assumption).
+- Clearing false `premium` values stays a manual step after the tamper check, because the user must approve each change (spec).
+- Stage 1 allows logs with no `ranch_id` only for members of the parent animal's ranch (assumption).
+- The webhook reads current state from RevenueCat instead of trusting event types. Only the `Pro` entitlement grants premium (assumption).
 
 ## Approach
 
@@ -58,11 +81,12 @@ M. A FlutterFlow app release is part of this.
 
 ## Acceptance
 
-- [ ] Emulator tests: a non-member can't write or delete another ranch's data; a member can do what the user decided; a non-member can't read another ranch, including its `Ranches` doc.
-- [ ] Inviting by email and accepting both work end to end, and an invited user can't read the ranch's animals before accepting.
-- [ ] The Algolia exposure is closed, or reported with a fix.
-- [ ] Emulator tests: a client can't create a `Users` doc for another uid or set `premium`.
-- [ ] A purchase sets `premium` and a lapse or refund clears it, with no client write, tested in RevenueCat sandbox.
-- [ ] The app's own flows (login, milk log, animals, tasks, invites, purchase) still work against the emulator.
-- [ ] The tamper check is reported.
+- [x] Emulator tests: a non-member can't write or delete another ranch's data; a member can do what the user decided; a non-member can't read another ranch, including its `Ranches` doc.
+- [ ] Inviting by email and accepting both work end to end in the released app, and an invited user can't read the ranch's animals before accepting (human: the callable and rules pass on the emulator; the app steps are in the runbook).
+- [x] The Algolia exposure is closed, or reported with a fix (reported from the code in `notes/findings.md`; live index details need `scripts/audit-live.mjs`).
+- [x] Emulator tests: a client can't create a `Users` doc for another uid or set `premium`.
+- [ ] A purchase sets `premium` and a lapse or refund clears it, with no client write, tested in RevenueCat sandbox (human: the logic passes on the emulator with a fake RevenueCat; sandbox needs the deployed webhook).
+- [ ] The app's own flows (login, milk log, animals, tasks, invites, purchase) still work against the emulator (human: needs the FlutterFlow release; the rules tests cover the same reads and writes at SDK level, not the app itself).
+- [ ] The tamper check is reported (human: run `scripts/audit-live.mjs --tamper`; live reads were blocked here).
+- [x] CI is green.
 - [ ] The user has deployed the rules and released the app (human).

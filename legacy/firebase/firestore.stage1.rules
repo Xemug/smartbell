@@ -1,0 +1,141 @@
+rules_version = '2';
+// GENERATED from firestore.rules by npm run build:stage1. Do not edit.
+// Stage 1: closes cross-ranch writes now; reads stay open until the app release.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // true only in firestore.stage1.rules: keeps today's app versions working while
+    // writes are locked down. See notes/deploy-runbook.md.
+    function legacyClients() { return true; }
+
+    function signedIn() { return request.auth != null; }
+    function myRef() { return /databases/$(database)/documents/Users/$(request.auth.uid); }
+    function ranchDoc(id) { return get(/databases/$(database)/documents/Ranches/$(id)).data; }
+
+    function isOwnerOf(ranch) { return signedIn() && ranch.user_id == myRef(); }
+    function isListedMember(ranch) {
+      return signedIn() && request.auth.uid in ranch.get('memberIds', []);
+    }
+    function isInvitedTo(ranch) { return signedIn() && myRef() in ranch.get('invitedUsers', []); }
+
+    // Users.ranch_list is never consulted here: users can write their own doc.
+    function memberOfId(id) {
+      let ranch = ranchDoc(id);
+      return isOwnerOf(ranch) || isListedMember(ranch) || (legacyClients() && isInvitedTo(ranch));
+    }
+    // ranch_id is a document reference. Checking the collection stops a ranch_id
+    // that points at a doc the caller controls, such as their own Users doc.
+    function memberOfRef(ref) { return ref is path && ref[3] == 'Ranches' && memberOfId(ref[4]); }
+
+    // Stage 1 only: old docs and today's cow and bull log forms write no ranch_id.
+    // Membership comes from the parent animal, so a stranger can't file logs that the
+    // backfill would later stamp into someone else's ranch.
+    function parentInMyRanch(data, field, collection) {
+      return field in data && data[field] is path && data[field][3] == collection
+        && memberOfRef(get(data[field]).data.ranch_id);
+    }
+    function legacyNoRanch(data) {
+      return legacyClients() && !('ranch_id' in data)
+        // Exactly one parent: the backfill stamps from one field per collection, so a
+        // doc naming the caller's cow and a victim's bull could land in the victim's ranch.
+        && (('bull_id' in data) != ('cow_id' in data))
+        && (parentInMyRanch(data, 'cow_id', 'Cows') || parentInMyRanch(data, 'bull_id', 'Bulls'));
+    }
+
+    function isRanchData(collection) {
+      return collection in ['Cows_In_Production_change', 'Tasks', 'Cows', 'Bulls', 'CowWeightHeight', 'BullWeightHeight', 'cowProductionPerDay', 'CowsDietChanges', 'CowReproductionState', 'cowHealth', 'BullDietChanges', 'Groups', 'Groups_Bulls', 'Group_cow_changes', 'Group_bull_changes', 'MilkPrices'];
+    }
+
+    match /{collection}/{id} {
+      allow read: if isRanchData(collection)
+        && ((legacyClients() && signedIn()) || memberOfRef(resource.data.ranch_id));
+      allow create: if isRanchData(collection)
+        && (legacyNoRanch(request.resource.data) || memberOfRef(request.resource.data.ranch_id));
+      allow update: if isRanchData(collection)
+        && (
+          // The old edit forms add ranch_id to a log that had none.
+          (legacyNoRanch(resource.data)
+            && (legacyNoRanch(request.resource.data) || memberOfRef(request.resource.data.ranch_id)))
+          || (memberOfRef(resource.data.ranch_id)
+              && request.resource.data.ranch_id == resource.data.ranch_id)
+        );
+      allow delete: if isRanchData(collection)
+        && (legacyNoRanch(resource.data) || memberOfRef(resource.data.ranch_id));
+    }
+
+    match /Ranches/{id} {
+      function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+      function oldMembers() { return resource.data.get('memberIds', []).toSet(); }
+      function newMembers() { return request.resource.data.get('memberIds', []).toSet(); }
+      function oldInvited() { return resource.data.get('invitedUsers', []).toSet(); }
+      function newInvited() { return request.resource.data.get('invitedUsers', []).toSet(); }
+
+      // Tapping an invited ranch: the caller moves themselves from invited to member.
+      function isAccepting() {
+        return isInvitedTo(resource.data)
+          && changed().hasOnly(['memberIds', 'invitedUsers'])
+          && newMembers() == oldMembers().union([request.auth.uid].toSet())
+          && newInvited() == oldInvited().difference([myRef()].toSet());
+      }
+      // Owners can remove people. Adding a member only happens through accept, so an
+      // owner can't put someone in a ranch without that person's tap. New invites go through
+      // inviteUserByEmail, which enforces premium and the rate limit; the old app still
+      // writes invitedUsers directly, so stage 1 allows that.
+      function isOwnerUpdate() {
+        return isOwnerOf(resource.data)
+          && !changed().hasAny(['user_id'])
+          && newMembers().difference(oldMembers()).size() == 0
+          && (legacyClients() || newInvited().difference(oldInvited()).size() == 0);
+      }
+      function isMemberUpdate() {
+        return (isListedMember(resource.data) || (legacyClients() && isInvitedTo(resource.data)))
+          && !changed().hasAny(['user_id', 'memberIds', 'invitedUsers', 'workesList']);
+      }
+
+      allow read: if (legacyClients() && signedIn())
+        || isOwnerOf(resource.data) || isListedMember(resource.data) || isInvitedTo(resource.data);
+      // Deleting a ranch leaves its data behind, so a deleted id must never be claimed again.
+      // onRanchChanged writes the tombstone.
+      allow create: if isOwnerOf(request.resource.data)
+        && !exists(/databases/$(database)/documents/deletedRanches/$(id))
+        && request.resource.data.get('memberIds', []).size() == 0
+        && (legacyClients() || request.resource.data.get('invitedUsers', []).size() == 0);
+      allow update: if isOwnerUpdate() || isMemberUpdate() || isAccepting();
+      allow delete: if isOwnerOf(resource.data);
+
+      match /productionPerDays/{doc} {
+        // The collection-group read below trusts ranch_id, so a doc here can't claim
+        // another ranch. Old docs without the field match no ranch filter.
+        function rightRanch(data) {
+          return !('ranch_id' in data)
+            || data.ranch_id == /databases/$(database)/documents/Ranches/$(id);
+        }
+        allow read, delete: if memberOfId(id);
+        allow create, update: if memberOfId(id) && rightRanch(request.resource.data);
+      }
+    }
+
+    // Collection-group reads only. Writes and direct reads use the rule above.
+    match /{path=**}/productionPerDays/{doc} {
+      allow read: if (legacyClients() && signedIn()) || memberOfRef(resource.data.ranch_id);
+    }
+
+    match /Users/{uid} {
+      function isSelf() { return signedIn() && request.auth.uid == uid; }
+      function serverOnly() { return ['premium', 'lifetimeMember', 'premiumCheckedAt']; }
+
+      allow get: if isSelf() || (legacyClients() && signedIn());
+      allow list: if legacyClients() && signedIn();
+      allow create: if isSelf() && !request.resource.data.keys().hasAny(serverOnly());
+      allow update: if isSelf()
+        && (legacyClients()
+            || !request.resource.data.diff(resource.data).affectedKeys().hasAny(serverOnly()));
+      allow delete: if false;
+    }
+
+    match /ff_user_push_notifications/{id} {
+      allow read, update, delete: if false;
+      allow create: if /databases/$(database)/documents/Users/$(request.auth.uid) == request.resource.data.sender;
+    }
+  }
+}

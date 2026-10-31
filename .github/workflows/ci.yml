@@ -58,3 +58,22 @@ jobs:
       - run: npm run typecheck
       - run: npm run test
       - run: npm run build
+
+  legacy-firebase:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: legacy/firebase
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: legacy/firebase/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: npm ci
+      - run: npm test
