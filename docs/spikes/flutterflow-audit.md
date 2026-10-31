@@ -285,7 +285,7 @@ What a cleanup would take:
   | `fcm_tokens` | device tokens, if the new client keeps FCM |
 
 - **Drop:** `ff_*push_notifications`, the unused collections (after confirming they are empty), and the Algolia indexes (use Postgres full-text or trigram search).
-- **Data cleaning:** trim and map the localised strings, coerce the integer litres, resolve `user_id` str/ref, and re-key SINIIGA uniqueness per ranch.
+- **Data cleaning:** trim and map the localised strings, coerce the integer litres, resolve `user_id` str/ref, and keep SINIIGA unique nationally (domain-model §7.7).
 - **Minimum feature parity**, to avoid regressing current users:
   1. Email, Google and Apple login.
   2. Ranch auto-create and the ranch switcher.
