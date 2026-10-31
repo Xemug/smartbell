@@ -116,6 +116,16 @@ describe('hasActivePro', () => {
     assert.equal(hasActivePro({ entitlements: { User: { expires_date: null } } }, NOW), false, 'seat product');
     assert.equal(hasActivePro({ entitlements: {} }, NOW), false);
   });
+
+  test('a sandbox purchase counts only when sandbox is allowed', () => {
+    const entitlements = { Pro: { expires_date: FUTURE, product_identifier: 'm' } };
+    const subscription = { entitlements, subscriptions: { m: { is_sandbox: true } } };
+    assert.equal(hasActivePro(subscription, NOW), false);
+    assert.equal(hasActivePro(subscription, NOW, true), true);
+    const oneTime = { entitlements: { Pro: { expires_date: null, product_identifier: 'l' } }, non_subscriptions: { l: [{ is_sandbox: true }] } };
+    assert.equal(hasActivePro(oneTime, NOW), false);
+    assert.equal(hasActivePro({ entitlements, subscriptions: { m: { is_sandbox: false } } }, NOW), true);
+  });
 });
 
 describe('RevenueCat', () => {

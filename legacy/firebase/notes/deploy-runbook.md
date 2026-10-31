@@ -8,8 +8,6 @@ Do the work from a checkout of this repo:
 cd legacy/firebase && npm ci && npm --prefix functions ci
 ```
 
-**Never run a bare `firebase deploy` from this folder.** `firebase.json` points at the final rules for the emulators, so a bare deploy would publish them too early. Use the exact commands below.
-
 ## Rule 1: never press Deploy on FlutterFlow's Firestore Rules page again
 
 FlutterFlow's Deploy replaces the live rules with the ones from its table, and it can't express these. Its docs give the Exclude checkbox for collections with custom rules. In FlutterFlow, open **Firestore > Firestore Settings > Firestore Rules** and tick **Exclude** on every collection. Whether a full Deploy still replaces the whole file wasn't tested, so treat that button as off-limits, and check the Firebase console after each FlutterFlow release.
@@ -30,13 +28,14 @@ This closes cross-ranch writes and deletes today. **Reads stay open until stage 
    npx firebase functions:secrets:set REVENUECAT_WEBHOOK_AUTH --project smartbell-app-2025   # value: Bearer <secret>
    npx firebase functions:secrets:set REVENUECAT_SECRET_KEY --project smartbell-app-2025     # value: sk_...
    ```
-2. Deploy the functions. The separate `lockdown` codebase leaves FlutterFlow's functions alone. Answer `false` to `REVENUECAT_ALLOW_SANDBOX`, or `true` while testing step 4:
+2. Deploy the functions. The separate `lockdown` codebase leaves FlutterFlow's functions alone. `firebase.json` holds no rules, so this can't publish them. Allow sandbox for step 4 by setting it in a file:
    ```bash
+   echo 'REVENUECAT_ALLOW_SANDBOX=true' > functions/.env.smartbell-app-2025
    npx firebase deploy --only functions:lockdown --project smartbell-app-2025
    ```
 3. In the RevenueCat dashboard, open **Project settings > Integrations > Webhooks > Add new webhook**. URL: the `revenueCatWebhook` URL printed by the deploy. Authorization header value: `Bearer <secret>`.
-4. Send a test event from RevenueCat, then make a sandbox purchase, refund or expire it, and check `Users.premium` follows. Set sandbox back to `false` and redeploy.
-5. Backfill: `node scripts/backfill-live.mjs --project smartbell-app-2025 --apply`. Run this once. Existing workers become members so nobody loses access. Everyone with a worker row keeps their `invitedUsers` entry because today's app reads it. Entries with no worker row are removed: they are people the owner already took off, and they could otherwise rejoin with one tap.
+4. Send a test event from RevenueCat, then make a sandbox purchase, refund or expire it, and check `Users.premium` follows. Then change that file to `REVENUECAT_ALLOW_SANDBOX=false` and run the same deploy command. Don't skip this: the deploy reads the file and won't ask, and the file is ignored by git. Left on `true`, sandbox purchases grant real premium.
+5. Backfill: `node scripts/backfill-live.mjs --project smartbell-app-2025 --apply`. Run this once. It exits with an error if any write failed. Active workers become members so nobody loses access, and they keep their `invitedUsers` entry because today's app reads it. Disabled workers don't become members, and anyone with no active worker row is removed from both lists: the owner already took them off.
 6. Publish `firestore.stage1.rules` by pasting it in **Firebase console > Firestore > Rules > Publish**. Check the milk log, animals and tasks on a real phone. To undo, publish the previous version from the same page.
 
 ## Stage 2: FlutterFlow release
@@ -57,9 +56,9 @@ Add `memberIds` (List of String) to the `Ranches` schema first, then:
 2. **Accept** (`ranch_list_menu`, invited row, on tap): before the existing update, add an Update Document on the tapped ranch: `memberIds` Add to List with the user uid, and `invitedUsers` Remove from List with the user reference.
 3. **Member ranches** (`ranch_list_menu`): add a list for `Ranches` where `memberIds` array-contains the uid. Without it a member loses the ranch from the menu after accepting.
 4. **Ranches page** (`ranchlist`): feed "Ranches I'm invited to" from `Ranches` where `invitedUsers` array-contains the user reference, instead of `Users.invitedRanchesList`, and add a list for `Ranches` where `memberIds` array-contains the uid. Without that second list an accepted ranch vanishes from this page. Remove the unfiltered `queryRanchesRecord()` in `animals_log_tabbed`:640 and `onboarding_step03_insight1`:367, or filter them by `user_id`.
-5. **Remove a worker** (`user_list`): add `memberIds` Remove from List and `invitedUsers` Remove from List. Only the owner can change workers now, so hide edit and remove from members.
+5. **Remove or disable a worker** (`user_list`, `edit_user`): add `memberIds` Remove from List and `invitedUsers` Remove from List to both. Disabling then really cuts access. To bring someone back, remove them and invite them again, because the rules let people join only by accepting. Only the owner can change workers now, so hide these actions from members.
 6. **Purchase:** remove the `premium: true` update from `membership_onboarding` (two places), `membership_annual`, `membership_monthly` and `membership_lifetime`. The webhook sets it within seconds. Go to the same success screen. If one stays, the purchase ends on an error under the final rules.
-7. **Bull weight form** (`bull_weight_new_log`): add `ranch_id`.
+7. **Forms that write no `ranch_id`:** add `ranch_id` to the `cowProductionPerDay` create (two places in each form) in `cow_profile_form`, `onboarding_step04_cow_profile_form`, `cow_profile_form_cow_mother`, `cow_profile_form_cow_m_g_mother`, `cow_profile_form_cow_p_g_mother`, `cow_profile_form_bull_mother`, `cow_profile_form_bull_m_g_mother` and `cow_profile_form_bull_p_g_mother`, and to the create in `bull_weight_new_log`. Lines are in [findings.md](findings.md). Stage 1 hides this: under the final rules, adding a cow would end in an error.
 8. **Queries:** every entry in [query-changes.md](query-changes.md). `validateSINIIGA` needs a new ranch argument. Its check then covers one ranch instead of the whole database: the final rules can't allow a global lookup, and a global one would tell any user that a tag exists elsewhere. Two ranches could then register the same tag; the same applies to `bulk_import_cows`.
 9. **Algolia:** apply the fix in [findings.md](findings.md).
 10. **Minimum version:** read a Remote Config value `min_build` at startup (the app already initialises Remote Config) and show a blocking "please update" screen when the build is lower. This only reaches this build and later ones.
@@ -79,11 +78,13 @@ Publish `firestore.rules` the same way as stage 1.
 
 Recommendation: publish when adoption of the new build reaches about 90%, or two weeks after release, whichever is first, and send a push asking people to update on release day. If you learn of active abuse, publish at once. Use Mixpanel or the store consoles to see adoption. After publishing, raise `min_build` for later releases.
 
-Right before publishing, repair logs written since stage 1 and check for orphans:
+Right before publishing, catch up with what changed since stage 1, then check:
 
 ```bash
-node scripts/backfill-live.mjs --project smartbell-app-2025 --ranch-ids-only --apply
-node scripts/backfill-live.mjs --project smartbell-app-2025 --ranch-ids-only
+node scripts/backfill-live.mjs --project smartbell-app-2025 --reconcile --apply
+node scripts/backfill-live.mjs --project smartbell-app-2025 --reconcile
 ```
 
-Use `--ranch-ids-only`. A second full run would turn pending invites into members.
+This removes people owners took off or disabled on the old app and stamps logs written since stage 1. The second run must show nothing left to remove and no fixable docs. Always use `--reconcile` here: a plain run would turn pending invites into members.
+
+The output also counts **invited, not yet members**. These are people invited after stage 1, who have been working in the ranch through the stage 1 allowance. After the final rules they see the ranch as an invite and must tap it once in the new app. Tell owners before publishing if the number is more than a few.

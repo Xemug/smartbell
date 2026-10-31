@@ -298,8 +298,18 @@ describe('stage 1 rules (today\'s app versions)', () => {
     await assertSucceeds(updateDoc(ranchA(f), { invitedUsers: arrayUnion(doc(f, 'Users', STRANGER)) }));
   });
 
-  test('the old bull weight form, which writes no ranch_id, still works', async () => {
-    await assertSucceeds(setDoc(doc(db(env, MEMBER), 'BullWeightHeight', 'b'), { weight: 1 }));
+  test('the old log forms, which write no ranch_id, still work for members', async () => {
+    const f = db(env, MEMBER);
+    await assertSucceeds(setDoc(doc(f, 'BullWeightHeight', 'b'), { weight: 1, bull_id: doc(f, 'Bulls', 'bull-a') }));
+    await assertSucceeds(setDoc(doc(f, 'cowProductionPerDay', 'c'), { cow_id: doc(f, 'Cows', 'cow-a') }));
+  });
+
+  test('a stranger cannot file a log with no ranch_id against another ranch animal', async () => {
+    const f = db(env, STRANGER);
+    await assertFails(setDoc(doc(f, 'cowHealth', 'c'), { cow_id: doc(f, 'Cows', 'cow-a') }));
+    await assertFails(setDoc(doc(f, 'BullWeightHeight', 'b'), { bull_id: doc(f, 'Bulls', 'bull-a') }));
+    await assertFails(setDoc(doc(f, 'cowHealth', 'd'), { cow_id: doc(f, 'Users', STRANGER) }));
+    await assertFails(setDoc(doc(f, 'cowHealth', 'e'), { note: 'no parent at all' }));
   });
 
   test('ranch_id cannot be dropped to escape the check', async () => {

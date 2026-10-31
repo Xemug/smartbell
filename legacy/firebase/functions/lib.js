@@ -100,10 +100,18 @@ function uidsFromEvent(event) {
   return [...new Set([event.app_user_id, event.original_app_user_id, ...(event.aliases ?? [])])].filter(isRealUid);
 }
 
+function isSandboxPurchase(subscriber, productId) {
+  const subscription = subscriber?.subscriptions?.[productId];
+  const oneTime = subscriber?.non_subscriptions?.[productId] ?? [];
+  return subscription?.is_sandbox === true || oneTime.some((purchase) => purchase.is_sandbox === true);
+}
+
 /** True when the RevenueCat subscriber document grants Pro right now. */
-function hasActivePro(subscriber, now) {
+function hasActivePro(subscriber, now, allowSandbox = false) {
   const entitlement = subscriber?.entitlements?.[PREMIUM_ENTITLEMENT];
   if (!entitlement) return false;
+  // A production event can arrive for a tester who also holds a sandbox purchase.
+  if (!allowSandbox && isSandboxPurchase(subscriber, entitlement.product_identifier)) return false;
   if (entitlement.expires_date == null) return true; // lifetime
   const ends = [entitlement.expires_date, entitlement.grace_period_expires_date].filter(Boolean).map(Date.parse);
   return Math.max(...ends) > now;
@@ -124,7 +132,7 @@ async function applyRevenueCatEvent(db, event, { fetchSubscriber, allowSandbox =
   for (const uid of uidsFromEvent(event)) {
     const ref = db.collection('Users').doc(uid);
     if (!(await ref.get()).exists) continue;
-    const premium = hasActivePro(await fetchSubscriber(uid), now);
+    const premium = hasActivePro(await fetchSubscriber(uid), now, allowSandbox);
     // update(), never set(): this must not create a Users doc for an unknown id.
     await ref.update({ premium, premiumCheckedAt: FieldValue.serverTimestamp() });
     updated.push({ uid, premium });

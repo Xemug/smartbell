@@ -1,23 +1,27 @@
 // Pure planning logic for backfill-live.mjs, kept separate so tests can run it.
 
-/** memberIds a ranch should hold: everyone already listed in workesList, except the owner. */
-export function planMemberIds(ranch) {
+const DISABLED = ['Disabled', 'Desactivado'];
+
+/** Workers the owner hasn't disabled. A row is added at invite time; status is the only other signal. */
+function activeWorkerIds(ranch) {
+  const rows = (ranch.workesList ?? []).filter((w) => w?.user?.id && !DISABLED.includes(w.status));
+  return new Set(rows.map((w) => w.user.id));
+}
+
+/** Who to add to and remove from a ranch so it matches workesList. */
+export function planRanch(ranch) {
   const owner = ranch.user_id?.id;
-  const fromWorkers = (ranch.workesList ?? []).map((w) => w?.user?.id).filter(Boolean);
-  return [...new Set([...(ranch.memberIds ?? []), ...fromWorkers])].filter((uid) => uid !== owner).sort();
+  const active = activeWorkerIds(ranch);
+  const members = ranch.memberIds ?? [];
+  const invited = ranch.invitedUsers ?? [];
+  return {
+    addMembers: [...active].filter((uid) => uid !== owner && !members.includes(uid)).sort(),
+    removeMembers: members.filter((uid) => !active.has(uid)),
+    // Today, removing a worker only clears workesList. A leftover invite would let them rejoin.
+    removeInvited: invited.filter((ref) => !active.has(ref.id)),
+    pendingInvites: invited.filter((ref) => active.has(ref.id) && !members.includes(ref.id)).length,
+  };
 }
-
-/**
- * invitedUsers to keep. The app adds workesList and invitedUsers together, and removing a
- * worker today only clears workesList. An invite with no worker row is left over from a
- * removal, and keeping it would let that person rejoin with one tap.
- */
-export function planInvitedUsers(ranch) {
-  const workers = new Set((ranch.workesList ?? []).map((w) => w?.user?.id));
-  return (ranch.invitedUsers ?? []).filter((ref) => workers.has(ref.id));
-}
-
-export const sameList = (a, b) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
 
 /** Parent reference that can supply a missing ranch_id, per log collection. */
 export const PARENT_FIELD = {
@@ -25,6 +29,3 @@ export const PARENT_FIELD = {
   CowWeightHeight: 'cow_id', cowProductionPerDay: 'cow_id', CowsDietChanges: 'cow_id',
   CowReproductionState: 'cow_id', cowHealth: 'cow_id', Group_cow_changes: 'cow_id',
 };
-export const RANCH_COLLECTIONS = [
-  ...Object.keys(PARENT_FIELD), 'Cows', 'Bulls', 'Tasks', 'Groups', 'Groups_Bulls', 'MilkPrices', 'Cows_In_Production_change',
-];

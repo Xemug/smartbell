@@ -1,25 +1,37 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
-import { PARENT_FIELD, RANCH_COLLECTIONS, planInvitedUsers, planMemberIds, sameList } from '../scripts/backfill-plan.mjs';
+import { planRanch } from '../scripts/backfill-plan.mjs';
 
 const ref = (id) => ({ id });
+const row = (id, status = 'Active') => ({ user: ref(id), status });
 
-test('workers become members, without the owner or duplicates', () => {
-  const ranch = { user_id: ref('o'), memberIds: ['a'], workesList: [{ user: ref('a') }, { user: ref('b') }, { user: ref('o') }, {}] };
-  assert.deepEqual(planMemberIds(ranch), ['a', 'b']);
+test('active workers become members, without the owner or duplicates', () => {
+  const plan = planRanch({ user_id: ref('o'), memberIds: ['a'], workesList: [row('a'), row('b'), row('o'), {}] });
+  assert.deepEqual(plan.addMembers, ['b']);
+  assert.deepEqual(plan.removeMembers, []);
 });
 
-test('a ranch with no workers plans an empty list', () => {
-  assert.deepEqual(planMemberIds({ user_id: ref('o') }), []);
+test('a disabled worker does not become a member and loses any access', () => {
+  for (const status of ['Disabled', 'Desactivado']) {
+    const plan = planRanch({ memberIds: ['d'], invitedUsers: [ref('d')], workesList: [row('d', status)] });
+    assert.deepEqual(plan.addMembers, []);
+    assert.deepEqual(plan.removeMembers, ['d']);
+    assert.deepEqual(plan.removeInvited.map((r) => r.id), ['d']);
+  }
 });
 
-test('a removed worker loses their leftover invite', () => {
-  const ranch = { invitedUsers: [ref('kept'), ref('removed')], workesList: [{ user: ref('kept') }] };
-  assert.deepEqual(planInvitedUsers(ranch).map((r) => r.id), ['kept']);
+test('a worker removed since the backfill is dropped from both lists', () => {
+  const plan = planRanch({ memberIds: ['gone', 'kept'], invitedUsers: [ref('gone'), ref('kept')], workesList: [row('kept')] });
+  assert.deepEqual(plan.removeMembers, ['gone']);
+  assert.deepEqual(plan.removeInvited.map((r) => r.id), ['gone']);
 });
 
-test('sameList ignores order', () => assert.equal(sameList(['a', 'b'], ['b', 'a']), true));
+test('pending invites are counted', () => {
+  const plan = planRanch({ memberIds: ['a'], invitedUsers: [ref('a'), ref('b')], workesList: [row('a'), row('b')] });
+  assert.equal(plan.pendingInvites, 1);
+});
 
-test('every collection with a parent field is covered', () => {
-  for (const name of Object.keys(PARENT_FIELD)) assert.ok(RANCH_COLLECTIONS.includes(name));
+test('a ranch with no workers plans nothing', () => {
+  const plan = planRanch({ user_id: ref('o') });
+  assert.deepEqual([plan.addMembers, plan.removeMembers, plan.removeInvited], [[], [], []]);
 });

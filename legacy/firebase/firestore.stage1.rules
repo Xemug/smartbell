@@ -27,8 +27,17 @@ service cloud.firestore {
     // that points at a doc the caller controls, such as their own Users doc.
     function memberOfRef(ref) { return ref is path && ref[3] == 'Ranches' && memberOfId(ref[4]); }
 
-    // Stage 1 only: old docs and the old bull weight form have no ranch_id.
-    function legacyNoRanch(data) { return legacyClients() && signedIn() && !('ranch_id' in data); }
+    // Stage 1 only: old docs and today's cow and bull log forms write no ranch_id.
+    // Membership comes from the parent animal, so a stranger can't file logs that the
+    // backfill would later stamp into someone else's ranch.
+    function parentInMyRanch(data, field, collection) {
+      return field in data && data[field] is path && data[field][3] == collection
+        && memberOfRef(get(data[field]).data.ranch_id);
+    }
+    function legacyNoRanch(data) {
+      return legacyClients() && !('ranch_id' in data)
+        && (parentInMyRanch(data, 'cow_id', 'Cows') || parentInMyRanch(data, 'bull_id', 'Bulls'));
+    }
 
     function isRanchData(collection) {
       return collection in ['Cows_In_Production_change', 'Tasks', 'Cows', 'Bulls', 'CowWeightHeight', 'BullWeightHeight', 'cowProductionPerDay', 'CowsDietChanges', 'CowReproductionState', 'cowHealth', 'BullDietChanges', 'Groups', 'Groups_Bulls', 'Group_cow_changes', 'Group_bull_changes', 'MilkPrices'];

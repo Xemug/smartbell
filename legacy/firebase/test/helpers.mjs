@@ -39,6 +39,7 @@ export async function seed(env) {
     });
     await setDoc(doc(f, 'Ranches', 'ranch-b'), { user_id: user(OTHER_OWNER), ranch_name: 'B', memberIds: [], invitedUsers: [] });
     await setDoc(doc(f, 'Cows', 'cow-a'), { name: 'Bessie', ranch_id: ranchA });
+    await setDoc(doc(f, 'Bulls', 'bull-a'), { name: 'Max', ranch_id: ranchA });
     await setDoc(doc(f, 'Tasks', 'task-a'), { title: 't', ranch_id: ranchA });
     await setDoc(doc(f, 'Ranches', 'ranch-a', 'productionPerDays', 'day-1'), { total: 10, ranch_id: ranchA });
   });

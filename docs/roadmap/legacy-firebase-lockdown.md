@@ -38,7 +38,8 @@ Everything built lives in `legacy/firebase/` in this repo. The legacy app (`/Use
 - `inviteUserByEmail` requires `premium` on the server too, and caps at 20 tries an hour so it can't be used to probe emails (assumption).
 - New invites must go through `inviteUserByEmail` once the final rules are live, so premium and the rate limit can't be skipped from a client (assumption).
 - SINIIGA duplicate checks cover one ranch, because rules can't allow a global lookup. Two ranches could register the same tag (assumption).
-- The backfill runs once for `memberIds`. It removes leftover invites from workers already taken off a ranch (assumption).
+- The stage 1 backfill runs once. Stage 3 runs `--reconcile`, which only removes. Disabled workers never become members, and disabling one in the release cuts access; bringing them back means a new invite (assumption).
+- Stage 1 allows logs with no `ranch_id` only for members of the parent animal's ranch (assumption).
 - The webhook reads current state from RevenueCat instead of trusting event types. Only the `Pro` entitlement grants premium (assumption).
 
 ## Approach

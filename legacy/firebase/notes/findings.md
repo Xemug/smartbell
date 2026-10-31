@@ -12,6 +12,7 @@ The deployed rules are known from the screenshot the user shared. `firestore.dep
 - **There is no accept step (code).** Tapping an invited ranch only writes `currentSelectedRanch`. The orchestrator decided that tap becomes accept, with no new screen.
 - **`Users.email` can't identify anyone (code).** Users can edit their own doc, so someone could copy a victim's address and catch their invites. The callable resolves emails through Firebase Auth.
 - **Removing a worker today only edits `workesList` (code).** `invitedUsers` keeps them. The release must also clear `memberIds` and `invitedUsers`.
+- **Disabling a worker does nothing today (code).** `edit_user` stores `Disabled` or `Desactivado` in the row, and nothing reads it.
 
 ## Premium
 
@@ -25,9 +26,19 @@ The deployed rules are known from the screenshot the user shared. `firestore.dep
 
 77 of 114 app queries have no `ranch_id` filter, and strict rules refuse them, including 12 with no filter at all. The list is in [query-changes.md](query-changes.md). Several read every cow in the database only to show a loading state, for example `queryCowsRecord()` in `delete_cow`, which is also a cost and privacy problem today.
 
-The backfill makes every `workesList` entry a member, including invitees who never opened the ranch, because the export can't tell them apart: the app adds that row at invite time and nothing marks acceptance. This was the orchestrator's call, so nobody loses access. Those people can already open the ranch today, and the dry run counts them. An owner can remove anyone afterwards.
+The backfill makes every active `workesList` entry a member, including invitees who never opened the ranch, because the export can't tell them apart: the app adds that row at invite time and nothing marks acceptance. Disabled workers are excluded. This was the orchestrator's call, so nobody loses access. Those people can already open the ranch today, and the dry run counts them. An owner can remove anyone afterwards.
 
-The bull weight form writes no `ranch_id`, so strict rules would refuse it and the old logs have none. The release fixes the form and the backfill fixes the logs.
+17 creates write no `ranch_id`, so strict rules would refuse them. Adding a cow or finishing the onboarding cow step would end in an error. The release fixes the forms and the backfill stamps old logs from the parent animal.
+
+- `bull_weight_new_log`:384
+- `onboarding_step04_cow_profile_form`:1328, 1582
+- `cow_profile_form`:3439, 3720
+- `cow_profile_form_cow_mother`:3773, 4064
+- `cow_profile_form_cow_m_g_mother`:3770, 4060
+- `cow_profile_form_cow_p_g_mother`:3778, 4071
+- `cow_profile_form_bull_mother`:3794, 4131
+- `cow_profile_form_bull_m_g_mother`:3814, 4044
+- `cow_profile_form_bull_p_g_mother`:3825, 4163
 
 ## Algolia
 
