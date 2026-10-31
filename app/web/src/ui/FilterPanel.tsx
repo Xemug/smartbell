@@ -140,7 +140,7 @@ export function FilterPanel<T extends FilterCategories>({
           options={categoryOptions}
           value={draft?.category ?? ''}
           onChange={pickCategory}
-          className="w-full sm:w-48"
+          className="w-full md:w-48"
         />
         <Select
           aria-label={t('ui.filterVariable')}
@@ -149,7 +149,7 @@ export function FilterPanel<T extends FilterCategories>({
           value={draft?.variable ?? ''}
           onChange={pickVariable}
           disabled={!category}
-          className="w-full sm:w-64"
+          className="w-full md:w-64"
         />
         {actions}
       </div>
