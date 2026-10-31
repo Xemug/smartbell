@@ -97,7 +97,7 @@ SERVIDA       --PREGNANCY_CHECK +--------------------> GESTANTE
 SERVIDA       --PREGNANCY_CHECK −--------------------> ABIERTA
 GESTANTE      --expected_calving − 60 d (job)--------> SECA         (lactation → SECA)
 GESTANTE|SECA --CALVING------------------------------> RECIEN_PARIDA (lactation → LACTANDO, #lact+1, kind VAQUILLA→VACA)
-GESTANTE|SECA --ABORTION-----------------------------> ABIERTA ⚙   (web mock shows RECIEN_PARIDA; open question)
+GESTANTE|SECA --ABORTION-----------------------------> ABIERTA     (confirmed 2026-10-31, §7.6)
 any           --REMOVAL------------------------------> status REMOVED
 ```
 
@@ -210,4 +210,8 @@ The ⚙ defaults in §1 and §7.5 are confirmed and become seeded defaults:
 - the ranch is auto-created at sign-up;
 - pricing comes from the RevenueCat store products.
 
-Still open: the state after an abortion, a return to heat while SERVIDA, and the permission-matrix oddities (§6).
+Confirmed by the user (2026-10-31):
+- **State after an abortion:** ABIERTA, ready to be bred again. The web mock's RECIEN_PARIDA is dropped.
+- **Return to heat while SERVIDA:** the service failed. The cow goes back to ABIERTA and her pending pregnancy check and expected calving dates are cancelled. The heat is then handled as a heat from ABIERTA (§2): if a service is recorded on it, she becomes SERVIDA again with new dates.
+
+Still open: the permission-matrix oddities (§6).

@@ -8,8 +8,8 @@ For the planner that continues Smartbell planning in a smartbell pane. Read this
   - Ship as an update to the existing store listings.
   - The constants and scope in `docs/reconciliation-v4.md` §5.
 - **Board (updated 2026-10-31):** `app-scaffold`, `design-tokens`, `core-data-model` and `icons-export` are merged (PRs #1, #2, #3, #5). `history-writer` is PR #4, waiting on the user. Backlog order and card types come from `docs/backlog.md`. Specs now use the real api package path, `app/api/smartbell/`.
-- **In flight:** `repro-engine` is in Up Next, waiting on the user's answers.
-- **Next action:** get the user's answers on the state after an abortion and a return to heat while SERVIDA, record them in `docs/domain-model.md` §7, then start `repro-engine`. Steer the two workers to ready PRs, then refill Up Next from `docs/backlog.md`.
+- **In flight:** `repro-engine` is Building. `history-writer` (PR #4) gets one text change, then the planner merges it; the user approved.
+- **Next action:** merge PR #4, steer `repro-engine` to a ready PR, and start `ui-primitives` (Up Next). Abortion and return-to-heat rules are in `docs/domain-model.md` §7.6.
   - `legacy-firebase-lockdown` stays first in Backlog; the user deferred it.
 - **Worker briefs:** tick the "pass in CI" acceptance item once CI is green, before marking the PR ready. Put copy-paste terminal test commands in the PR. This machine has no Docker: use the Homebrew Postgres 14 with `DATABASE_URL=postgresql+asyncpg://juan@localhost:5432/<db>` and `SKIP_DOCKER=1`.
 
@@ -37,7 +37,5 @@ For the planner that continues Smartbell planning in a smartbell pane. Read this
   - the terminals where the user runs smartbell dev servers (spawn workers in new terminals).
 
 ## Open questions still with the user
-- The state after an abortion (default ABIERTA).
-- A return to heat while SERVIDA.
 - The permission-matrix oddities.
 - The design defaults in `docs/design-inventory/uikit-design-system.md` §6.6 (proposed defaults are in reconciliation §4.8).

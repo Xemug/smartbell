@@ -60,7 +60,7 @@ Date: 2026-10-29. Status: **draft; the decisions in §4 need the user.**
 4. **Ranch creation:** auto-create "Mi rancho" at sign-up and let users rename it?
 5. **Pricing:** four conflicting models: herd-size tiers (M/W), the $250/$2,500 MXN basic membership + 50% OTO (V4), the 24.99/249.99 store subscription (shipped), and the lifetime licence (grant). Which one is current?
 6. **Reproductive constants:** gestation 283 d, cycle 21 d, check 35–45 d, re-checks 90/180 d, close-up 21 d before calving, heat window 7 d (V4) vs ±2 d.
-7. **Abortion → ABIERTA?** Return-to-heat while SERVIDA? (unchanged from before)
+7. **Abortion → ABIERTA?** Yes. Return-to-heat while SERVIDA? The service failed, back to ABIERTA. Confirmed 2026-10-31, see domain-model §7.6.
 
 **Design** (the full list is in uikit-design-system.md §6.6; defaults proposed)
 8. Is the UI Kit canonical? Proposed **yes**, with these defaults:
