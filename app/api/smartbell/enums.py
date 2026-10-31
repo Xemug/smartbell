@@ -427,6 +427,9 @@ class HistoryKey(_Name):
     GROUP_EDITED = auto()
     GROUP_DELETED = auto()
     GROUP_ANIMALS_MOVED = auto()
+    # Con Ganado, not in §3.5: moves with no single source group, and creating a group.
+    GROUP_ANIMALS_SENT = auto()
+    GROUP_CREATED = auto()
     # Con Usuarios
     USERS_ADDED = auto()
     USERS_REMOVED = auto()
@@ -441,7 +444,8 @@ class HistoryKey(_Name):
     CALVED = auto()
     TREATMENT_CHANGED = auto()
     ANIMALS_CURED = auto()
-    # De Salud, not in §3.5: the event types it has no template for.
+    # De Salud, not in §3.5: the event outcomes it has no template for.
+    HEAT_NOT_OBSERVED = auto()
     PREGNANCY_NEGATIVE = auto()
     ABORTED = auto()
     VACCINATED = auto()

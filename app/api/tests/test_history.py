@@ -11,6 +11,7 @@ from smartbell.models import HistoryEntry, Ranch, User
 from smartbell.schemas.history import HistoryRefs
 from smartbell.services.history import record, render
 
+DUPLICATE = uuid.uuid4()
 NAMES = {"group": "General", "to_group": "Secas", "ranch": "El Roble"}
 
 # key: (singular, plural); plural is None when the event is always about one thing.
@@ -46,6 +47,11 @@ COPY: dict[HistoryKey, tuple[str, str | None]] = {
         "Se cambió 1 vaca de potrero General a potrero Secas",
         "Se cambiaron 5 vacas de potrero General a potrero Secas",
     ),
+    HistoryKey.GROUP_ANIMALS_SENT: (
+        "Se cambió 1 vaca a potrero Secas",
+        "Se cambiaron 5 vacas a potrero Secas",
+    ),
+    HistoryKey.GROUP_CREATED: ("Se creó el potrero General", None),
     HistoryKey.USERS_ADDED: ("Se dio de alta 1 usuario", "Se dieron de alta 5 usuarios"),
     HistoryKey.USERS_REMOVED: ("Se dio de baja 1 usuario", "Se dieron de baja 5 usuarios"),
     HistoryKey.USERS_EDITED: ("Se editó 1 usuario", "Se editaron 5 usuarios"),
@@ -73,6 +79,7 @@ COPY: dict[HistoryKey, tuple[str, str | None]] = {
         "1 animal que estaba enferma, se curó exitosamente",
         "5 animales que estaban enfermas, se curaron exitosamente",
     ),
+    HistoryKey.HEAT_NOT_OBSERVED: ("1 animal no entró en celo", "5 animales no entraron en celo"),
     HistoryKey.PREGNANCY_NEGATIVE: (
         "1 animal se diagnosticó vacía",
         "5 animales se diagnosticaron vacías",
@@ -93,7 +100,7 @@ def ids(n: int) -> list[uuid.UUID]:
 def refs_for(key: HistoryKey, n: int) -> HistoryRefs:
     template = TEMPLATES[key]
     return HistoryRefs(
-        animal_ids=ids(n) if template.card is HistoryCard.A else [],
+        animal_ids=ids(n) if template.plural and template.card is not HistoryCard.C else [],
         user_ids=ids(n) if template.card is HistoryCard.C else [],
         group_id=uuid.uuid4() if template.names & {"group", "to_group"} else None,
         **{name: NAMES[name] for name in template.names},
@@ -260,6 +267,16 @@ async def test_names_are_not_format_strings(
             HistoryKey.ANIMALS_ADDED, HistoryRefs(animal_ids=ids(2)), 3, id="count-vs-animals"
         ),
         pytest.param(HistoryKey.ANIMALS_ADDED, HistoryRefs(), 1, id="no-animals"),
+        pytest.param(HistoryKey.ANIMALS_REMOVED_ERROR, HistoryRefs(), 5, id="hard-delete-count"),
+        pytest.param(
+            HistoryKey.ANIMALS_ADDED, HistoryRefs(animal_ids=[DUPLICATE] * 2), 2, id="repeat-exact"
+        ),
+        pytest.param(
+            HistoryKey.ANIMALS_ADDED,
+            HistoryRefs(animal_ids=[DUPLICATE, DUPLICATE, uuid.uuid4()]),
+            2,
+            id="repeat-distinct",
+        ),
         pytest.param(HistoryKey.USERS_EDITED, HistoryRefs(user_ids=ids(1)), 2, id="count-vs-users"),
         pytest.param(HistoryKey.ANIMALS_ADDED, HistoryRefs(), 0, id="zero"),
         pytest.param(HistoryKey.ANIMALS_REMOVED_ERROR, HistoryRefs(), -1, id="negative"),
@@ -281,6 +298,12 @@ async def test_refuses_an_entry_it_could_not_show(
         await record(session, ranch.id, user.id, key, refs, n)
 
     assert await session.scalar(select(func.count()).select_from(HistoryEntry)) == 0
+
+
+@pytest.mark.parametrize("name", ["", "  "])
+def test_refs_refuse_blank_names(name: str) -> None:
+    with pytest.raises(ValidationError):
+        HistoryRefs(group=name)
 
 
 def test_refs_refuse_unknown_fields() -> None:

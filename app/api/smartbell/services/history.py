@@ -53,6 +53,7 @@ def _check(key: HistoryKey, template: HistoryTemplate, refs: HistoryRefs, n: int
         raise ValueError(f"{key}: refs need {sorted(missing)}")
     if template.names & {"group", "to_group"} and refs.group_id is None:
         raise ValueError(f"{key}: refs need group_id")
-    listed = {HistoryCard.A: refs.animal_ids, HistoryCard.C: refs.user_ids}.get(template.card)
-    if listed is not None and len(set(listed)) != n:
-        raise ValueError(f"{key}: n is {n} but refs list {len(set(listed))}")
+    if template.plural is not None:  # A count has to agree with the IDs the card lists.
+        listed = refs.user_ids if template.card is HistoryCard.C else refs.animal_ids
+        if len(listed) != n or len(set(listed)) != n:
+            raise ValueError(f"{key}: n is {n} but refs list {len(listed)}, or repeat one")

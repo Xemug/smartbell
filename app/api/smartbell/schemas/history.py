@@ -4,6 +4,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from smartbell.schemas.events import NonBlank
+
 
 class HistoryRefs(BaseModel):
     """Stored as `HistoryEntry.refs`.
@@ -18,6 +20,6 @@ class HistoryRefs(BaseModel):
     animal_ids: list[UUID] = []
     user_ids: list[UUID] = []
     group_id: UUID | None = None
-    group: str | None = None
-    to_group: str | None = None
-    ranch: str | None = None
+    group: NonBlank | None = None
+    to_group: NonBlank | None = None
+    ranch: NonBlank | None = None

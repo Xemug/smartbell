@@ -6,6 +6,7 @@ are the names stored in the entry's refs.
 """
 
 from dataclasses import dataclass
+from functools import cached_property
 from string import Formatter
 
 from smartbell.enums import HistoryCard, HistoryCategory, HistoryKey
@@ -18,10 +19,10 @@ class HistoryTemplate:
     singular: str
     plural: str | None = None  # None: the event is always about one thing, so n stays 1.
 
-    @property
+    @cached_property
     def names(self) -> frozenset[str]:
         """The refs names this template shows."""
-        parsed = Formatter().parse(self.plural or self.singular)
+        parsed = Formatter().parse(self.singular + (self.plural or ""))
         return frozenset(field for _, field, _, _ in parsed if field and field != "n")
 
 
@@ -82,6 +83,12 @@ TEMPLATES: dict[HistoryKey, HistoryTemplate] = {
         "Se cambió 1 vaca de potrero {group} a potrero {to_group}",
         "Se cambiaron {n} vacas de potrero {group} a potrero {to_group}",
     ),
+    HistoryKey.GROUP_ANIMALS_SENT: _ganado(
+        HistoryCard.A,
+        "Se cambió 1 vaca a potrero {to_group}",
+        "Se cambiaron {n} vacas a potrero {to_group}",
+    ),
+    HistoryKey.GROUP_CREATED: _ganado(HistoryCard.B, "Se creó el potrero {group}"),
     HistoryKey.USERS_ADDED: _usuarios("Se dio de alta 1 usuario", "Se dieron de alta {n} usuarios"),
     HistoryKey.USERS_REMOVED: _usuarios(
         "Se dio de baja 1 usuario", "Se dieron de baja {n} usuarios"
@@ -109,6 +116,9 @@ TEMPLATES: dict[HistoryKey, HistoryTemplate] = {
     HistoryKey.ANIMALS_CURED: _salud(
         "1 animal que estaba enferma, se curó exitosamente",
         "{n} animales que estaban enfermas, se curaron exitosamente",
+    ),
+    HistoryKey.HEAT_NOT_OBSERVED: _salud(
+        "1 animal no entró en celo", "{n} animales no entraron en celo"
     ),
     HistoryKey.PREGNANCY_NEGATIVE: _salud(
         "1 animal se diagnosticó vacía", "{n} animales se diagnosticaron vacías"
