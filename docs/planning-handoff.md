@@ -40,3 +40,8 @@ For the planner that continues Smartbell planning in a smartbell pane. Read this
 ## Update 2026-10-31: SINIIGA
 
 The user corrected the lockdown: SINIIGA is unique nationally. `docs/domain-model.md` §7.7 records the format and rule, taken from the technical manual. PR #9 went back to its worker to keep the live app's nationwide check through a callable that returns only available or taken. `siniiga-compliance` is a new card, and `animal-api` carries the index change. Stage 0 of `legacy/firebase/notes/deploy-runbook.md` is with the user.
+
+## Update 2026-10-31: lockdown merged
+
+PR #9 merged, nothing deployed. The user accepted the Stage 1 `cow_id` gap until Stage 3. `ui-surfaces-feedback` is building. Next for the user: Stage 0 of `legacy/firebase/notes/deploy-runbook.md`. Open acceptance items stay with the user: invite end to end, RevenueCat sandbox, app flows, tamper check. Raise the permission-matrix oddities before `ranch-tenancy-permissions`.
+
