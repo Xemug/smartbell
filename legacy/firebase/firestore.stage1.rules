@@ -1,0 +1,113 @@
+rules_version = '2';
+// GENERATED from firestore.rules by npm run build:stage1. Do not edit.
+// Stage 1: closes cross-ranch writes now; reads stay open until the app release.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // true only in firestore.stage1.rules: keeps today's app versions working while
+    // writes are locked down. See notes/deploy-runbook.md.
+    function legacyClients() { return true; }
+
+    function signedIn() { return request.auth != null; }
+    function myRef() { return /databases/$(database)/documents/Users/$(request.auth.uid); }
+    function ranchDoc(id) { return get(/databases/$(database)/documents/Ranches/$(id)).data; }
+
+    function isOwnerOf(ranch) { return signedIn() && ranch.user_id == myRef(); }
+    function isListedMember(ranch) {
+      return signedIn() && request.auth.uid in ranch.get('memberIds', []);
+    }
+    function isInvitedTo(ranch) { return signedIn() && myRef() in ranch.get('invitedUsers', []); }
+
+    // Users.ranch_list is never consulted here: users can write their own doc.
+    function memberOfId(id) {
+      let ranch = ranchDoc(id);
+      return isOwnerOf(ranch) || isListedMember(ranch) || (legacyClients() && isInvitedTo(ranch));
+    }
+    // ranch_id is a document reference. Checking the collection stops a ranch_id
+    // that points at a doc the caller controls, such as their own Users doc.
+    function memberOfRef(ref) { return ref is path && ref[3] == 'Ranches' && memberOfId(ref[4]); }
+
+    // Stage 1 only: old docs and the old bull weight form have no ranch_id.
+    function legacyNoRanch(data) { return legacyClients() && signedIn() && !('ranch_id' in data); }
+
+    function isRanchData(collection) {
+      return collection in ['Cows_In_Production_change', 'Tasks', 'Cows', 'Bulls', 'CowWeightHeight', 'BullWeightHeight', 'cowProductionPerDay', 'CowsDietChanges', 'CowReproductionState', 'cowHealth', 'BullDietChanges', 'Groups', 'Groups_Bulls', 'Group_cow_changes', 'Group_bull_changes', 'MilkPrices'];
+    }
+
+    match /{collection}/{id} {
+      allow read: if isRanchData(collection)
+        && ((legacyClients() && signedIn()) || memberOfRef(resource.data.ranch_id));
+      allow create: if isRanchData(collection)
+        && (legacyNoRanch(request.resource.data) || memberOfRef(request.resource.data.ranch_id));
+      allow update: if isRanchData(collection)
+        && (
+          (legacyNoRanch(resource.data) && legacyNoRanch(request.resource.data))
+          || (memberOfRef(resource.data.ranch_id)
+              && request.resource.data.ranch_id == resource.data.ranch_id)
+        );
+      allow delete: if isRanchData(collection)
+        && (legacyNoRanch(resource.data) || memberOfRef(resource.data.ranch_id));
+    }
+
+    match /Ranches/{id} {
+      function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+      function oldMembers() { return resource.data.get('memberIds', []).toSet(); }
+      function newMembers() { return request.resource.data.get('memberIds', []).toSet(); }
+      function oldInvited() { return resource.data.get('invitedUsers', []).toSet(); }
+      function newInvited() { return request.resource.data.get('invitedUsers', []).toSet(); }
+
+      // Tapping an invited ranch: the caller moves themselves from invited to member.
+      function isAccepting() {
+        return isInvitedTo(resource.data)
+          && changed().hasOnly(['memberIds', 'invitedUsers'])
+          && newMembers() == oldMembers().union([request.auth.uid].toSet())
+          && newInvited() == oldInvited().difference([myRef()].toSet());
+      }
+      // Owners run invites and can remove people. Adding a member only happens through
+      // accept, so an owner can't put someone in a ranch without that person's tap.
+      function isOwnerUpdate() {
+        return isOwnerOf(resource.data)
+          && !changed().hasAny(['user_id'])
+          && newMembers().difference(oldMembers()).size() == 0;
+      }
+      function isMemberUpdate() {
+        return (isListedMember(resource.data) || (legacyClients() && isInvitedTo(resource.data)))
+          && !changed().hasAny(['user_id', 'memberIds', 'invitedUsers', 'workesList']);
+      }
+
+      allow read: if (legacyClients() && signedIn())
+        || isOwnerOf(resource.data) || isListedMember(resource.data) || isInvitedTo(resource.data);
+      allow create: if isOwnerOf(request.resource.data)
+        && request.resource.data.get('memberIds', []).size() == 0;
+      allow update: if isOwnerUpdate() || isMemberUpdate() || isAccepting();
+      allow delete: if isOwnerOf(resource.data);
+
+      match /productionPerDays/{doc} {
+        allow read, write: if memberOfId(id);
+      }
+    }
+
+    // Collection-group reads only. Writes and direct reads use the rule above.
+    match /{path=**}/productionPerDays/{doc} {
+      allow read: if (legacyClients() && signedIn()) || memberOfRef(resource.data.ranch_id);
+    }
+
+    match /Users/{uid} {
+      function isSelf() { return signedIn() && request.auth.uid == uid; }
+      function serverOnly() { return ['premium', 'lifetimeMember', 'premiumCheckedAt']; }
+
+      allow get: if isSelf() || (legacyClients() && signedIn());
+      allow list: if legacyClients() && signedIn();
+      allow create: if isSelf() && !request.resource.data.keys().hasAny(serverOnly());
+      allow update: if isSelf()
+        && (legacyClients()
+            || !request.resource.data.diff(resource.data).affectedKeys().hasAny(serverOnly()));
+      allow delete: if false;
+    }
+
+    match /ff_user_push_notifications/{id} {
+      allow read, update, delete: if false;
+      allow create: if /databases/$(database)/documents/Users/$(request.auth.uid) == request.resource.data.sender;
+    }
+  }
+}

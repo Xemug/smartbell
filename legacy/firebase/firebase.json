@@ -1,0 +1,11 @@
+{
+  "firestore": { "rules": "firestore.rules" },
+  "functions": [{ "source": "functions", "codebase": "lockdown" }],
+  "emulators": {
+    "firestore": { "port": 8180, "host": "127.0.0.1" },
+    "auth": { "port": 9199, "host": "127.0.0.1" },
+    "functions": { "port": 5101, "host": "127.0.0.1" },
+    "ui": { "enabled": false },
+    "singleProjectMode": true
+  }
+}
