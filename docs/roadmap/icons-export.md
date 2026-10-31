@@ -68,4 +68,4 @@ S.
 - [x] Every icon listed in design-system.md §3 is exported or listed as missing in the PR with reason.
 - [x] `<Icon name="bell"/>` type-checks and an unknown name fails `tsc`.
 - [x] Gallery renders all icons; line icons follow text color.
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
