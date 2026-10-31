@@ -21,14 +21,14 @@ FlutterFlow's Deploy replaces the live rules with the ones from its table, and i
 
 ## Stage 1: server, webhook and write lockdown (no app release needed)
 
-This closes cross-ranch writes and deletes today. **Reads stay open until stage 3**, including every email and phone.
+This closes cross-ranch writes and deletes today. **Reads stay open until stage 3**, including every email and phone. One known gap until then: a log can claim someone else's animal in `cow_id` under the writer's own `ranch_id`, which can show on that animal or block its deletion on the old app. A per-document parent check would exceed the rules `get()` limit on group batches, and the final rules scope those queries, so this closes at stage 3.
 
 1. Pick a long random webhook secret. Set it, including the word Bearer, and the RevenueCat v1 secret key:
    ```bash
    npx firebase functions:secrets:set REVENUECAT_WEBHOOK_AUTH --project smartbell-app-2025   # value: Bearer <secret>
    npx firebase functions:secrets:set REVENUECAT_SECRET_KEY --project smartbell-app-2025     # value: sk_...
    ```
-2. Deploy the functions. The separate `lockdown` codebase leaves FlutterFlow's functions alone. `firebase.json` holds no rules, so this can't publish them. Allow sandbox for step 4 by setting it in a file:
+2. Deploy the functions. `onRanchChanged` runs in `us-central1` by default; if the deploy complains about the Firestore region, add a `region` option matching the database in `functions/index.js`. The separate `lockdown` codebase leaves FlutterFlow's functions alone. `firebase.json` holds no rules, so this can't publish them. Allow sandbox for step 4 by setting it in a file:
    ```bash
    echo 'REVENUECAT_ALLOW_SANDBOX=true' > functions/.env.smartbell-app-2025
    npx firebase deploy --only functions:lockdown --project smartbell-app-2025
@@ -61,7 +61,9 @@ Add `memberIds` (List of String) to the `Ranches` schema first, then:
 7. **Forms that write no `ranch_id`:** add `ranch_id` to the `cowProductionPerDay` create (two places in each form) in `cow_profile_form`, `onboarding_step04_cow_profile_form`, `cow_profile_form_cow_mother`, `cow_profile_form_cow_m_g_mother`, `cow_profile_form_cow_p_g_mother`, `cow_profile_form_bull_mother`, `cow_profile_form_bull_m_g_mother` and `cow_profile_form_bull_p_g_mother`, and to the create in `bull_weight_new_log`. Lines are in [findings.md](findings.md). Stage 1 hides this: under the final rules, adding a cow would end in an error.
 8. **Queries:** every entry in [query-changes.md](query-changes.md). `validateSINIIGA` needs a new ranch argument. Its check then covers one ranch instead of the whole database: the final rules can't allow a global lookup, and a global one would tell any user that a tag exists elsewhere. Two ranches could then register the same tag; the same applies to `bulk_import_cows`.
 9. **Algolia:** apply the fix in [findings.md](findings.md).
-10. **Minimum version:** read a Remote Config value `min_build` at startup (the app already initialises Remote Config) and show a blocking "please update" screen when the build is lower. This only reaches this build and later ones.
+10. **Lost ranch:** at startup, read `currentSelectedRanch`. If the read is denied or the ranch is gone, clear it and open the ranch list. After a worker is removed or a ranch deleted, scoped queries are refused rather than empty, and the app's list screens would spin forever.
+11. **Profile email:** `edit_my_profile` writes `Users.email` but not the sign-in email, and invites now use the sign-in email. Make that field read-only, or tell owners to invite the address people sign in with.
+12. **Minimum version:** read a Remote Config value `min_build` at startup (the app already initialises Remote Config) and show a blocking "please update" screen when the build is lower. This only reaches this build and later ones.
 
 Test the release against the stage 1 rules, then again against the emulator with the final rules, for login, milk log, animals, tasks, invites and purchase.
 
@@ -77,6 +79,8 @@ Publish `firestore.rules` the same way as stage 1.
 | Publish the day the release is live | Closes the exposure now | Everyone not yet updated gets a broken app until they update |
 
 Recommendation: publish when adoption of the new build reaches about 90%, or two weeks after release, whichever is first, and send a push asking people to update on release day. If you learn of active abuse, publish at once. Use Mixpanel or the store consoles to see adoption. After publishing, raise `min_build` for later releases.
+
+After publishing, run the tamper check again: nobody can set `premium` from then on, but false values from before remain, and they still pass the app's gates and `inviteUserByEmail`. Clear the ones you approve by hand in the Firebase console. The webhook only updates a user when RevenueCat sends an event for them.
 
 Right before publishing, catch up with what changed since stage 1, then check:
 

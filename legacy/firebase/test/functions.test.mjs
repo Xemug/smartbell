@@ -8,7 +8,7 @@ const require = createRequire(new URL('../functions/lib.js', import.meta.url));
 const { deleteApp, initializeApp } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
 const { getFirestore } = require('firebase-admin/firestore');
-const { applyRevenueCatEvent, handleRevenueCatWebhook, hasActivePro, inviteUser } = require('./lib.js');
+const { applyRevenueCatEvent, handleRevenueCatWebhook, hasActivePro, inviteUser, syncRanchAccess } = require('./lib.js');
 
 process.env.GCLOUD_PROJECT = 'demo-smartbell';
 let app, db, auth;
@@ -107,6 +107,43 @@ describe('inviteUser', () => {
   });
 });
 
+describe('syncRanchAccess', () => {
+  const ranch = () => db.collection('Ranches').doc('r1');
+  const row = (uid, status = 'Active') => ({ user: db.collection('Users').doc(uid), status });
+
+  test('a worker removed on the old app loses membership and their invite', async () => {
+    await ranch().update({ memberIds: ['gone', 'kept'], invitedUsers: [db.collection('Users').doc('gone')], workesList: [row('kept')] });
+    await syncRanchAccess(db, 'r1');
+    const data = (await ranch().get()).data();
+    assert.deepEqual(data.memberIds, ['kept']);
+    assert.deepEqual(data.invitedUsers, []);
+  });
+
+  test('disabling a worker cuts access', async () => {
+    await ranch().update({ memberIds: ['w'], workesList: [row('w', 'Desactivado')] });
+    await syncRanchAccess(db, 'r1');
+    assert.deepEqual((await ranch().get()).get('memberIds'), []);
+  });
+
+  test('the old edit form, which removes and re-adds the row, keeps the worker', async () => {
+    await ranch().update({ memberIds: ['w'], workesList: [] });
+    await syncRanchAccess(db, 'r1', { wait: () => ranch().update({ workesList: [row('w')] }) });
+    assert.deepEqual((await ranch().get()).get('memberIds'), ['w']);
+  });
+
+  test('it never adds a member', async () => {
+    await ranch().update({ workesList: [row('w')], invitedUsers: [db.collection('Users').doc('w')] });
+    await syncRanchAccess(db, 'r1');
+    assert.deepEqual((await ranch().get()).get('memberIds'), []);
+  });
+
+  test('a deleted ranch leaves a tombstone', async () => {
+    await ranch().delete();
+    await syncRanchAccess(db, 'r1');
+    assert.equal((await db.collection('deletedRanches').doc('r1').get()).exists, true);
+  });
+});
+
 describe('hasActivePro', () => {
   test('reads the Pro entitlement only', () => {
     assert.equal(hasActivePro({ entitlements: { Pro: { expires_date: FUTURE } } }, NOW), true);
@@ -125,6 +162,8 @@ describe('hasActivePro', () => {
     const oneTime = { entitlements: { Pro: { expires_date: null, product_identifier: 'l' } }, non_subscriptions: { l: [{ is_sandbox: true }] } };
     assert.equal(hasActivePro(oneTime, NOW), false);
     assert.equal(hasActivePro({ entitlements, subscriptions: { m: { is_sandbox: false } } }, NOW), true);
+    const both = { ...oneTime, non_subscriptions: { l: [{ is_sandbox: true }, { is_sandbox: false }] } };
+    assert.equal(hasActivePro(both, NOW), true, 'a real purchase after a test purchase counts');
   });
 });
 

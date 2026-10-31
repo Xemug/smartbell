@@ -118,6 +118,15 @@ describe('final rules', () => {
       for (const uid of [OWNER, MEMBER, INVITED]) await assertSucceeds(getDoc(ranchA(db(env, uid))));
     });
 
+    test('a deleted ranch id cannot be claimed again', async () => {
+      await env.withSecurityRulesDisabled(async (ctx) => {
+        await setDoc(doc(ctx.firestore(), 'deletedRanches', 'gone'), { deletedAt: 1 });
+      });
+      const f = db(env, STRANGER);
+      await assertFails(setDoc(doc(f, 'Ranches', 'gone'), { user_id: doc(f, 'Users', STRANGER) }));
+      await assertFails(getDoc(doc(f, 'deletedRanches', 'gone')));
+    });
+
     test('the app ranch queries work', async () => {
       const me = (f, uid) => doc(f, 'Users', uid);
       let f = db(env, OWNER);
@@ -302,6 +311,18 @@ describe('stage 1 rules (today\'s app versions)', () => {
     const f = db(env, MEMBER);
     await assertSucceeds(setDoc(doc(f, 'BullWeightHeight', 'b'), { weight: 1, bull_id: doc(f, 'Bulls', 'bull-a') }));
     await assertSucceeds(setDoc(doc(f, 'cowProductionPerDay', 'c'), { cow_id: doc(f, 'Cows', 'cow-a') }));
+  });
+
+  test('a log with both parents is refused, so the backfill cannot stamp the wrong ranch', async () => {
+    const f = db(env, MEMBER);
+    await assertFails(setDoc(doc(f, 'BullWeightHeight', 'x'), { cow_id: doc(f, 'Cows', 'cow-a'), bull_id: doc(f, 'Bulls', 'bull-a') }));
+  });
+
+  test('the old edit form can add ranch_id to a log that had none', async () => {
+    const f = db(env, MEMBER);
+    await assertSucceeds(setDoc(doc(f, 'cowProductionPerDay', 'c'), { cow_id: doc(f, 'Cows', 'cow-a') }));
+    await assertSucceeds(updateDoc(doc(f, 'cowProductionPerDay', 'c'), { ranch_id: ranchA(f) }));
+    await assertFails(setDoc(doc(f, 'cowProductionPerDay', 'd'), { cow_id: doc(f, 'Cows', 'cow-a') }).then(() => updateDoc(doc(f, 'cowProductionPerDay', 'd'), { ranch_id: doc(f, 'Ranches', 'ranch-b') })));
   });
 
   test('a stranger cannot file a log with no ranch_id against another ranch animal', async () => {

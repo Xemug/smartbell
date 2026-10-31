@@ -39,6 +39,8 @@ Everything built lives in `legacy/firebase/` in this repo. The legacy app (`/Use
 - New invites must go through `inviteUserByEmail` once the final rules are live, so premium and the rate limit can't be skipped from a client (assumption).
 - SINIIGA duplicate checks cover one ranch, because rules can't allow a global lookup. Two ranches could register the same tag (assumption).
 - The stage 1 backfill runs once. Stage 3 runs `--reconcile`, which only removes. Disabled workers never become members, and disabling one in the release cuts access; bringing them back means a new invite (assumption).
+- `onRanchChanged` removes access whenever a worker row goes or is disabled, so old-app owners are covered, and tombstones deleted ranch ids (assumption).
+- Clearing false `premium` values stays a manual step after the tamper check, because the user must approve each change (spec).
 - Stage 1 allows logs with no `ranch_id` only for members of the parent animal's ranch (assumption).
 - The webhook reads current state from RevenueCat instead of trusting event types. Only the `Pro` entitlement grants premium (assumption).
 

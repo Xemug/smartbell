@@ -14,6 +14,8 @@ The deployed rules are known from the screenshot the user shared. `firestore.dep
 - **Removing a worker today only edits `workesList` (code).** `invitedUsers` keeps them. The release must also clear `memberIds` and `invitedUsers`.
 - **Disabling a worker does nothing today (code).** `edit_user` stores `Disabled` or `Desactivado` in the row, and nothing reads it.
 
+- **Deleted ranches leave their data behind (code).** `ranchlist` deletes only the `Ranches` doc. Anyone who knows the id could recreate it and own the leftovers, so `onRanchChanged` writes a tombstone the rules check, and the backfill adds tombstones for ranches deleted earlier.
+
 ## Premium
 
 - **Entitlements (console).** `Pro` is premium: monthly, annual and lifetime products on both stores. `User` is a separate additional-seat entitlement, sold as consumables.

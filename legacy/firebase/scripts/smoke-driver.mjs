@@ -64,5 +64,19 @@ const anonymous = await fetch(`${base}/inviteUserByEmail`, {
 assert.equal(anonymous.status, 401);
 console.log('callable invite without sign-in: 401');
 
+async function until(check, label) {
+  for (let i = 0; i < 40; i += 1) {
+    if (await check()) { console.log(label); return; }
+    await new Promise((resolve) => { setTimeout(resolve, 500); });
+  }
+  throw new Error(`timed out: ${label}`);
+}
+
+const ranch = db.collection('Ranches').doc('r1');
+await ranch.update({ memberIds: ['worker'], workesList: [] });
+await until(async () => (await ranch.get()).get('memberIds').length === 0, 'trigger: removed worker lost membership');
+await ranch.delete();
+await until(async () => (await db.collection('deletedRanches').doc('r1').get()).exists, 'trigger: deleted ranch left a tombstone');
+
 fakeRevenueCat.close();
 process.exit(0);

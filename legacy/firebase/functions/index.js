@@ -1,10 +1,11 @@
 // Deployed as a separate codebase ("lockdown") so FlutterFlow's own deploy leaves it alone.
 const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
+const { onDocumentWritten } = require('firebase-functions/v2/firestore');
 const { defineBoolean, defineSecret } = require('firebase-functions/params');
 const { initializeApp } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
 const { getFirestore } = require('firebase-admin/firestore');
-const { CallError, inviteUser, handleRevenueCatWebhook } = require('./lib');
+const { CallError, inviteUser, handleRevenueCatWebhook, syncRanchAccess } = require('./lib');
 
 initializeApp();
 
@@ -20,6 +21,12 @@ exports.inviteUserByEmail = onCall(async (request) => {
     throw err;
   }
 });
+
+exports.onRanchChanged = onDocumentWritten('Ranches/{ranchId}', (event) =>
+  syncRanchAccess(getFirestore(), event.params.ranchId, {
+    wait: () => new Promise((resolve) => { setTimeout(resolve, 5000); }),
+  }),
+);
 
 async function fetchSubscriber(uid) {
   const url = process.env.REVENUECAT_API_URL ?? 'https://api.revenuecat.com';

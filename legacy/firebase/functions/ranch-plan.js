@@ -1,4 +1,4 @@
-// Pure planning logic for backfill-live.mjs, kept separate so tests can run it.
+// Who should have access to a ranch, from workesList. Used by the trigger and the backfill.
 
 const DISABLED = ['Disabled', 'Desactivado'];
 
@@ -9,7 +9,7 @@ function activeWorkerIds(ranch) {
 }
 
 /** Who to add to and remove from a ranch so it matches workesList. */
-export function planRanch(ranch) {
+function planRanch(ranch) {
   const owner = ranch.user_id?.id;
   const active = activeWorkerIds(ranch);
   const members = ranch.memberIds ?? [];
@@ -24,8 +24,10 @@ export function planRanch(ranch) {
 }
 
 /** Parent reference that can supply a missing ranch_id, per log collection. */
-export const PARENT_FIELD = {
+const PARENT_FIELD = {
   BullWeightHeight: 'bull_id', BullDietChanges: 'bull_id', Group_bull_changes: 'bull_id',
   CowWeightHeight: 'cow_id', cowProductionPerDay: 'cow_id', CowsDietChanges: 'cow_id',
   CowReproductionState: 'cow_id', cowHealth: 'cow_id', Group_cow_changes: 'cow_id',
 };
+
+module.exports = { planRanch, PARENT_FIELD };

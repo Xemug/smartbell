@@ -1,6 +1,7 @@
 // Logic for the lockdown functions. index.js wires it to Firebase; tests call it directly.
 const { createHash, timingSafeEqual } = require('node:crypto');
 const { FieldValue } = require('firebase-admin/firestore');
+const { planRanch } = require('./ranch-plan');
 
 const INVITE_LIMIT_PER_HOUR = 20;
 const HOUR_MS = 60 * 60 * 1000;
@@ -103,7 +104,9 @@ function uidsFromEvent(event) {
 function isSandboxPurchase(subscriber, productId) {
   const subscription = subscriber?.subscriptions?.[productId];
   const oneTime = subscriber?.non_subscriptions?.[productId] ?? [];
-  return subscription?.is_sandbox === true || oneTime.some((purchase) => purchase.is_sandbox === true);
+  // One real purchase is enough, even if the same person also bought it while testing.
+  return subscription?.is_sandbox === true
+    || (oneTime.length > 0 && oneTime.every((purchase) => purchase.is_sandbox === true));
 }
 
 /** True when the RevenueCat subscriber document grants Pro right now. */
@@ -156,4 +159,28 @@ async function handleRevenueCatWebhook(req, res, deps) {
   }
 }
 
-module.exports = { CallError, inviteUser, applyRevenueCatEvent, handleRevenueCatWebhook, hasActivePro };
+/**
+ * Keeps access in step with the ranch doc. Runs on every Ranches write.
+ *
+ * A deleted ranch gets a tombstone so its id can't be reclaimed. Otherwise anyone an owner
+ * removed or disabled loses access: the old app only edits workesList, and this also
+ * covers owners who stay on it. It only ever removes. The wait matters because the old
+ * edit_user form removes the worker row and adds it back in two separate writes.
+ */
+async function syncRanchAccess(db, ranchId, { wait = () => Promise.resolve() } = {}) {
+  const ref = db.collection('Ranches').doc(ranchId);
+  await wait();
+  const ranch = await ref.get();
+  if (!ranch.exists) {
+    await db.collection('deletedRanches').doc(ranchId).set({ deletedAt: FieldValue.serverTimestamp() });
+    return;
+  }
+  const { removeMembers, removeInvited } = planRanch(ranch.data());
+  if (!removeMembers.length && !removeInvited.length) return;
+  await ref.update({
+    ...(removeMembers.length ? { memberIds: FieldValue.arrayRemove(...removeMembers) } : {}),
+    ...(removeInvited.length ? { invitedUsers: FieldValue.arrayRemove(...removeInvited) } : {}),
+  });
+}
+
+module.exports = { CallError, syncRanchAccess, inviteUser, applyRevenueCatEvent, handleRevenueCatWebhook, hasActivePro };

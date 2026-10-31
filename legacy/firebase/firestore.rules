@@ -37,6 +37,9 @@ service cloud.firestore {
     }
     function legacyNoRanch(data) {
       return legacyClients() && !('ranch_id' in data)
+        // Exactly one parent: the backfill stamps from one field per collection, so a
+        // doc naming the caller's cow and a victim's bull could land in the victim's ranch.
+        && (('bull_id' in data) != ('cow_id' in data))
         && (parentInMyRanch(data, 'cow_id', 'Cows') || parentInMyRanch(data, 'bull_id', 'Bulls'));
     }
 
@@ -51,7 +54,9 @@ service cloud.firestore {
         && (legacyNoRanch(request.resource.data) || memberOfRef(request.resource.data.ranch_id));
       allow update: if isRanchData(collection)
         && (
-          (legacyNoRanch(resource.data) && legacyNoRanch(request.resource.data))
+          // The old edit forms add ranch_id to a log that had none.
+          (legacyNoRanch(resource.data)
+            && (legacyNoRanch(request.resource.data) || memberOfRef(request.resource.data.ranch_id)))
           || (memberOfRef(resource.data.ranch_id)
               && request.resource.data.ranch_id == resource.data.ranch_id)
         );
@@ -90,7 +95,10 @@ service cloud.firestore {
 
       allow read: if (legacyClients() && signedIn())
         || isOwnerOf(resource.data) || isListedMember(resource.data) || isInvitedTo(resource.data);
+      // Deleting a ranch leaves its data behind, so a deleted id must never be claimed again.
+      // onRanchChanged writes the tombstone.
       allow create: if isOwnerOf(request.resource.data)
+        && !exists(/databases/$(database)/documents/deletedRanches/$(id))
         && request.resource.data.get('memberIds', []).size() == 0
         && (legacyClients() || request.resource.data.get('invitedUsers', []).size() == 0);
       allow update: if isOwnerUpdate() || isMemberUpdate() || isAccepting();

@@ -1,6 +1,8 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
-import { planRanch } from '../scripts/backfill-plan.mjs';
+import plan from '../functions/ranch-plan.js';
+
+const { planRanch } = plan;
 
 const ref = (id) => ({ id });
 const row = (id, status = 'Active') => ({ user: ref(id), status });

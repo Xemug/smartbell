@@ -7,7 +7,7 @@
 import { parseArgs } from 'node:util';
 import { applicationDefault, initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
-import { PARENT_FIELD, planRanch } from './backfill-plan.mjs';
+import plan from '../functions/ranch-plan.js';
 
 const { values } = parseArgs({
   options: {
@@ -19,30 +19,33 @@ const { values } = parseArgs({
 if (!values.project) throw new Error('Pass --project explicitly.');
 const db = getFirestore(initializeApp({ credential: applicationDefault(), projectId: values.project }));
 const writer = values.apply ? db.bulkWriter() : null;
-writer?.onWriteError(() => false); // don't retry forever; failures are counted below
+writer?.onWriteError((err) => err.failedAttempts < 5); // retry a little; failures are counted below
 console.log(values.apply ? 'APPLYING CHANGES' : 'DRY RUN: nothing will be written');
 
 let failures = 0;
 const write = (ref, data) => writer?.update(ref, data).catch(() => { failures += 1; });
 
 const totals = { ranches: 0, noOwner: 0, added: 0, removedMembers: 0, removedInvites: 0, pending: 0 };
+const liveRanches = new Set();
+const referencedRanches = new Set();
 for (const ranch of (await db.collection('Ranches').get()).docs) {
+  liveRanches.add(ranch.id);
   const data = ranch.data();
-  const plan = planRanch(data);
-  const addMembers = values.reconcile ? [] : plan.addMembers;
+  const changes = plan.planRanch(data);
+  const addMembers = values.reconcile ? [] : changes.addMembers;
   totals.ranches += 1;
   if (!data.user_id) totals.noOwner += 1;
   totals.added += addMembers.length;
-  totals.removedMembers += plan.removeMembers.length;
-  totals.removedInvites += plan.removeInvited.length;
-  totals.pending += plan.pendingInvites;
+  totals.removedMembers += changes.removeMembers.length;
+  totals.removedInvites += changes.removeInvited.length;
+  totals.pending += changes.pendingInvites;
   // Field transforms, not whole arrays, so a live invite during the run isn't overwritten.
   // Firestore can't union and remove on one field in a single write, hence two writes.
   if (addMembers.length) write(ranch.ref, { memberIds: FieldValue.arrayUnion(...addMembers) });
-  if (plan.removeMembers.length || plan.removeInvited.length) {
+  if (changes.removeMembers.length || changes.removeInvited.length) {
     write(ranch.ref, {
-      ...(plan.removeMembers.length ? { memberIds: FieldValue.arrayRemove(...plan.removeMembers) } : {}),
-      ...(plan.removeInvited.length ? { invitedUsers: FieldValue.arrayRemove(...plan.removeInvited) } : {}),
+      ...(changes.removeMembers.length ? { memberIds: FieldValue.arrayRemove(...changes.removeMembers) } : {}),
+      ...(changes.removeInvited.length ? { invitedUsers: FieldValue.arrayRemove(...changes.removeInvited) } : {}),
     });
   }
 }
@@ -56,12 +59,15 @@ async function parentRanch(ref) {
   return ranchOf.get(ref.path);
 }
 
-for (const [name, field] of Object.entries(PARENT_FIELD)) {
+for (const [name, field] of Object.entries(plan.PARENT_FIELD)) {
   const snap = await db.collection(name).select('ranch_id', field).get();
   let missing = 0;
   let fixable = 0;
   for (const doc of snap.docs) {
-    if (doc.get('ranch_id')) continue;
+    if (doc.get('ranch_id')) {
+      referencedRanches.add(doc.get('ranch_id').id);
+      continue;
+    }
     missing += 1;
     const parent = doc.get(field);
     const ranchId = parent ? await parentRanch(parent) : undefined;
@@ -73,11 +79,17 @@ for (const [name, field] of Object.entries(PARENT_FIELD)) {
 }
 for (const name of ['Cows', 'Bulls', 'Tasks', 'Groups', 'Groups_Bulls', 'MilkPrices', 'Cows_In_Production_change']) {
   const snap = await db.collection(name).select('ranch_id').get();
+  for (const doc of snap.docs) if (doc.get('ranch_id')) referencedRanches.add(doc.get('ranch_id').id);
   console.log(`${name}: ${snap.size} docs, ${snap.docs.filter((d) => !d.get('ranch_id')).length} orphaned`);
 }
 
+// Data from ranches deleted before onRanchChanged existed: block those ids from being reclaimed.
+const deleted = [...referencedRanches].filter((id) => !liveRanches.has(id));
+for (const id of deleted) writer?.set(db.collection('deletedRanches').doc(id), { deletedAt: FieldValue.serverTimestamp() }).catch(() => { failures += 1; });
+console.log(`Deleted ranches with data left behind: ${deleted.length}`);
+
 await writer?.close();
 if (failures) {
-  console.error(`${failures} WRITES FAILED. Run again before publishing any rules.`);
+  console.error(`${failures} WRITES FAILED. Run the same command again, with the same flags, before publishing any rules.`);
   process.exitCode = 1;
 }
