@@ -1,9 +1,10 @@
 import { useId, type ComponentPropsWithoutRef } from 'react';
 
-import { icons, type IconName } from './index';
+import type { Glyph } from './glyphs';
 
 type IconProps = Omit<ComponentPropsWithoutRef<'svg'>, 'children' | 'width' | 'height'> & {
-  name: IconName;
+  /** A named export of ./glyphs, so the bundle keeps only the icons in use. */
+  icon: Glyph;
   /** Height in px; width follows the icon's own proportions. */
   size?: number;
   /** Accessible name. Without it the icon is decorative and hidden from screen readers. */
@@ -12,8 +13,8 @@ type IconProps = Omit<ComponentPropsWithoutRef<'svg'>, 'children' | 'width' | 'h
 
 // Line icons paint with `currentColor`, so they follow the text colour. Colour icons keep the
 // brand colours from Figma. The markup comes from our own SVG files, never from user input.
-export function Icon({ name, size = 24, title, ...props }: IconProps) {
-  const { viewBox, body } = icons[name];
+export function Icon({ icon, size = 24, title, ...props }: IconProps) {
+  const { viewBox, body } = icon;
   // Masks and clip paths are found by id, which must stay unique when an icon repeats on a page.
   const instance = useId().replace(/:/g, '');
   const html = body.replace(/( id="|url\(#)([^")]+)/g, `$1$2-${instance}`);

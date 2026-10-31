@@ -4,7 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
-import { buildIconIndex, type IconKind } from './buildIconIndex';
+import { buildIconModules, glyphExport, type IconKind } from './buildIconIndex';
 
 const dir = (path: string) => new URL(path, import.meta.url);
 const svgFiles = (url: URL) => readdirSync(url).filter((f) => f.endsWith('.svg'));
@@ -21,10 +21,22 @@ function read() {
   return { files, illustrations };
 }
 
-describe('icons index', () => {
-  it('is up to date with the SVG files (run `npm run icons`)', () => {
+describe('icon modules', () => {
+  it('are up to date with the SVG files (run `npm run icons`)', () => {
     const { files, illustrations } = read();
-    expect(readFileSync(dir('./index.ts'), 'utf8')).toBe(buildIconIndex(files, illustrations));
+    const modules = buildIconModules(files, illustrations);
+    expect(readFileSync(dir('./glyphs.ts'), 'utf8')).toBe(modules.glyphs);
+    expect(readFileSync(dir('./index.ts'), 'utf8')).toBe(modules.index);
+  });
+
+  it('keeps the gallery index apart from glyphs.ts, or every page would load the whole set', () => {
+    const { files, illustrations } = read();
+    expect(buildIconModules(files, illustrations).index).not.toContain("from './glyphs'");
+  });
+
+  it('names exports so reserved words stay valid', () => {
+    expect(glyphExport('delete')).toBe('iconDelete');
+    expect(glyphExport('chevron-down')).toBe('iconChevronDown');
   });
 
   it('does not let one name live in both kinds', () => {
@@ -33,6 +45,6 @@ describe('icons index', () => {
   });
 
   it('rejects a file that is not an svg', () => {
-    expect(() => buildIconIndex([{ name: 'bad', kind: 'line', svg: '<p/>' }], [])).toThrow('bad');
+    expect(() => buildIconModules([{ name: 'bad', kind: 'line', svg: '<p/>' }], [])).toThrow('bad');
   });
 });

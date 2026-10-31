@@ -1,12 +1,13 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
+import { iconBell, iconCow, iconHeat, iconTrash } from './glyphs';
 import { Icon } from './Icon';
 import { iconNames, icons } from './index';
 
 describe('Icon', () => {
   it('renders a typed name at the default size, hidden from screen readers', () => {
-    const { container } = render(<Icon name="bell" />);
+    const { container } = render(<Icon icon={iconBell} />);
     const svg = container.querySelector('svg');
     expect(svg).toHaveAttribute('viewBox', '0 0 24 24');
     expect(svg).toHaveAttribute('width', '24');
@@ -14,29 +15,29 @@ describe('Icon', () => {
     expect(svg?.querySelector('path')).not.toBeNull();
   });
 
-  it('rejects an unknown name at compile time', () => {
+  it('rejects anything but a glyph at compile time', () => {
     const unknown = () => (
-      // @ts-expect-error `nope` is not an IconName; `tsc` fails if this ever type-checks.
-      <Icon name="nope" />
+      // @ts-expect-error A name is not a Glyph; `tsc` fails if this ever type-checks.
+      <Icon icon="bell" />
     );
     expect(unknown).toBeTypeOf('function');
   });
 
   it('exposes an accessible name when given a title', () => {
-    render(<Icon name="heat" title="Celo" />);
+    render(<Icon icon={iconHeat} title="Celo" />);
     expect(screen.getByRole('img', { name: 'Celo' })).toBeInTheDocument();
   });
 
   it('stays exposed when labelled with aria-label', () => {
-    render(<Icon name="trash" aria-label="Borrar" />);
+    render(<Icon icon={iconTrash} aria-label="Borrar" />);
     expect(screen.getByLabelText('Borrar')).not.toHaveAttribute('aria-hidden');
   });
 
   it('gives each rendered copy of a masked icon its own ids', () => {
     const { container } = render(
       <>
-        <Icon name="heat" />
-        <Icon name="heat" />
+        <Icon icon={iconHeat} />
+        <Icon icon={iconHeat} />
       </>,
     );
     const ids = [...container.querySelectorAll('mask')].map((m) => m.id);
@@ -47,7 +48,7 @@ describe('Icon', () => {
   });
 
   it('keeps the proportions of non-square icons', () => {
-    const { container } = render(<Icon name="cow" size={30} />);
+    const { container } = render(<Icon icon={iconCow} size={30} />);
     expect(container.querySelector('svg')).toHaveAttribute('width', '32');
   });
 });

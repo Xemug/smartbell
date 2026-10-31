@@ -1,7 +1,7 @@
-// Regenerates src/ui/icons/index.ts from the SVG files: `npm run icons`.
+// Regenerates src/ui/icons/glyphs.ts and index.ts from the SVG files: `npm run icons`.
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 
-import { buildIconIndex, type IconKind } from '../src/ui/icons/buildIconIndex';
+import { buildIconModules, type IconKind } from '../src/ui/icons/buildIconIndex';
 
 const icons = new URL('../src/ui/icons/', import.meta.url);
 const svgNames = (dir: URL) =>
@@ -19,6 +19,7 @@ const files = (['line', 'color'] as IconKind[]).flatMap((kind) => {
 });
 const illustrations = svgNames(new URL('../public/illustrations/', import.meta.url));
 
-const out = new URL('index.ts', icons);
-writeFileSync(out, buildIconIndex(files, illustrations));
-console.log(`wrote ${out.pathname}`);
+const { glyphs, index } = buildIconModules(files, illustrations);
+writeFileSync(new URL('glyphs.ts', icons), glyphs);
+writeFileSync(new URL('index.ts', icons), index);
+console.log(`wrote glyphs.ts and index.ts in ${icons.pathname}`);

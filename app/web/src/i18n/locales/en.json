@@ -28,5 +28,43 @@
     "line": "Line icons",
     "color": "Colour icons",
     "illustrations": "Illustrations and logos"
+  },
+  "ui": {
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "dialCode": "Country code",
+    "decrease": "Decrease {{label}}",
+    "increase": "Increase {{label}}",
+    "step": "Step {{step}} of {{total}}",
+    "datePlaceholder": "DD/MM/YYYY",
+    "openCalendar": "Open calendar",
+    "dateInvalid": "Enter a valid date (DD/MM/YYYY)",
+    "dateFuture": "The date cannot be in the future",
+    "dateAfter": "The date cannot be after {{date}}",
+    "dateBefore": "The date cannot be before {{date}}",
+    "rangePlaceholder": "Pick a period",
+    "clear": "Clear",
+    "cancel": "Cancel",
+    "calendar": "Calendar"
+  },
+  "validation": {
+    "required": "This field is required",
+    "phone": "Enter a 10-digit phone number",
+    "positive": "Enter a number above 0"
+  },
+  "devUi": {
+    "title": "Base components",
+    "intro": "Internal preview of the kit. Tab through the page: every control must show the focus ring.",
+    "buttons": "Buttons",
+    "iconButtons": "Icon buttons",
+    "textFields": "Text fields",
+    "dateFields": "Dates",
+    "selects": "Selects and phone",
+    "selection": "Checkboxes, options and toggles",
+    "chips": "Chips and counters",
+    "progress": "Progress",
+    "form": "Sample form",
+    "sample": "Button",
+    "saved": "Saved: {{values}}"
   }
 }

@@ -40,7 +40,7 @@ Interface icons come from the UI Kit Icons page (K 31916-36672, 1,179 Untitled-U
 - **Drop shadows removed.** Figma's shadow filters clipped to grey corners at the icon bounds; elevation belongs to the shadow tokens.
 - **Illustrations.** Mascots, logos and the avatar are files in `public/illustrations/`, shown by a typed `<Illustration name alt/>`. The avatar embeds its raster photo fill (Figma has no vector for it).
 - **Export method.** One whole-page SVG per source (K page, M 83-790, M 3633-95078) cut by group id, which kept Figma use to about 15 calls. The SVG files are now the source of truth; the slicer was a one-off and is not in the repo.
-- **Bundle size.** `index.ts` inlines every icon (271 kB, 87 kB gzipped). Only the lazy gallery imports it today, so the main bundle is unchanged, but the first screen that imports `Icon` pulls in all of it. `ui-primitives` should decide whether that is acceptable or whether to split it.
+- **Bundle size.** `index.ts` inlines every icon (271 kB, 87 kB gzipped). Only the lazy gallery imports it today, so the main bundle is unchanged, but the first screen that imports `Icon` pulls in all of it. `ui-primitives` split it: app code now imports named exports from `glyphs.ts`.
 
 ### design-system.md §3 coverage
 

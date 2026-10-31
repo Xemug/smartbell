@@ -43,5 +43,11 @@ previews every token.
 
 Icons are SVG files in `app/web/src/ui/icons/` (`line/` follows the text colour, `color/` keeps its
 colours); illustrations are in `app/web/public/illustrations/`. After adding one, run `npm run icons`
-(in `app/web`) to regenerate `index.ts`; a test fails while it is stale. http://localhost:5173/dev/icons
+(in `app/web`) to regenerate `glyphs.ts` and `index.ts`; a test fails while they are stale. App code
+imports icons by name from `glyphs.ts` (`<Icon icon={iconBell} />`), so only those ship; `index.ts`
+holds the whole set for the gallery, and lint blocks it elsewhere. http://localhost:5173/dev/icons
 previews them all.
+
+The base components are in `app/web/src/ui/`; http://localhost:5173/dev/ui shows every variant. Each
+form control takes `value`, `onChange`, `onBlur` and `error`, so `FormField` binds any of them to
+`react-hook-form`.

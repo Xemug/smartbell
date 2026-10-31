@@ -32,7 +32,7 @@ export function DevIconsPage() {
           >
             {lineIcons.map((name) => (
               <li key={name} className="flex flex-col items-center gap-1 text-center">
-                <Icon name={name} data-testid={`icon-${name}`} />
+                <Icon icon={icons[name]} data-testid={`icon-${name}`} />
                 <span className="type-body-sm break-all">{name}</span>
               </li>
             ))}
@@ -47,7 +47,7 @@ export function DevIconsPage() {
         <ul className="grid grid-cols-3 gap-4 md:grid-cols-6 lg:grid-cols-8">
           {colorIcons.map((name) => (
             <li key={name} className="flex flex-col items-center gap-1 text-center">
-              <Icon name={name} size={60} data-testid={`icon-${name}`} />
+              <Icon icon={icons[name]} size={60} data-testid={`icon-${name}`} />
               <span className="type-body-sm break-all">{name}</span>
             </li>
           ))}
