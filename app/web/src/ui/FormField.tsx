@@ -11,7 +11,11 @@ import { useTranslation } from 'react-i18next';
 interface FormFieldProps<Values extends FieldValues, Name extends FieldPath<Values>> {
   control: Control<Values>;
   name: Name;
-  /** Spread the props onto any kit control: they all take value, onChange, onBlur and error. */
+  /**
+   * Spread the props onto a form control: the text, number, phone and date fields, Select,
+   * RadioGroup, Checkbox or Toggle. ChipGroup, CountController and DateRangeField are filter and
+   * stepper controls with no error or focus handling; bind them with useController if needed.
+   */
   render: (props: ControllerRenderProps<Values, Name> & { error?: string }) => ReactElement;
 }
 

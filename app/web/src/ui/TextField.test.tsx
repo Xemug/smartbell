@@ -42,6 +42,18 @@ describe('TextField', () => {
   });
 });
 
+describe('TextField marks', () => {
+  it('keeps the required mark on a floating label', () => {
+    render(<TextField label="Rancho" floatingLabel required />);
+    expect(screen.getByText('*')).toBeInTheDocument();
+  });
+
+  it('keeps a unit visible next to an error', () => {
+    render(<NumberField label="Litros" unit="L" error="Falta" value="" />);
+    expect(screen.getByText('L')).toBeInTheDocument();
+  });
+});
+
 describe('TextArea', () => {
   it('only resizes when scaling', () => {
     render(<TextArea label="Notas" scaling />);

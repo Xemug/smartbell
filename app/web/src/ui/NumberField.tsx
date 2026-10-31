@@ -13,7 +13,7 @@ type NumberFieldProps = Omit<TextFieldProps, 'type' | 'value' | 'onChange' | 'in
 };
 
 export const NumberField = forwardRef<HTMLInputElement, NumberFieldProps>(function NumberField(
-  { value, onChange, decimals = 0, unit, hint, ...props },
+  { value, onChange, decimals = 0, unit, ...props },
   ref,
 ) {
   const change = (event: ChangeEvent<HTMLInputElement>) =>
@@ -22,7 +22,7 @@ export const NumberField = forwardRef<HTMLInputElement, NumberFieldProps>(functi
     <TextField
       ref={ref}
       {...props}
-      hint={hint ?? unit}
+      suffix={unit}
       value={value}
       onChange={change}
       inputMode={decimals > 0 ? 'decimal' : 'numeric'}

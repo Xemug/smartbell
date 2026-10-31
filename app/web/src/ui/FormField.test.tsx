@@ -53,7 +53,7 @@ function Sample({ onValid, date = '' }: { onValid: (values: Values) => void; dat
       <FormField
         control={control}
         name="active"
-        render={(field) => <Checkbox label="Activa" {...field} error={Boolean(field.error)} />}
+        render={(field) => <Checkbox label="Activa" {...field} />}
       />
       <Button type="submit">Guardar</Button>
     </form>

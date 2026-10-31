@@ -90,6 +90,8 @@ export const PhoneField = forwardRef<HTMLInputElement, PhoneFieldProps>(function
   const join = (nextDial: string, nextLocal: string) => (nextLocal ? nextDial + nextLocal : '');
   const changeNumber = (text: string) => {
     const clean = sanitizePhone(text);
+    // Remember a code that came in with the value, so clearing the number does not lose it.
+    setChosenDial(dial);
     if (clean.startsWith('+')) {
       // A pasted international number brings its own code.
       const parts = splitPhone(clean, dial);
@@ -99,7 +101,8 @@ export const PhoneField = forwardRef<HTMLInputElement, PhoneFieldProps>(function
   };
   const changeDial = (nextDial: string) => {
     setChosenDial(nextDial);
-    onChange?.(join(nextDial, local));
+    // Choosing a code replaces the + of an unlisted one kept in the number.
+    onChange?.(join(nextDial, local.replace(/^\+/, '')));
   };
 
   return (

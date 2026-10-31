@@ -53,7 +53,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
     <Field label={label} hint={hint} error={error} required={required} className={className}>
       {(slot, labelId) => (
         <RadixSelect.Root
-          value={value ?? ''}
+          value={value}
           onValueChange={onChange}
           name={name}
           disabled={disabled}

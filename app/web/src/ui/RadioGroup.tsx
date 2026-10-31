@@ -109,7 +109,7 @@ export const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(function R
           ref={ref}
           {...slot}
           aria-labelledby={labelId}
-          value={value ?? ''}
+          value={value}
           onValueChange={onChange}
           onBlur={onBlur}
           name={name}

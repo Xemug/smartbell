@@ -14,6 +14,8 @@ export type TextFieldProps = Omit<ComponentPropsWithoutRef<'input'>, 'size' | 't
     size?: InputSize;
     leadingIcon?: Glyph;
     trailingIcon?: Glyph;
+    /** Fixed text after the value, such as a unit. */
+    suffix?: string;
     /** Draws the label inside the box; it floats up once the field has focus or a value. */
     floatingLabel?: boolean;
   };
@@ -28,6 +30,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
     size = 'md',
     leadingIcon,
     trailingIcon,
+    suffix,
     floatingLabel = false,
     disabled,
     className,
@@ -83,9 +86,15 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
                 )}
               >
                 {label}
+                {required && (
+                  <span aria-hidden className="text-error">
+                    {' *'}
+                  </span>
+                )}
               </label>
             )}
           </div>
+          {suffix && <span className="shrink-0 text-secondary-text">{suffix}</span>}
           {type === 'password' ? (
             <button
               type="button"

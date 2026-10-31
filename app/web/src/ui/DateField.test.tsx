@@ -64,6 +64,33 @@ describe('DateField', () => {
     expect(input()).toHaveValue('15/10/2026');
   });
 
+  it('reports today when bound with no value, and leaves it out when limits exclude it', () => {
+    const onChange = vi.fn();
+    render(<DateField label="Fecha" onChange={onChange} />);
+    expect(onChange).toHaveBeenCalledWith('2026-10-15');
+    const past = vi.fn();
+    render(<DateField label="Otra" maxDate="2026-01-01" onChange={past} />);
+    expect(past).not.toHaveBeenCalled();
+  });
+
+  it('drops typed text when the parent loads another date', async () => {
+    function Reloading() {
+      const [value, setValue] = useState('2026-10-01');
+      return (
+        <>
+          <DateField label="Fecha" maxDate="today" value={value} onChange={setValue} />
+          <button onClick={() => setValue('2026-01-05')}>Cargar</button>
+        </>
+      );
+    }
+    render(<Reloading />);
+    fireEvent.change(input(), { target: { value: '16102099' } });
+    expect(input()).toBeInvalid();
+    await userEvent.click(screen.getByRole('button', { name: 'Cargar' }));
+    expect(input()).toHaveValue('05/01/2026');
+    expect(input()).toBeValid();
+  });
+
   it('accepts a typed past date', async () => {
     const onChange = vi.fn();
     render(<Controlled onChange={onChange} maxDate="today" />);

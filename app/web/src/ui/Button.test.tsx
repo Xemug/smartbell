@@ -50,5 +50,6 @@ describe('IconButton', () => {
   it('takes its name from the label and can be round', () => {
     render(<IconButton icon={iconPlus} label="Agregar" circle />);
     expect(screen.getByRole('button', { name: 'Agregar' })).toHaveClass('rounded-full');
+    expect(screen.getByRole('button')).not.toHaveClass('rounded-interactive');
   });
 });

@@ -20,6 +20,11 @@ describe('sanitizeNumber', () => {
     expect(sanitizeNumber('-5', 0)).toBe('5');
   });
 
+  it('reads thousands separators as grouping', () => {
+    expect(sanitizeNumber('1,250', 0)).toBe('1250');
+    expect(sanitizeNumber('1,250,000.5', 2)).toBe('1250000.5');
+  });
+
   it('keeps one point and limits the decimals', () => {
     expect(sanitizeNumber('12.345', 2)).toBe('12.34');
     expect(sanitizeNumber('1.2.3', 2)).toBe('1.23');

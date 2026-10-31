@@ -1,5 +1,12 @@
 import * as Popover from '@radix-ui/react-popover';
-import { forwardRef, useState, type ChangeEvent, type FocusEventHandler } from 'react';
+import {
+  forwardRef,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FocusEventHandler,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Calendar } from './Calendar';
@@ -43,17 +50,37 @@ export const DateField = forwardRef<HTMLInputElement, DateFieldProps>(function D
   ref,
 ) {
   const { t } = useTranslation();
-  const [own, setOwn] = useState(todayIso);
+  const maxIso = resolveDate(maxDate);
+  const minIso = resolveDate(minDate);
+  // Today, unless the limits exclude it.
+  const [own, setOwn] = useState(() => {
+    const today = todayIso();
+    return (maxIso && today > maxIso) || (minIso && today < minIso) ? '' : today;
+  });
   const [open, setOpen] = useState(false);
   // Text the user is typing. While set it wins over the value, which holds no partial date.
   const [draft, setDraft] = useState<string | null>(null);
   const [rejection, setRejection] = useState<string>();
   const current = value ?? own;
-  const maxIso = resolveDate(maxDate);
-  const minIso = resolveDate(minDate);
+
+  // A form with no default for this field must hold the date on screen.
+  useEffect(() => {
+    if (value === undefined && own) onChange?.(own);
+    // Once, on mount: afterwards the field reports its own changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Typed text gives way when the parent loads a value this field did not emit, as reset() does.
+  const emitted = useRef(value);
+  if (value !== emitted.current) {
+    emitted.current = value;
+    if (draft !== null) setDraft(null);
+    if (rejection) setRejection(undefined);
+  }
 
   const commit = (iso: string) => {
     setOwn(iso);
+    if (value !== undefined) emitted.current = iso;
     if (iso !== current) onChange?.(iso);
   };
 

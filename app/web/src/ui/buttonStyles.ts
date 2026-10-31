@@ -14,9 +14,10 @@ const variants: Record<ButtonVariant, string> = {
     'bg-error text-button-text hover:bg-error/90 active:bg-error/80 disabled:bg-neutral-2 disabled:text-secondary-text',
 };
 
-export function buttonClass(variant: ButtonVariant): string {
+export function buttonClass(variant: ButtonVariant, circle = false): string {
   return cx(
-    'inline-flex shrink-0 items-center justify-center rounded-interactive transition-colors disabled:cursor-not-allowed',
+    'inline-flex shrink-0 items-center justify-center transition-colors disabled:cursor-not-allowed',
+    circle ? 'rounded-full' : 'rounded-interactive',
     focusRing,
     variants[variant],
   );

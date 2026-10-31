@@ -60,7 +60,7 @@ const schema = z.object({
   litres: z.string().refine((v) => Number(v) > 0, 'validation.positive'),
   breed: z.string().min(1, 'validation.required'),
   date: z.string().min(1, 'validation.required'),
-  terms: z.literal(true, { error: 'validation.required' }),
+  terms: z.boolean().refine(Boolean, 'validation.required'),
 });
 type Sample = z.input<typeof schema>;
 
@@ -80,7 +80,7 @@ function SampleForm() {
   const [saved, setSaved] = useState<string>();
   const { control, handleSubmit } = useForm<Sample>({
     resolver: zodResolver(schema),
-    defaultValues: { name: '', phone: '', litres: '', breed: '', date: todayIso() },
+    defaultValues: { name: '', phone: '', litres: '', breed: '', date: todayIso(), terms: false },
   });
   return (
     <form
@@ -119,12 +119,7 @@ function SampleForm() {
       <FormField
         control={control}
         name="terms"
-        render={({ error, ...field }) => (
-          <div className="flex flex-col gap-1">
-            <Checkbox label="Acepto los términos" error={Boolean(error)} {...field} />
-            {error && <p className="type-body-sm">{error}</p>}
-          </div>
-        )}
+        render={(field) => <Checkbox label="Acepto los términos" {...field} />}
       />
       <Button type="submit" leadingIcon={iconSave}>
         Guardar

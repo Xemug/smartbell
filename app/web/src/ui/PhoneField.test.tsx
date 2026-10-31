@@ -68,6 +68,20 @@ describe('PhoneField', () => {
     expect(number()).toHaveValue('+81901234');
   });
 
+  it('keeps a loaded code when the number is cleared', async () => {
+    render(<Controlled initial="+34611222333" />);
+    await userEvent.clear(number());
+    expect(dial()).toHaveTextContent('+34');
+  });
+
+  it('stays well formed when a code replaces an unlisted one', async () => {
+    const onChange = vi.fn();
+    render(<Controlled initial="+4915112345" onChange={onChange} />);
+    await userEvent.click(dial());
+    await userEvent.click(await screen.findByRole('option', { name: /\+57/ }));
+    expect(onChange).toHaveBeenLastCalledWith('+574915112345');
+  });
+
   it('changes the code of a typed number', async () => {
     const onChange = vi.fn();
     render(<Controlled initial="+524421234567" onChange={onChange} />);

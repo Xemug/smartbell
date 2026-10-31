@@ -46,7 +46,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       aria-label={label}
       aria-busy={loading || undefined}
       disabled={disabled || loading}
-      className={cx(buttonClass(variant), sizes[size], circle && 'rounded-full', className)}
+      className={cx(buttonClass(variant, circle), sizes[size], className)}
     >
       {loading ? <Spinner size={iconSizes[size]} /> : <Icon icon={icon} size={iconSizes[size]} />}
     </button>

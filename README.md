@@ -48,6 +48,5 @@ imports icons by name from `glyphs.ts` (`<Icon icon={iconBell} />`), so only tho
 holds the whole set for the gallery, and lint blocks it elsewhere. http://localhost:5173/dev/icons
 previews them all.
 
-The base components are in `app/web/src/ui/`; http://localhost:5173/dev/ui shows every variant. Each
-form control takes `value`, `onChange`, `onBlur` and `error`, so `FormField` binds any of them to
-`react-hook-form`.
+The base components are in `app/web/src/ui/`; http://localhost:5173/dev/ui shows every variant.
+`FormField` binds the form controls to `react-hook-form`.

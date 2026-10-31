@@ -11,7 +11,30 @@ import { RadioGroup } from './RadioGroup';
 import { Stepper } from './Stepper';
 import { Toggle } from './Toggle';
 
+describe('uncontrolled use', () => {
+  it('lets radios, checkboxes and toggles run themselves', async () => {
+    render(
+      <>
+        <RadioGroup options={[{ value: 'a', label: 'A' }]} />
+        <Checkbox label="B" />
+        <Toggle label="C" />
+      </>,
+    );
+    await userEvent.click(screen.getByRole('radio', { name: 'A' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'B' }));
+    await userEvent.click(screen.getByRole('switch', { name: 'C' }));
+    expect(screen.getByRole('radio', { name: 'A' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'B' })).toBeChecked();
+    expect(screen.getByRole('switch', { name: 'C' })).toBeChecked();
+  });
+});
+
 describe('Checkbox', () => {
+  it('ties an error message to the box', () => {
+    render(<Checkbox label="Acepto" error="Obligatorio" />);
+    expect(screen.getByRole('checkbox')).toHaveAccessibleDescription('Obligatorio');
+  });
+
   it('toggles by click on the label and by Space', async () => {
     const onChange = vi.fn();
     render(<Checkbox label="Acepto" value={false} onChange={onChange} />);
