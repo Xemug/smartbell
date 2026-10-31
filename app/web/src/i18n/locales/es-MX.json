@@ -21,5 +21,12 @@
     "shadows": "Sombras",
     "breakpoints": "Puntos de quiebre",
     "sample": "Vacas en sistema 128"
+  },
+  "devIcons": {
+    "title": "Íconos",
+    "intro": "Vista previa interna de los íconos e ilustraciones exportados de Figma.",
+    "line": "Íconos de línea",
+    "color": "Íconos a color",
+    "illustrations": "Ilustraciones y logos"
   }
 }

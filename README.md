@@ -40,3 +40,8 @@ the typed client in `src/api/schema.d.ts` from `/openapi.json`.
 Design tokens live in `app/web/src/styles/tokens.json`. After editing it, run `npm run tokens` (in
 `app/web`) to regenerate `tokens.css`; a test fails while it is stale. http://localhost:5173/dev/tokens
 previews every token.
+
+Icons are SVG files in `app/web/src/ui/icons/` (`line/` follows the text colour, `color/` keeps its
+colours); illustrations are in `app/web/public/illustrations/`. After adding one, run `npm run icons`
+(in `app/web`) to regenerate `index.ts`; a test fails while it is stale. http://localhost:5173/dev/icons
+previews them all.
