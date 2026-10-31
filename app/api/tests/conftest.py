@@ -12,8 +12,15 @@ from collections.abc import AsyncIterator
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncConnection,
+    AsyncEngine,
+    AsyncSession,
+    create_async_engine,
+)
 
+from smartbell import models  # noqa: F401 - registers every table on Base.metadata
+from smartbell.db import Base, make_sessionmaker
 from smartbell.main import create_app
 from smartbell.settings import Settings
 
@@ -74,3 +81,12 @@ async def db_engine() -> AsyncIterator[AsyncEngine]:
 async def db_conn(db_engine: AsyncEngine) -> AsyncIterator[AsyncConnection]:
     async with db_engine.connect() as conn:
         yield conn
+
+
+@pytest.fixture
+async def session(db_engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
+    """A session on a fresh copy of the full schema."""
+    async with db_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    async with make_sessionmaker(db_engine)() as session:
+        yield session

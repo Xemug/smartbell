@@ -7,6 +7,7 @@ from alembic import context
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from smartbell import models  # noqa: F401 - registers every table on Base.metadata
 from smartbell.db import Base
 from smartbell.settings import get_settings
 
