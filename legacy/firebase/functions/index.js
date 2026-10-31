@@ -5,7 +5,7 @@ const { defineBoolean, defineSecret } = require('firebase-functions/params');
 const { initializeApp } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
 const { getFirestore } = require('firebase-admin/firestore');
-const { CallError, inviteUser, handleRevenueCatWebhook, syncRanchAccess } = require('./lib');
+const { CallError, checkSiniiga, inviteUser, handleRevenueCatWebhook, syncRanchAccess } = require('./lib');
 
 initializeApp();
 
@@ -13,14 +13,20 @@ const webhookAuth = defineSecret('REVENUECAT_WEBHOOK_AUTH');
 const revenueCatKey = defineSecret('REVENUECAT_SECRET_KEY');
 const allowSandbox = defineBoolean('REVENUECAT_ALLOW_SANDBOX', { default: false });
 
-exports.inviteUserByEmail = onCall(async (request) => {
+const callable = (handler) => onCall(async (request) => {
   try {
-    return await inviteUser(getFirestore(), getAuth(), request.auth?.uid, request.data);
+    return await handler(request);
   } catch (err) {
     if (err instanceof CallError) throw new HttpsError(err.code, err.message);
     throw err;
   }
 });
+
+exports.inviteUserByEmail = callable((request) =>
+  inviteUser(getFirestore(), getAuth(), request.auth?.uid, request.data));
+
+exports.checkSiniiga = callable((request) =>
+  checkSiniiga(getFirestore(), request.auth?.uid, request.data));
 
 exports.onRanchChanged = onDocumentWritten('Ranches/{ranchId}', (event) =>
   syncRanchAccess(getFirestore(), event.params.ranchId, {

@@ -42,6 +42,13 @@ The backfill makes every active `workesList` entry a member, including invitees 
 - `cow_profile_form_bull_m_g_mother`:3814, 4044
 - `cow_profile_form_bull_p_g_mother`:3825, 4163
 
+## SINIIGA
+
+- **The duplicate check is global and has to stay global (code).** `validateSINIIGA` queries all of `Cows` and `Bulls`. The number is national (`docs/domain-model.md` §7.7), so `checkSiniiga` keeps that scope with the Admin SDK and answers only available or taken. Like today's check, it counts every matching doc, including animals marked dead or deleted.
+- **Bulk import does no duplicate check (code).** `bulk_import_cows` writes the CSV's `SINIIGA` value as it comes, with no duplicate or format check, so it can create duplicates, and a value in another format won't match `checkSiniiga`. This is the same today. Not changed here. Its two SINIIGA queries only resolve `Mother_SINIIGA` and `Father_SINIIGA` to parent refs.
+- **Forms can skip the check (code).** The forms call `validateSINIIGA` only when the ranch has `siniigaNumbers` on; otherwise they save the typed text unchecked. Same today, not changed.
+- **No edit path exists yet (code).** `SINIIGA` is written only by the create forms and bulk import, so today's app has no use for `animalId`. It's there for an edit form.
+
 ## Algolia
 
 - **Exposure (code).** The app ships the app id and search key in `lib/backend/algolia/algolia_manager.dart`. All the `search()` calls, for example `CowsRecord.search(term: ...)`, pass no ranch filter, and the export has none on the client. A client filter wouldn't protect anything anyway: anyone can take the key from the app. Unless the key is restricted on the server, every indexed cow and bull is readable across ranches, whatever the Firestore rules say.

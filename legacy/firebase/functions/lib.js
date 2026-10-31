@@ -4,9 +4,13 @@ const { FieldValue } = require('firebase-admin/firestore');
 const { planRanch } = require('./ranch-plan');
 
 const INVITE_LIMIT_PER_HOUR = 20;
+// Higher than invites because someone entering a herd by hand checks one number per animal.
+const SINIIGA_LIMIT_PER_HOUR = 60;
 const HOUR_MS = 60 * 60 * 1000;
 const WORKER_STATUSES = ['Active', 'Activo'];
 const PREMIUM_ENTITLEMENT = 'Pro';
+const SINIIGA_FORMAT = /^484-00-(\d{2})-\d{4}-\d{4}$/;
+const isDocId = (id) => typeof id === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(id);
 
 class CallError extends Error {
   constructor(code, message) {
@@ -15,14 +19,14 @@ class CallError extends Error {
   }
 }
 
-async function takeInviteSlot(db, uid, now) {
-  const ref = db.collection('inviteThrottle').doc(uid);
+async function takeSlot(db, docId, limit, message, now) {
+  const ref = db.collection('inviteThrottle').doc(docId);
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     const current = snap.data();
     const fresh = !current || now - current.windowStart >= HOUR_MS;
     const count = fresh ? 0 : current.count;
-    if (count >= INVITE_LIMIT_PER_HOUR) throw new CallError('resource-exhausted', 'Too many invites. Try again later.');
+    if (count >= limit) throw new CallError('resource-exhausted', message);
     tx.set(ref, { windowStart: fresh ? now : current.windowStart, count: count + 1 });
   });
 }
@@ -38,15 +42,14 @@ async function takeInviteSlot(db, uid, now) {
 async function inviteUser(db, auth, callerUid, data, now = Date.now()) {
   if (!callerUid) throw new CallError('unauthenticated', 'Sign in first.');
   const { ranchId, email, rol, status = 'Active' } = data ?? {};
-  const validId = typeof ranchId === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(ranchId);
-  if (!validId || typeof email !== 'string' || email.length > 254 || !email.includes('@')) {
+  if (!isDocId(ranchId) || typeof email !== 'string' || email.length > 254 || !email.includes('@')) {
     throw new CallError('invalid-argument', 'Invalid invite.');
   }
   if (typeof rol !== 'string' || rol.length < 1 || rol.length > 60 || !WORKER_STATUSES.includes(status)) {
     throw new CallError('invalid-argument', 'Invalid invite.');
   }
 
-  await takeInviteSlot(db, callerUid, now);
+  await takeSlot(db, callerUid, INVITE_LIMIT_PER_HOUR, 'Too many invites. Try again later.', now);
 
   const ranchRef = db.collection('Ranches').doc(ranchId);
   const callerRef = db.collection('Users').doc(callerUid);
@@ -85,6 +88,44 @@ async function inviteUser(db, auth, callerUid, data, now = Date.now()) {
     }),
   });
   return { status: 'invited' };
+}
+
+/**
+ * Says whether a SINIIGA number is free across every ranch. It's a national id, and the
+ * final rules can't let a client look across ranches, so the check runs here.
+ *
+ * The answer is only available or taken, and it's throttled because it is an existence
+ * oracle. animalId only excuses an animal in the caller's own ranch: excusing any id
+ * would let a caller test which number another ranch's animal holds.
+ */
+async function checkSiniiga(db, callerUid, data, now = Date.now()) {
+  if (!callerUid) throw new CallError('unauthenticated', 'Sign in first.');
+  const { siniiga, ranchId, animalId } = data ?? {};
+  const format = typeof siniiga === 'string' ? SINIIGA_FORMAT.exec(siniiga) : null;
+  if (!format) throw new CallError('invalid-argument', 'Invalid SINIIGA number.');
+  const state = Number(format[1]);
+  if (state < 1 || state > 32) throw new CallError('out-of-range', 'Invalid SINIIGA state code.');
+  if (!isDocId(ranchId) || (animalId != null && !isDocId(animalId))) {
+    throw new CallError('invalid-argument', 'Invalid SINIIGA check.');
+  }
+
+  await takeSlot(db, `siniiga_${callerUid}`, SINIIGA_LIMIT_PER_HOUR, 'Too many checks. Try again later.', now);
+
+  const ranchRef = db.collection('Ranches').doc(ranchId);
+  const callerPath = `Users/${callerUid}`;
+  const ranch = await ranchRef.get();
+  const isMember = ranch.exists
+    && (ranch.get('user_id')?.path === callerPath || (ranch.get('memberIds') ?? []).includes(callerUid));
+  // One error for missing and not-yours, as in inviteUser.
+  if (!isMember) throw new CallError('permission-denied', 'Only ranch members can check a number.');
+
+  const isOwnAnimal = (doc) => doc.id === animalId && doc.get('ranch_id')?.path === ranchRef.path;
+  for (const name of ['Cows', 'Bulls']) {
+    // Two, so a duplicate still shows when one of the matches is the animal being edited.
+    const matches = await db.collection(name).where('SINIIGA', '==', siniiga).limit(2).get();
+    if (matches.docs.some((doc) => !isOwnAnimal(doc))) return { status: 'taken' };
+  }
+  return { status: 'available' };
 }
 
 function sameSecret(given, expected) {
@@ -183,4 +224,4 @@ async function syncRanchAccess(db, ranchId, { wait = () => Promise.resolve() } =
   });
 }
 
-module.exports = { CallError, syncRanchAccess, inviteUser, applyRevenueCatEvent, handleRevenueCatWebhook, hasActivePro };
+module.exports = { CallError, checkSiniiga, syncRanchAccess, inviteUser, applyRevenueCatEvent, handleRevenueCatWebhook, hasActivePro };

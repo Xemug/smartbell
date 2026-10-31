@@ -266,6 +266,13 @@ describe('final rules', () => {
     test('invite throttle counters are not client readable', async () => {
       await assertFails(getDoc(doc(db(env, OWNER), 'inviteThrottle', OWNER)));
     });
+
+    test('a client cannot look up a SINIIGA number across ranches', async () => {
+      const f = db(env, OWNER);
+      await assertFails(getDocs(query(collection(f, 'Cows'), where('SINIIGA', '==', '484-00-14-1234-5678'))));
+      await assertFails(getDocs(query(collection(f, 'Bulls'), where('SINIIGA', '==', '484-00-14-1234-5678'))));
+      await assertSucceeds(getDocs(query(cowsOf(f), where('SINIIGA', '==', '484-00-14-1234-5678'))));
+    });
   });
 });
 

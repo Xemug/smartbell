@@ -8,7 +8,7 @@ const require = createRequire(new URL('../functions/lib.js', import.meta.url));
 const { deleteApp, initializeApp } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
 const { getFirestore } = require('firebase-admin/firestore');
-const { applyRevenueCatEvent, handleRevenueCatWebhook, hasActivePro, inviteUser, syncRanchAccess } = require('./lib.js');
+const { applyRevenueCatEvent, checkSiniiga, handleRevenueCatWebhook, hasActivePro, inviteUser, syncRanchAccess } = require('./lib.js');
 
 process.env.GCLOUD_PROJECT = 'demo-smartbell';
 let app, db, auth;
@@ -104,6 +104,106 @@ describe('inviteUser', () => {
     for (let i = 0; i < 20; i += 1) await invite({ email: `n${i}@example.test` });
     await assert.rejects(invite({ email: 'n21@example.test' }), code('resource-exhausted'));
     assert.equal((await invite({ email: 'n22@example.test' }, OWNER, NOW + 3600_000)).status, 'not_found');
+  });
+});
+
+describe('checkSiniiga', () => {
+  const TAG = '484-00-14-1234-5678';
+  const ranch = (id) => db.collection('Ranches').doc(id);
+  const check = (data, uid = USER, now = NOW) => checkSiniiga(db, uid, { siniiga: TAG, ranchId: 'r1', ...data }, now);
+  const addAnimal = (collection, id, ranchId, siniiga = TAG) =>
+    db.collection(collection).doc(id).set({ SINIIGA: siniiga, ranch_id: ranch(ranchId), name: 'Private name' });
+
+  beforeEach(async () => {
+    await ranch('r1').update({ memberIds: [USER] });
+    await ranch('r2').set({ user_id: db.collection('Users').doc('other-owner'), memberIds: [] });
+  });
+
+  test('a number held in another ranch is taken, for cows and for bulls', async () => {
+    await addAnimal('Cows', 'foreign-cow', 'r2');
+    assert.deepEqual(await check(), { status: 'taken' });
+    await addAnimal('Bulls', 'foreign-bull', 'r2', '484-00-14-1234-0000');
+    assert.deepEqual(await check({ siniiga: '484-00-14-1234-0000' }), { status: 'taken' });
+  });
+
+  test('a number held in the same ranch is taken', async () => {
+    await addAnimal('Bulls', 'my-bull', 'r1');
+    assert.deepEqual(await check(), { status: 'taken' });
+  });
+
+  test('a free number is available, and the owner can check too', async () => {
+    await addAnimal('Cows', 'other-tag', 'r2', '484-00-14-1234-9999');
+    assert.deepEqual(await check(), { status: 'available' });
+    assert.deepEqual(await check({}, OWNER), { status: 'available' });
+  });
+
+  test('editing an animal does not collide with its own number', async () => {
+    await addAnimal('Cows', 'my-cow', 'r1');
+    assert.deepEqual(await check({ animalId: 'my-cow' }), { status: 'available' });
+  });
+
+  test('editing still catches a duplicate of its own number elsewhere', async () => {
+    await addAnimal('Cows', 'my-cow', 'r1');
+    await addAnimal('Cows', 'foreign-cow', 'r2');
+    assert.deepEqual(await check({ animalId: 'my-cow' }), { status: 'taken' });
+    await addAnimal('Bulls', 'foreign-bull', 'r2');
+    await db.collection('Cows').doc('foreign-cow').delete();
+    assert.deepEqual(await check({ animalId: 'my-cow' }), { status: 'taken' });
+  });
+
+  test('another ranch\'s animal id excuses nothing, so a caller cannot test what it holds', async () => {
+    await addAnimal('Cows', 'foreign-cow', 'r2');
+    assert.deepEqual(await check({ animalId: 'foreign-cow' }), { status: 'taken' });
+  });
+
+  test('the answer leaks no ranch, owner or animal data', async () => {
+    await addAnimal('Cows', 'foreign-cow', 'r2');
+    const taken = await check();
+    assert.deepEqual(Object.keys(taken), ['status']);
+    assert.equal(/foreign-cow|r2|other-owner|Private name/.test(JSON.stringify(taken)), false);
+  });
+
+  test('sign-in is required', async () => {
+    await assert.rejects(check({}, null), code('unauthenticated'));
+  });
+
+  test('non-members are refused, and a missing ranch reads the same', async () => {
+    await assert.rejects(check({ ranchId: 'r2' }), code('permission-denied'));
+    await assert.rejects(check({ ranchId: 'missing' }), code('permission-denied'));
+    await ranch('r2').update({ invitedUsers: [db.collection('Users').doc(USER)] });
+    await assert.rejects(check({ ranchId: 'r2' }), code('permission-denied'), 'an invite is not membership');
+    await ranch('r1').update({ memberIds: [], user_id: db.collection('Users').doc(OWNER) });
+    await assert.rejects(check({}), code('permission-denied'), 'a removed worker');
+  });
+
+  test('format is refused before state, and neither is a lookup', async () => {
+    await assert.rejects(check({ siniiga: '484-00-99-12-5678' }), code('invalid-argument'));
+    await assert.rejects(check({ siniiga: '1412345678' }), code('invalid-argument'));
+    await assert.rejects(check({ siniiga: 1412345678 }), code('invalid-argument'));
+    await assert.rejects(check({ siniiga: '484-00-00-1234-5678' }), code('out-of-range'));
+    await assert.rejects(check({ siniiga: '484-00-33-1234-5678' }), code('out-of-range'));
+    await assert.rejects(check({ ranchId: '../Users/x' }), code('invalid-argument'));
+    await assert.rejects(check({ animalId: 'a/b' }), code('invalid-argument'));
+    assert.equal((await db.collection('inviteThrottle').doc(`siniiga_${USER}`).get()).exists, false);
+  });
+
+  test('state codes 01 and 32 are valid', async () => {
+    assert.equal((await check({ siniiga: '484-00-01-1234-5678' })).status, 'available');
+    assert.equal((await check({ siniiga: '484-00-32-1234-5678' })).status, 'available');
+  });
+
+  test('it is throttled per user, the window resets, and invites keep their own count', async () => {
+    for (let i = 0; i < 60; i += 1) await check();
+    await assert.rejects(check(), code('resource-exhausted'));
+    assert.equal((await check({}, OWNER)).status, 'available', 'another user is unaffected');
+    assert.equal((await invite({ email: 'nobody@example.test' }, OWNER)).status, 'not_found');
+    assert.equal((await invite({ email: 'nobody@example.test' }, USER).catch((err) => err.code)), 'permission-denied', 'throttle did not block invites');
+    assert.equal((await check({}, USER, NOW + 3600_000)).status, 'available');
+  });
+
+  test('a non-member uses up the throttle too, so ranch ids cannot be probed freely', async () => {
+    for (let i = 0; i < 60; i += 1) await assert.rejects(check({ ranchId: 'r2' }), code('permission-denied'));
+    await assert.rejects(check({ ranchId: 'r2' }), code('resource-exhausted'));
   });
 });
 

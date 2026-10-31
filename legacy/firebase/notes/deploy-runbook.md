@@ -33,6 +33,7 @@ This closes cross-ranch writes and deletes today. **Reads stay open until stage 
    echo 'REVENUECAT_ALLOW_SANDBOX=true' > functions/.env.smartbell-app-2025
    npx firebase deploy --only functions:lockdown --project smartbell-app-2025
    ```
+   `functions:lockdown` deploys the whole codebase. Check the output lists all four functions: `inviteUserByEmail`, `checkSiniiga`, `revenueCatWebhook` and `onRanchChanged`. If you deploy by function name instead, include `checkSiniiga`: the stage 2 release needs it live, and without it nobody on the new build can register an animal on a ranch with SINIIGA numbers turned on.
 3. In the RevenueCat dashboard, open **Project settings > Integrations > Webhooks > Add new webhook**. URL: the `revenueCatWebhook` URL printed by the deploy. Authorization header value: `Bearer <secret>`.
 4. Send a test event from RevenueCat, then make a sandbox purchase, refund or expire it, and check `Users.premium` follows. Then change that file to `REVENUECAT_ALLOW_SANDBOX=false` and run the same deploy command. Don't skip this: the deploy reads the file and won't ask, and the file is ignored by git. Left on `true`, sandbox purchases grant real premium.
 5. Backfill: `node scripts/backfill-live.mjs --project smartbell-app-2025 --apply`. Run this once. It exits with an error if any write failed. Active workers become members so nobody loses access, and they keep their `invitedUsers` entry because today's app reads it. Disabled workers don't become members, and anyone with no active worker row is removed from both lists: the owner already took them off.
@@ -59,7 +60,22 @@ Add `memberIds` (List of String) to the `Ranches` schema first, then:
 5. **Remove or disable a worker** (`user_list`, `edit_user`): add `memberIds` Remove from List and `invitedUsers` Remove from List to both. Disabling then really cuts access. To bring someone back, remove them and invite them again, because the rules let people join only by accepting. Only the owner can change workers now, so hide these actions from members.
 6. **Purchase:** remove the `premium: true` update from `membership_onboarding` (two places), `membership_annual`, `membership_monthly` and `membership_lifetime`. The webhook sets it within seconds. Go to the same success screen. If one stays, the purchase ends on an error under the final rules.
 7. **Forms that write no `ranch_id`:** add `ranch_id` to the `cowProductionPerDay` create (two places in each form) in `cow_profile_form`, `onboarding_step04_cow_profile_form`, `cow_profile_form_cow_mother`, `cow_profile_form_cow_m_g_mother`, `cow_profile_form_cow_p_g_mother`, `cow_profile_form_bull_mother`, `cow_profile_form_bull_m_g_mother` and `cow_profile_form_bull_p_g_mother`, and to the create in `bull_weight_new_log`. Lines are in [findings.md](findings.md). Stage 1 hides this: under the final rules, adding a cow would end in an error.
-8. **Queries:** every entry in [query-changes.md](query-changes.md). `validateSINIIGA` needs a new ranch argument. Its check then covers one ranch instead of the whole database: the final rules can't allow a global lookup, and a global one would tell any user that a tag exists elsewhere. Two ranches could then register the same tag; the same applies to `bulk_import_cows`.
+8. **Queries:** every entry in [query-changes.md](query-changes.md), except the two `validateSINIIGA` queries, which go away. SINIIGA is a national id, so the duplicate check stays global, as it is today, but it moves to the `checkSiniiga` callable because the final rules can't allow a client lookup across ranches. Keep the function's format and state checks and its return codes, add a ranch argument, and replace both queries:
+   ```dart
+   // Pass the ranch this form saves as ranch_id. animalId is for a future edit form.
+   Future<String> validateSINIIGA(String siniigaNumber, String ranchId, [String? animalId]) async {
+     // ...today's cleaning, 'ERROR', 'ERRORStateCode' and formattedSINIIGA stay as they are...
+     final result = await FirebaseFunctions.instance.httpsCallable('checkSiniiga').call({
+       'siniiga': formattedSINIIGA,
+       'ranchId': ranchId,
+       if (animalId != null) 'animalId': animalId,
+     });
+     return result.data['status'] == 'available' ? formattedSINIIGA : 'ERRORCowQuery';
+   }
+   ```
+   - **Don't catch errors and don't add new return codes.** The forms save whatever isn't a known error code as the SINIIGA number, so a new string would be written to the animal. An exception stops the button before anything is saved. That covers more than 60 checks an hour (`resource-exhausted`), but the user sees no message: to show one, catch it in the form, not in this function.
+   - **Change the wording.** The callable says only available or taken, never cow or bull, so `ERRORCowQuery` now means either and `ERRORBull` no longer occurs. In the 15 forms, change the `ERRORCowQuery` snackbar to "This SINIIGA number is already registered" / "Este número SINIIGA ya está registrado". Otherwise a number held by a bull reads as assigned to a cow.
+   - **`bulk_import_cows`:** its two SINIIGA queries look up an imported animal's parents, not duplicates. Filter them by `ranch_id` like the other queries: a parent belongs to the importing ranch.
 9. **Algolia:** apply the fix in [findings.md](findings.md).
 10. **Lost ranch:** at startup, read `currentSelectedRanch`. If the read is denied or the ranch is gone, clear it and open the ranch list. After a worker is removed or a ranch deleted, scoped queries are refused rather than empty, and the app's list screens would spin forever.
 11. **Profile email:** `edit_my_profile` writes `Users.email` but not the sign-in email, and invites now use the sign-in email. Make that field read-only, or tell owners to invite the address people sign in with.
@@ -71,7 +87,7 @@ Test the release against the stage 1 rules, then again against the emulator with
 
 Publish `firestore.rules` the same way as stage 1.
 
-**Older app versions can't be forced to update**, because they have no gate. Once the final rules are live they show empty lists or errors on any unscoped query, invites fail, and a purchase ends on an error even though premium is set.
+**Older app versions can't be forced to update**, because they have no gate. Once the final rules are live they show empty lists or errors on any unscoped query, invites fail, a purchase ends on an error even though premium is set, and registering an animal fails on ranches with SINIIGA numbers turned on, because the old duplicate check is refused.
 
 | Option | Good | Bad |
 |---|---|---|

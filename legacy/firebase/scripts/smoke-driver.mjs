@@ -64,6 +64,19 @@ const anonymous = await fetch(`${base}/inviteUserByEmail`, {
 assert.equal(anonymous.status, 401);
 console.log('callable invite without sign-in: 401');
 
+const check = (data, headers = { authorization: `Bearer ${idToken}` }) => fetch(`${base}/checkSiniiga`, {
+  method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify({ data }),
+});
+const tag = '484-00-14-1234-5678';
+await db.collection('Ranches').doc('r2').set({ user_id: users.doc('someone-else') });
+const statusOf = async (data) => (await (await check(data)).json()).result;
+assert.deepEqual(await statusOf({ siniiga: tag, ranchId: 'r1' }), { status: 'available' });
+await db.collection('Cows').doc('cow-elsewhere').set({ SINIIGA: tag, ranch_id: db.collection('Ranches').doc('r2') });
+assert.deepEqual(await statusOf({ siniiga: tag, ranchId: 'r1' }), { status: 'taken' });
+assert.equal((await check({ siniiga: tag, ranchId: 'r2' })).status, 403);
+assert.equal((await check({ siniiga: tag, ranchId: 'r1' }, {})).status, 401);
+console.log('callable SINIIGA check: free available, taken in another ranch, non-member 403, no sign-in 401');
+
 async function until(check, label) {
   for (let i = 0; i < 40; i += 1) {
     if (await check()) { console.log(label); return; }
