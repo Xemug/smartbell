@@ -17,7 +17,8 @@ const variants: Record<ButtonVariant, string> = {
 export function buttonClass(variant: ButtonVariant, circle = false): string {
   return cx(
     'inline-flex shrink-0 items-center justify-center transition-colors disabled:cursor-not-allowed',
-    circle ? 'rounded-full' : 'rounded-interactive',
+    // 4 px, as the Symbols buttons draw it (user review of M 80-574); fields stay at 8.
+    circle ? 'rounded-full' : 'rounded-moon-i-xs',
     focusRing,
     variants[variant],
   );

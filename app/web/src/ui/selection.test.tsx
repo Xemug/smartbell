@@ -98,13 +98,9 @@ describe('Toggle', () => {
 });
 
 describe('Chip', () => {
-  it('exposes selected as pressed and shows a count', () => {
-    render(
-      <Chip selected count={8}>
-        Vacas
-      </Chip>,
-    );
-    expect(screen.getByRole('button', { name: 'Vacas 8' })).toHaveAttribute('aria-pressed', 'true');
+  it('exposes selected as pressed', () => {
+    render(<Chip selected>Vacas</Chip>);
+    expect(screen.getByRole('button', { name: 'Vacas' })).toHaveAttribute('aria-pressed', 'true');
   });
 });
 

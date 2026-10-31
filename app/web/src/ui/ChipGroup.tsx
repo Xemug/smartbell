@@ -6,7 +6,6 @@ export interface ChipOption {
   value: string;
   label: string;
   icon?: Glyph;
-  count?: number;
   disabled?: boolean;
 }
 
@@ -44,7 +43,6 @@ export function ChipGroup({
           key={option.value}
           size={size}
           icon={option.icon}
-          count={option.count}
           disabled={option.disabled}
           selected={value.includes(option.value)}
           onClick={() => toggle(option.value)}

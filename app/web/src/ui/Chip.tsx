@@ -8,12 +8,10 @@ type ChipProps = Omit<ComponentPropsWithoutRef<'button'>, 'onChange'> & {
   selected?: boolean;
   size?: 'sm' | 'md';
   icon?: Glyph;
-  /** Trailing number, as on the Cow / Calf / Bull counters. */
-  count?: number;
 };
 
 export const Chip = forwardRef<HTMLButtonElement, ChipProps>(function Chip(
-  { selected = false, size = 'md', icon, count, className, children, ...props },
+  { selected = false, size = 'md', icon, className, children, ...props },
   ref,
 ) {
   return (
@@ -35,7 +33,6 @@ export const Chip = forwardRef<HTMLButtonElement, ChipProps>(function Chip(
     >
       {icon && <Icon icon={icon} size={size === 'sm' ? 16 : 20} />}
       {children}
-      {count !== undefined && <span className="tabular-nums">{count}</span>}
     </button>
   );
 });

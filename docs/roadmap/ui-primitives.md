@@ -40,12 +40,13 @@ Follow design-system.md §2.1–§2.2 and the build order in §4.2. Use Radix pr
   - Search box: `TextField type="search"`. Masks such as SINIIGA: left to `animal-forms`.
   - Textarea: `TextArea`, added because design-system.md §4.2 lists it as a primitive.
   - Boton Text On/Off, 2 lines, Boton Vaca/Vaquilla/Toro: `RadioGroup variant="card"`. Boton Text Check: `Checkbox`.
-  - Cow/Calf/Bull counters: `Chip` with `count`. Choice Chips: `ChipGroup`.
+  - Cow/Calf/Bull counters and Boton Vacas en Sistema: `SplitIndicator`. Choice Chips: `ChipGroup`.
   - "Stepper": `Stepper` is the old Steper Bar 1/N; the kit's −/value/+ is `CountController`.
-  - Not built here: Combobox, Boton Vacas en Sistema (a KPI, `dashboard`), Boton Imagen (`animal-forms`), custom scrollbars, Toggle Button, Segmented Control and Slider. The Toggle's sun/moon icon variant is dropped because v1 has no dark mode.
-- **Design defaults (reconciliation §4.8).** Blue primary CTA, so no green `cta` button; Open Sans buttons; radii 8/12; body 16 in every input; light mode only.
+  - Not built here: Combobox, Boton Imagen (`animal-forms`), custom scrollbars, Toggle Button, Segmented Control and Slider. The Toggle's sun/moon icon variant is dropped because v1 has no dark mode.
+- **Design defaults (reconciliation §4.8).** Blue primary CTA, so no green `cta` button; Open Sans buttons; radii 8/12, except buttons at 4 (user review of M 80-574, 2026-10-31); body 16 in every input; light mode only.
 - **Beyond Figma.**
   - `danger` button (uikit §6.3 asks for one).
+  - `SplitIndicator` paints the frame's light-blue half in `primary` and the dark half in `primary-dark`, because white on the frame's `#57A7F5` is 2.6:1, under AA. Inactive uses `neutral-2` and `secondary-text` for the same reason.
   - Error text is primary text with a red icon: `#EB004E` on `#F9F9F9` is 4.3:1, under AA.
   - Toggle's off track is `neutral-3`, since the kit's is near-invisible.
   - The focus ring from Figma's buttons is used on every control.

@@ -33,6 +33,7 @@ import { PhoneField } from '../ui/PhoneField';
 import { ProgressBar } from '../ui/ProgressBar';
 import { RadioGroup } from '../ui/RadioGroup';
 import { Select } from '../ui/Select';
+import { SplitIndicator } from '../ui/SplitIndicator';
 import { Stepper } from '../ui/Stepper';
 import { TextArea } from '../ui/TextArea';
 import { TextField } from '../ui/TextField';
@@ -317,9 +318,38 @@ export function DevUiPage() {
         />
         <div className="flex flex-wrap items-center gap-3">
           <Chip size="sm">Pequeño</Chip>
-          <Chip icon={iconCow} count={8} selected={counter} onClick={() => setCounter((c) => !c)}>
-            Vacas
-          </Chip>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <SplitIndicator label="Vacas en Sistema" count={128} className="w-[280px] max-w-full" />
+          <SplitIndicator
+            label="Vacas en Sistema"
+            count={0}
+            active={false}
+            className="w-[280px] max-w-full"
+          />
+          <SplitIndicator
+            label="Vacas"
+            icon={iconCow}
+            count={8}
+            active={counter}
+            onClick={() => setCounter((c) => !c)}
+          />
+          <SplitIndicator
+            label="Vaquillas"
+            icon={iconHeifer}
+            count={8}
+            active={false}
+            onClick={() => undefined}
+          />
+          <SplitIndicator
+            label="Toros"
+            icon={iconBull}
+            count={0}
+            active={false}
+            disabled
+            onClick={() => undefined}
+          />
+          <SplitIndicator label="Becerras" icon={iconCalf} count={12} />
         </div>
         <div className="flex flex-wrap items-center gap-6">
           {(['xs', 'sm', 'md', 'lg'] as const).map((size) => (
