@@ -77,7 +77,11 @@ def test_positive_check_schedules_calving_dry_off_close_up_and_rechecks() -> Non
     projection = run(calved(0), served(60), check(100, positive=True), today=101)
 
     assert windows(projection, AlertKind.CALVING) == [Window(day(340), day(346))]
-    assert windows(projection, AlertKind.DRY_OFF) == [Window(day(283), day(283))]
+    assert windows(projection, AlertKind.DRY_OFF) == [
+        Window(day(273), day(273)),
+        Window(day(278), day(278)),
+        Window(day(283), day(283)),
+    ]
     assert windows(projection, AlertKind.CLOSE_UP) == [Window(day(322), day(322))]
     assert windows(projection, AlertKind.PREG_RECHECK) == [
         Window(day(190), day(190)),
@@ -93,6 +97,16 @@ def test_a_recorded_recheck_drops_off_the_list() -> None:
     )
 
     assert windows(projection, AlertKind.PREG_RECHECK) == [Window(day(280), day(280))]
+
+
+def test_dry_off_alerts_give_way_and_the_last_one_lasts_through_its_day() -> None:
+    events = (calved(0), served(60), check(100, positive=True))
+
+    assert windows(run(*events, today=275), AlertKind.DRY_OFF) == [
+        Window(day(278), day(278)),
+        Window(day(283), day(283)),
+    ]
+    assert windows(run(*events, today=283), AlertKind.DRY_OFF) == [Window(day(283), day(283))]
 
 
 def test_dry_off_alert_ends_once_she_is_dry_and_calving_stays() -> None:

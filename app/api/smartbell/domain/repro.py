@@ -72,6 +72,7 @@ FOLDED_EVENT_TYPES = frozenset(
         EventType.TREATMENT_FOLLOWUP,
     }
 )
+DRY_OFF_ALERT_DAYS_BEFORE = (10, 5, 0)  # Confirmed by the user (§7.6).
 EPOCH = dt.datetime(1970, 1, 1, tzinfo=dt.UTC)
 
 
@@ -280,6 +281,7 @@ class _Fold:
     bull_id: uuid.UUID | None = None
     service_number: int | None = None
     open_service: dt.date | None = None  # The service still being judged, unlike last_service.
+    estimated_until: dt.date | None = None  # While set, a service logged by then replaces it.
     confirmed_on: dt.date | None = None
     expected_calving: dt.date | None = None
     rechecks_done: int = 0
@@ -351,21 +353,27 @@ class _Fold:
             self.last_heat = self.heat_anchor = on
             self.service_number = 1
         else:
-            self.seed_pregnancy(on)
+            self.seed_pregnancy(on, alta.last_service_date if alta else None)
 
-    def seed_pregnancy(self, on: dt.date) -> None:
-        """GESTANTE declares the diagnosis date and SECA the dry-off date: the service is estimated
-        from them, so the dates that follow have something to hang from."""
+    def seed_pregnancy(self, on: dt.date, service: dt.date | None) -> None:
+        """GESTANTE declares the diagnosis date and SECA the dry-off date. The service is the true
+        reference (§7.6): with none declared it is estimated, until a logged one replaces it."""
         settings = self.settings
         if self.state is ReproState.GESTANTE:
             self.confirmed_on = on
-            self.open_service = on - dt.timedelta(days=settings.preg_check_min_days)
-        else:
-            back = settings.gestation_days - settings.dry_off_days_before_calving
-            self.open_service = on - dt.timedelta(days=back)
-        self.last_service = self.open_service
+        if service is None:
+            self.estimated_until = on
+            if self.state is ReproState.GESTANTE:
+                service = on - dt.timedelta(days=settings.preg_check_max_days)
+            else:
+                back = settings.gestation_days - settings.dry_off_days_before_calving
+                service = on - dt.timedelta(days=back)
         self.service_number = 1
-        self.expected_calving = self.open_service + dt.timedelta(days=settings.gestation_days)
+        self.set_pregnancy_service(service)
+
+    def set_pregnancy_service(self, service: dt.date) -> None:
+        self.last_service = self.open_service = service
+        self.expected_calving = service + dt.timedelta(days=self.settings.gestation_days)
 
     def _default_state(self) -> ReproState:
         if not self.has_calved:
@@ -402,6 +410,7 @@ class _Fold:
 
     def clear_pregnancy(self) -> None:
         self.open_service = self.confirmed_on = self.expected_calving = None
+        self.estimated_until = None
         self.rechecks_done = 0
         self.return_watch_closed = False
 
@@ -451,7 +460,13 @@ class _Fold:
         if payload.treatment is not None:
             self.treat(EventType.HEAT, payload.treatment, on)
         if self.state in PREGNANT_STATES:
-            if observed:
+            logged = outcome is HeatOutcome.INSEMINATED
+            if logged and self.estimated_until is not None and on <= self.estimated_until:
+                self.estimated_until = None
+                self.set_pregnancy_service(on)
+                self.last_heat = on
+                self.bull_id = payload.bull_id
+            elif observed:
                 self.warn(Flag.UNEXPECTED_EVENT, on)
             return
         if outcome is HeatOutcome.VWP and self.state is ReproState.ABIERTA:
@@ -619,8 +634,11 @@ class _Fold:
             return
         alerts.append(AlertSpec(AlertKind.CALVING, calving))
         dry_off, close_up = self.dry_off_date, self.close_up_date
-        if self.state is ReproState.GESTANTE and self.has_calved and dry_off is not None:
-            alerts.append(AlertSpec(AlertKind.DRY_OFF, Window(dry_off, dry_off)))
+        if self.has_calved and dry_off is not None:
+            for days in DRY_OFF_ALERT_DAYS_BEFORE:
+                due = dry_off - dt.timedelta(days=days)
+                if due >= today:  # A passed reminder gives way to the next one.
+                    alerts.append(AlertSpec(AlertKind.DRY_OFF, Window(due, due)))
         if close_up is not None:
             alerts.append(AlertSpec(AlertKind.CLOSE_UP, Window(close_up, close_up)))
         if self.confirmed_on is not None:

@@ -1,5 +1,7 @@
 """Every transition of docs/domain-model.md §2, as a table: events in, state out."""
 
+import dataclasses
+
 import pytest
 
 from smartbell.domain.repro import AnimalFacts, EventFact, Flag, ReproWarning, project
@@ -13,6 +15,7 @@ from smartbell.enums import (
 )
 from tests.domain.factories import (
     BIRTH,
+    BULL,
     COW,
     D0,
     HEIFER,
@@ -239,7 +242,7 @@ def test_a_future_event_is_not_folded() -> None:
     [
         (ReproState.ABIERTA, ReproState.ABIERTA, None, None),
         (ReproState.SERVIDA, ReproState.SERVIDA, 0, None),
-        (ReproState.GESTANTE, ReproState.GESTANTE, -35, 248),
+        (ReproState.GESTANTE, ReproState.GESTANTE, -45, 238),
         (ReproState.SECA, ReproState.SECA, -223, 60),
     ],
 )
@@ -353,3 +356,46 @@ def test_a_payload_the_fold_ignores_is_not_parsed() -> None:
     bad = EventFact(EventType.WEIGHT, day(10), {"kg": "heavy"})
 
     assert Flag.INVALID_EVENT not in {w.flag for w in run(bad, today=11).warnings}
+
+
+GESTANTE_DECLARED = AnimalFacts(
+    Sex.HEMBRA, BIRTH, D.VACA_ADULTA, repro_stage=ReproState.GESTANTE, repro_stage_date=D0
+)
+
+
+def test_a_declared_service_date_is_used_instead_of_the_estimate() -> None:
+    registered = alta(lactation_number=1, last_service_date=day(-60))
+
+    projection = project(GESTANTE_DECLARED, [registered], SETTINGS, D0)
+
+    assert projection.last_service_date == day(-60)
+    assert projection.expected_calving_date == day(223)
+    assert projection.pregnancy_confirmed_date == D0
+
+
+def test_a_logged_service_replaces_the_estimate() -> None:
+    logged = served(-60)
+
+    projection = project(GESTANTE_DECLARED, [alta(lactation_number=1), logged], SETTINGS, D0)
+
+    assert projection.last_service_date == day(-60)
+    assert projection.expected_calving_date == day(223)
+    assert projection.service_bull_id == BULL
+    assert projection.warnings == ()
+
+
+def test_a_service_after_the_diagnosis_does_not_replace_the_estimate() -> None:
+    projection = project(
+        GESTANTE_DECLARED, [alta(lactation_number=1), served(20)], SETTINGS, day(21)
+    )
+
+    assert projection.expected_calving_date == day(238)
+    assert ReproWarning(Flag.UNEXPECTED_EVENT, day(20)) in projection.warnings
+
+
+def test_a_logged_service_replaces_the_estimate_on_a_declared_dry_cow() -> None:
+    cow = dataclasses.replace(GESTANTE_DECLARED, repro_stage=ReproState.SECA)
+
+    projection = project(cow, [alta(lactation_number=1), served(-230)], SETTINGS, D0)
+
+    assert projection.expected_calving_date == day(53)

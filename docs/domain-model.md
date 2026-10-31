@@ -214,4 +214,12 @@ Confirmed by the user (2026-10-31):
 - **State after an abortion:** ABIERTA, ready to be bred again. The web mock's RECIEN_PARIDA is dropped.
 - **Return to heat while SERVIDA:** the service failed. The cow goes back to ABIERTA and her pending pregnancy check and expected calving dates are cancelled. The heat is then handled as a heat from ABIERTA (§2): if a service is recorded on it, she becomes SERVIDA again with new dates.
 
+Confirmed by the user (2026-10-31, after `repro-engine` shipped):
+- **A heat not observed while SERVIDA** keeps the service: she stays SERVIDA.
+- **Unstated withdrawal with no table value** gets the maximum, 42 days. It is a heavy penalty, but it protects the farmer's milk quality.
+- **A never-calved heifer** goes SECA at −60 d and gets no dry-off task.
+- **AUTO stage bands.** Female: TERNERA <6 mo, DESTETADA <12 (no insemination before puberty), NOVILLA to 27, then adult. Male: BECERRO <3, DESTETADO <9, NOVILLO <24, TORO from 24, so that smaller animals aren't placed with bigger ones.
+- **The service date is the reference for a pregnant cow.** A declared or logged service is used. If there is none, it is assumed to be 45 days before the diagnosis (`preg_check_max_days`).
+- **Dry-off alerts** go out 10, 5 and 0 days before the dry-off date (expected calving − 60 d).
+
 Still open: the permission-matrix oddities (§6).
