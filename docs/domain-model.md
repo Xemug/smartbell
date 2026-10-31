@@ -22,7 +22,7 @@ UI copy is Spanish (MX). Code and API names are English; Spanish labels live in 
 ### Animals and groups
 | Entity | Fields | Notes |
 |---|---|---|
-| **Animal** | id, ranch_id, kind (VACA, VAQUILLA, TORO), control_id (unique per ranch; letters, digits, ñ, spaces), siniiga (optional, 4–8 digits, unique; 4 digits expand to `MX-00-00-0000-1234`), breed (default HOLSTEIN), birth_date (never in the future), photo_url, group_id, status (ACTIVE, REMOVED), removed_reason, removed_at, created_at | One table with a kind discriminator |
+| **Animal** | id, ranch_id, kind (VACA, VAQUILLA, TORO), control_id (unique per ranch; letters, digits, ñ, spaces), siniiga (optional; `MX-00-EE-NNNN-NNNN`: EE is the INEGI state code 01–32, N is the animal's 8 digits; unique nationally, see §7.7), breed (default HOLSTEIN), birth_date (never in the future), photo_url, group_id, status (ACTIVE, REMOVED), removed_reason, removed_at, created_at | One table with a kind discriminator |
 | ↳ cow fields | repro_state (see §2), lactation_state (LACTANDO, SECA), lactation_number, last_calving_date, last_heat_date, last_service_date, service_bull_id, service_number_in_lactation, pregnancy_confirmed_date, expected_calving_date, is_sick, sick_since, milk_withdrawal_until | All repro fields are **derived** from events (§3); stored as a projection for list speed |
 | ↳ heifer fields | dam_id, sire_id, birth_length_cm, birth_weight_kg, sex ⚙ (in notes only) | Becomes a VACA automatically on her first calving |
 | ↳ bull fields | name (unique per ranch) | Added inline from the heat flow ("Agregar Toro") |
@@ -223,3 +223,13 @@ Confirmed by the user (2026-10-31, after `repro-engine` shipped):
 - **Dry-off alerts** go out 10, 5 and 0 days before the dry-off date (expected calving − 60 d).
 
 Still open: the permission-matrix oddities (§6).
+
+### 7.7 SINIIGA (confirmed 2026-10-31)
+
+Source: the SINIIGA technical manual (rev. 4.0, 2016) §XI.1. This overrides the 4–8 digit Figma notes, and matches the live app's `validateSINIIGA`.
+
+- **Number:** `MX` + species `00` (bovine) + 2-digit INEGI state + 8-digit animal number. The user types 10 digits. Stored as `MX-00-EE-NNNN-NNNN`. State 00 is invalid, so the old `MX-00-00-0000-1234` 4-digit expansion is dropped.
+- **Other forms of one number:** the live app stores `484-00-EE-NNNN-NNNN` (`484` is the barcode and RFID country code). Import converts it to `MX-00`.
+- **Unique nationally, not per ranch:** the manual says each animal has a unique, permanent number across the country. A duplicate in any ranch is refused, and the refusal reveals nothing about the other ranch.
+- **Sold or dead animals:** only ACTIVE animals hold a number, so a buyer can register a sold animal once the seller has removed it. If the seller hasn't, the buyer is blocked and support resolves it.
+- **Optional, but flagged:** an animal may have no SINIIGA. Missing numbers are shown to the user, and onboarding asks whether the ranch has them all. See `siniiga-compliance`.

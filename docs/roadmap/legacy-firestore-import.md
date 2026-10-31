@@ -27,6 +27,8 @@ It lets the new app ship as an update under the same bundle id, without data los
 
 Per `docs/spikes/flutterflow-audit.md` §2 and §8. Read with a read-only credential. Normalise values stored as translated dropdown text (mixed English/Spanish, trailing spaces) into our enums. Report the ones that don't map. Cows and Bulls become Animal; diet, weight, group and removal records become events; the herd milk log by destination becomes MilkHerdLog; MilkPrices becomes a new ranch setting history. SINIIGA: keep the legacy value in a `legacy_siniiga` field when it doesn't match our format. Idempotent by Firestore doc id. A dry run prints counts and anomalies.
 
+SINIIGA: convert `484-00-…` to `MX-00-…` (domain-model §7.7). Values that don't parse, or that two active animals share, import as empty and are listed in the dry-run report, so the import never stops on them and the owner can fix them.
+
 ## Effort
 
 M.

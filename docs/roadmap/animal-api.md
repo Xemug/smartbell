@@ -25,7 +25,7 @@ Every screen with a cow depends on this API.
 
 ## Approach
 
-Rules from domain-model §1 and §3.11 and web-onboarding-registry.md §3: control_id charset, SINIIGA 4–8 digits with 4-digit expansion, default breed Holstein, birth date not future, cow last calving ≥ birth + 660 d, heifer ≤ 24 months on edit, >30 months warning. Creating a cow takes onboarding repro inputs (stage, last calving, last heat/service, lactation number) which are written as initial events so the repro engine can project; then runs the projection. Removal reasons; ERROR_REGISTRO hard-deletes. List endpoint: kind, search by control_id, filters (group, breed, repro state, health, removed reason), sort, page size 10. Permission codes from ranch-tenancy. History entries via history-writer. **V4 model (domain-model.md §7.1):** only name_or_control_id + birth_date are required; sex replaces kind (kind derived); development_stage with AUTO; crossbreed_level + contributing_breed (required when not FB); dam/sire on every animal with inline parent creation (`POST /animals` with a nested `dam`/`sire` that is created first); dam status on heifer registration writes a REMOVAL on the dam when she is not alive.
+Rules from domain-model §1 and §3.11 and web-onboarding-registry.md §3: control_id charset, SINIIGA per domain-model §7.7 (10 digits, state 01–32, unique nationally: this card replaces the per-ranch index `uq_animals_ranch_id_siniiga` with a partial unique index on `siniiga` for ACTIVE animals, in a migration), default breed Holstein, birth date not future, cow last calving ≥ birth + 660 d, heifer ≤ 24 months on edit, >30 months warning. Creating a cow takes onboarding repro inputs (stage, last calving, last heat/service, lactation number) which are written as initial events so the repro engine can project; then runs the projection. Removal reasons; ERROR_REGISTRO hard-deletes. List endpoint: kind, search by control_id, filters (group, breed, repro state, health, removed reason), sort, page size 10. Permission codes from ranch-tenancy. History entries via history-writer. **V4 model (domain-model.md §7.1):** only name_or_control_id + birth_date are required; sex replaces kind (kind derived); development_stage with AUTO; crossbreed_level + contributing_breed (required when not FB); dam/sire on every animal with inline parent creation (`POST /animals` with a nested `dam`/`sire` that is created first); dam status on heifer registration writes a REMOVAL on the dam when she is not alive.
 
 ## Effort
 
@@ -34,7 +34,9 @@ M.
 ## Acceptance
 
 - [ ] Creating a cow with stage Gestante + service date returns a projection with an expected calving window.
-- [ ] Duplicate control_id or SINIIGA in the same ranch → 409 with field error.
+- [ ] Duplicate control_id in the same ranch → 409 with field error.
+- [ ] A SINIIGA held by an ACTIVE animal in any ranch → 409 with a field error that names no ranch, owner or animal (test with two ranches).
+- [ ] A SINIIGA with the wrong length or a state outside 01–32 → 422; a missing SINIIGA is accepted.
 - [ ] Filter `repro=SERVIDA&group=GENERAL` returns only matching cows (test).
 - [ ] Baja with ERROR_REGISTRO removes the row and its events; other reasons keep them with status REMOVED.
 - [ ] A heifer registered with a new dam creates both animals, linked, in one transaction.

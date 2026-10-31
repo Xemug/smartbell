@@ -36,3 +36,7 @@ For the planner that continues Smartbell planning in a smartbell pane. Read this
 
 ## Open questions still with the user
 - The permission-matrix oddities. The user tabled this on 2026-10-31; raise it before `ranch-tenancy-permissions`.
+
+## Update 2026-10-31: SINIIGA
+
+The user corrected the lockdown: SINIIGA is unique nationally. `docs/domain-model.md` §7.7 records the format and rule, taken from the technical manual. PR #9 went back to its worker to keep the live app's nationwide check through a callable that returns only available or taken. `siniiga-compliance` is a new card, and `animal-api` carries the index change. Stage 0 of `legacy/firebase/notes/deploy-runbook.md` is with the user.

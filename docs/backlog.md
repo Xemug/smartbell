@@ -43,25 +43,26 @@ Ordered by dependency. Each row is one card; its spec is `docs/roadmap/<slug>.md
 | 32 | `tasks-home`: Tasks home: task list, new task, task detail | feature | M | tasks-engine, event-launcher, app-shell-navigation |
 | 33 | `milk-screens`: Milk screens: daily log, per-cow log and production history chart | feature | M | milk-api, ui-surfaces-feedback |
 | 34 | `dashboard`: Reportes 'General' dashboard (V4) | feature | M | alert-engine, animal-lists, milk-api |
+| 35 | `siniiga-compliance`: Flag animals with no SINIIGA and ask at onboarding if the ranch has them all | feature | S | animal-lists, onboarding-hub, tasks-engine |
 | | **5 Replace the live app** | | | |
-| 35 | `legacy-firestore-import`: Import legacy Firestore data into Postgres | feature | M | core-data-model, auth, milk-api, animal-api |
-| 36 | `app-favicon-and-install-icons`: App favicon and install icons | chore | S | icons-export |
-| 37 | `mobile-store-release`: Capacitor iOS/Android build under the existing bundle id, with RevenueCat | feature | L | auth, tasks-home, milk-screens |
-| 38 | `golden-path-e2e`: End-to-end golden path test | chore | M | tasks-home, dashboard, milk-screens, calving-flow, health-flows, abortion-flow, mobile-store-release |
+| 36 | `legacy-firestore-import`: Import legacy Firestore data into Postgres | feature | M | core-data-model, auth, milk-api, animal-api |
+| 37 | `app-favicon-and-install-icons`: App favicon and install icons | chore | S | icons-export |
+| 38 | `mobile-store-release`: Capacitor iOS/Android build under the existing bundle id, with RevenueCat | feature | L | auth, tasks-home, milk-screens |
+| 39 | `golden-path-e2e`: End-to-end golden path test | chore | M | tasks-home, dashboard, milk-screens, calving-flow, health-flows, abortion-flow, mobile-store-release |
 | | **6 Notifications and admin** | | | |
-| 39 | `email-digest`: Notification service and daily email digest | feature | M | alert-engine |
-| 40 | `web-push-pwa`: Web push notifications and installable PWA | feature | M | email-digest, tasks-home |
-| 41 | `user-admin`: User administration and permissions | feature | M | ranch-tenancy-permissions, history-writer |
-| 42 | `retire-dairy-milk-tracker`: Retire dairy-milk-tracker | chore | S | auth |
+| 40 | `email-digest`: Notification service and daily email digest | feature | M | alert-engine |
+| 41 | `web-push-pwa`: Web push notifications and installable PWA | feature | M | email-digest, tasks-home |
+| 42 | `user-admin`: User administration and permissions | feature | M | ranch-tenancy-permissions, history-writer |
+| 43 | `retire-dairy-milk-tracker`: Retire dairy-milk-tracker | chore | S | auth |
 | | **7 Deferred ("Futuro" in 4.0 or not in it)** | | | |
-| 43 | `vaccination-plan`: Vaccination and development plan wizard | feature | M | onboarding-hub |
-| 44 | `history`: History (Historial): activity feed with filters | feature | S | history-writer, cow-profile |
-| 45 | `kpi-engine`: Report KPI engine (Básico report) | feature | L | events-api |
-| 46 | `reports-overview`: Reports tab: Básicos overview | feature | M | kpi-engine |
-| 47 | `reports-kpi-detail`: Report KPI detail screens | feature | M | reports-overview |
-| 48 | `report-export`: Report export: PDF and XLS | feature | S | reports-overview |
+| 44 | `vaccination-plan`: Vaccination and development plan wizard | feature | M | onboarding-hub |
+| 45 | `history`: History (Historial): activity feed with filters | feature | S | history-writer, cow-profile |
+| 46 | `kpi-engine`: Report KPI engine (Básico report) | feature | L | events-api |
+| 47 | `reports-overview`: Reports tab: Básicos overview | feature | M | kpi-engine |
+| 48 | `reports-kpi-detail`: Report KPI detail screens | feature | M | reports-overview |
+| 49 | `report-export`: Report export: PDF and XLS | feature | S | reports-overview |
 | | **8 Parked** | | | |
-| 49 | `plans-billing`: Plans, billing and plan limits (parked) | feature | XL | user-admin |
-| 50 | `sms-whatsapp-alerts`: SMS and WhatsApp alert channels (parked) | feature | M | email-digest, plans-billing |
-| 51 | `messages`: Internal user messages (parked) | feature | M | user-admin |
-| 52 | `offline-event-queue`: Offline event capture (spike) | spike | M | event-launcher |
+| 50 | `plans-billing`: Plans, billing and plan limits (parked) | feature | XL | user-admin |
+| 51 | `sms-whatsapp-alerts`: SMS and WhatsApp alert channels (parked) | feature | M | email-digest, plans-billing |
+| 52 | `messages`: Internal user messages (parked) | feature | M | user-admin |
+| 53 | `offline-event-queue`: Offline event capture (spike) | spike | M | event-launcher |
