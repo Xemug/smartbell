@@ -38,7 +38,7 @@ Per design-system.md §2.3–§2.5 and §4.2. Snackbar variants match web event 
 - **New dependencies.** `@radix-ui/react-dialog` (Modal, ConfirmDialog, BottomSheet) and `@radix-ui/react-tabs`, in line with the primitives. Radix returns focus only to its own Trigger, so `useReturnFocus` does it for our controlled dialogs.
 - **DataTable has two modes.** `animal-api` filters, sorts and pages on the server at size 10, so passing `total` makes `rows` the current page and hands sort and page to the caller. Without `total` the table does both itself.
   - The header checkbox selects the current page, not the whole list; selection survives page changes. In client mode rows a filter removes leave the selection, so a bulk action cannot reach hidden animals. A server-mode caller clears selection on a new filter.
-  - The table cannot tell a new filter from an edited list, so the caller returns to page 1 on a new filter (`page`/`onPageChange`). If the page stops existing the table moves to the last one, through `onPageChange` with a server.
+  - Without a server, a changed set of rows returns to page 1, so new filter results open at the top. Lists that add or remove rows in place set `keepPage`, and stay on their page. If a page stops existing the table moves to the last one, through `onPageChange` with a server. A server-mode caller resets its own page on a new filter.
   - While `loading`, empty rows mean nothing: no alert, no selection pruning, no page change. Callers pass it during every fetch.
   - Sorting toggles asc/desc and returns to page 1. Blank values stay last in both directions.
   - Mobile hides columns and actions per Header Table_Mobile (`hideOnMobile`). Below that a narrow table scrolls inside its own box.

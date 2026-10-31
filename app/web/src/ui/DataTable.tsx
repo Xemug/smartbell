@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Banner } from './Banner';
@@ -60,6 +60,11 @@ interface DataTableProps<Row> {
   /** Counted from 1. */
   page?: number;
   onPageChange?: (page: number) => void;
+  /**
+   * Without a server, a changed set of rows returns to page 1, as new filter results should. Set
+   * this on a list that adds or removes rows in place, so deleting one keeps the reader's page.
+   */
+  keepPage?: boolean;
   /** Replaces the default "no animals with this filter" alert. */
   empty?: ReactNode;
   /** A fetch is running: empty `rows` then mean nothing, so nothing is judged from them. */
@@ -90,6 +95,7 @@ export function DataTable<Row>({
   onSortChange,
   page: pageProp,
   onPageChange,
+  keepPage = false,
   empty,
   loading = false,
   className,
@@ -131,26 +137,32 @@ export function DataTable<Row>({
     setPage(1);
   };
 
-  // Filtering must not leave hidden rows selected, or a bulk delete would reach them. With a
-  // server the other pages are not here to check, so its caller clears them on a new filter.
-  const known = serverSide ? null : rows.map(getRowId).join('\n');
-  useEffect(() => {
-    if (known === null || loading) return;
-    const ids = new Set(known.split('\n'));
-    const kept = selected.filter((id) => ids.has(id));
-    if (kept.length !== selected.length) setSelected(kept);
-    // Only a change in the rows should trigger this.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [known, loading]);
-
-  // Deleting the last rows of the last page: move to a page that exists. With a server this is
-  // what fetches it.
   const askedPage = pageProp ?? ownPage;
+  // Keys the row set. With a server the other pages are not here to check, so its caller clears
+  // selection and page on a new filter.
+  const known = serverSide ? null : rows.map(getRowId).join('\n');
+  const seenRows = useRef<string | null>(null);
   useEffect(() => {
-    if (!loading && askedPage > pageCount) setPage(pageCount);
-    // Only the page numbers matter here.
+    if (loading) return;
+    if (known !== null && known !== seenRows.current) {
+      const firstRun = seenRows.current === null;
+      seenRows.current = known;
+      // Filtering must not leave hidden rows selected, or a bulk delete would reach them.
+      const ids = new Set(known.split('\n'));
+      const kept = selected.filter((id) => ids.has(id));
+      if (kept.length !== selected.length) setSelected(kept);
+      // New results open on their first page.
+      if (!firstRun && !keepPage && askedPage !== 1) {
+        setPage(1);
+        return;
+      }
+    }
+    // Otherwise, as after deleting the last rows of the last page, move to a page that exists.
+    // With a server this is what fetches it.
+    if (askedPage > pageCount) setPage(pageCount);
+    // Only the rows and the page numbers should trigger this.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [askedPage, pageCount, loading]);
+  }, [known, askedPage, pageCount, loading]);
 
   const visibleIds = visible.map(getRowId);
   const pageChecked = visibleIds.filter((id) => selected.includes(id)).length;

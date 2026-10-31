@@ -231,15 +231,9 @@ function CardDemos() {
 function TableAndFilters() {
   const [filter, setFilter] = useState<Filter | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
-  const [page, setPage] = useState(1);
   const [sheet, setSheet] = useState(false);
   const [lastAction, setLastAction] = useState('');
   const rows = useMemo(() => herd.filter((cow) => matches(cow, filter)), [filter]);
-  // The table cannot tell a new filter from an edited list, so its owner goes back to page 1.
-  const applyFilter = (next: Filter | null) => {
-    setFilter(next);
-    setPage(1);
-  };
   const rowActions: DataTableRowAction<Cow>[] = [
     {
       label: 'Mover',
@@ -251,7 +245,7 @@ function TableAndFilters() {
   ];
   return (
     <>
-      <FilterPanel categories={filterCategories} value={filter} onApply={applyFilter} />
+      <FilterPanel categories={filterCategories} value={filter} onApply={setFilter} />
       <div className="flex items-center gap-3">
         <IconButton
           icon={iconFilter}
@@ -269,7 +263,7 @@ function TableAndFilters() {
         onOpenChange={setSheet}
         categories={filterCategories}
         value={filter}
-        onApply={applyFilter}
+        onApply={setFilter}
       />
       <DataTable
         label="Vacas"
@@ -280,8 +274,6 @@ function TableAndFilters() {
         rowActions={rowActions}
         selected={selected}
         onSelectionChange={setSelected}
-        page={page}
-        onPageChange={setPage}
       />
       <p data-testid="table-state" className="type-body-sm">
         Seleccionadas: {selected.length}. {lastAction}

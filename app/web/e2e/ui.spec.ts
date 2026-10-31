@@ -156,6 +156,7 @@ test('table filters, sorts, pages and selects', async ({ page, isMobile }) => {
   const pager = page.getByRole('navigation', { name: 'Paginación', exact: true });
   await pager.getByRole('button', { name: 'Ir a la página 3' }).click();
   await expect(table.getByRole('row')).toHaveCount(4);
+  await pager.getByRole('button', { name: 'Ir a la página 2' }).click();
 
   if (isMobile) {
     await page.getByRole('button', { name: 'Filtrar en móvil' }).click();

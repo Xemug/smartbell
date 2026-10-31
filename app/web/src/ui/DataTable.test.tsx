@@ -136,11 +136,39 @@ describe('DataTable', () => {
     expect(screen.getByRole('status')).not.toHaveTextContent('01');
   });
 
-  it('falls back to the last page when the list shrinks', async () => {
+  it('opens new results on page 1, and stays there when they are cleared', async () => {
     const { rerender } = render(table());
-    await userEvent.click(screen.getByRole('button', { name: 'Ir a la página 3' }));
-    rerender(table({ rows: rows.slice(0, 12) }));
-    expect(ids()).toEqual(['11', '12']);
+    await userEvent.click(screen.getByRole('button', { name: 'Ir a la página 2' }));
+    rerender(table({ rows: rows.slice(0, 15) }));
+    expect(ids()[0]).toBe('01');
+    rerender(table());
+    expect(ids()[0]).toBe('01');
+  });
+
+  it('tells a controlled owner to go back to page 1', () => {
+    const onPageChange = vi.fn();
+    const { rerender } = render(table({ page: 3, onPageChange }));
+    expect(onPageChange).not.toHaveBeenCalled();
+    rerender(table({ page: 3, onPageChange, rows: rows.slice(0, 12) }));
+    expect(onPageChange).toHaveBeenCalledTimes(1);
+    expect(onPageChange).toHaveBeenCalledWith(1);
+  });
+
+  it('keeps the page with keepPage, falling back only if that page is gone', async () => {
+    const { rerender } = render(table({ keepPage: true }));
+    await userEvent.click(screen.getByRole('button', { name: 'Ir a la página 2' }));
+    rerender(table({ keepPage: true, rows: rows.slice(1) }));
+    expect(ids()[0]).toBe('12');
+    rerender(table({ keepPage: true, rows: rows.slice(0, 8) }));
+    expect(ids()[0]).toBe('01');
+  });
+
+  it('does not reset for a refetch that only passes through empty rows', async () => {
+    const { rerender } = render(table());
+    await userEvent.click(screen.getByRole('button', { name: 'Ir a la página 2' }));
+    rerender(table({ rows: [], loading: true }));
+    rerender(table());
+    expect(ids()[0]).toBe('11');
   });
 
   it('runs row actions, naming the row', async () => {
