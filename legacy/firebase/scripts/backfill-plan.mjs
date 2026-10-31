@@ -7,6 +7,16 @@ export function planMemberIds(ranch) {
   return [...new Set([...(ranch.memberIds ?? []), ...fromWorkers])].filter((uid) => uid !== owner).sort();
 }
 
+/**
+ * invitedUsers to keep. The app adds workesList and invitedUsers together, and removing a
+ * worker today only clears workesList. An invite with no worker row is left over from a
+ * removal, and keeping it would let that person rejoin with one tap.
+ */
+export function planInvitedUsers(ranch) {
+  const workers = new Set((ranch.workesList ?? []).map((w) => w?.user?.id));
+  return (ranch.invitedUsers ?? []).filter((ref) => workers.has(ref.id));
+}
+
 export const sameList = (a, b) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
 
 /** Parent reference that can supply a missing ranch_id, per log collection. */

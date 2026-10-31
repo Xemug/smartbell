@@ -36,6 +36,9 @@ Everything built lives in `legacy/firebase/` in this repo. The legacy app (`/Use
 - The owner can remove members but can't add them; members join only through accept. Members can't edit `workesList`, `invitedUsers` or `memberIds`, or the owner field (assumption).
 - Members can delete all ranch data the app deletes, not only cows and tasks, because the app's delete flows cascade to logs, groups and bulls (assumption).
 - `inviteUserByEmail` requires `premium` on the server too, and caps at 20 tries an hour so it can't be used to probe emails (assumption).
+- New invites must go through `inviteUserByEmail` once the final rules are live, so premium and the rate limit can't be skipped from a client (assumption).
+- SINIIGA duplicate checks cover one ranch, because rules can't allow a global lookup. Two ranches could register the same tag (assumption).
+- The backfill runs once for `memberIds`. It removes leftover invites from workers already taken off a ranch (assumption).
 - The webhook reads current state from RevenueCat instead of trusting event types. Only the `Pro` entitlement grants premium (assumption).
 
 ## Approach

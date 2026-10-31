@@ -63,12 +63,15 @@ service cloud.firestore {
           && newMembers() == oldMembers().union([request.auth.uid].toSet())
           && newInvited() == oldInvited().difference([myRef()].toSet());
       }
-      // Owners run invites and can remove people. Adding a member only happens through
-      // accept, so an owner can't put someone in a ranch without that person's tap.
+      // Owners can remove people. Adding a member only happens through accept, so an
+      // owner can't put someone in a ranch without that person's tap. New invites go through
+      // inviteUserByEmail, which enforces premium and the rate limit; the old app still
+      // writes invitedUsers directly, so stage 1 allows that.
       function isOwnerUpdate() {
         return isOwnerOf(resource.data)
           && !changed().hasAny(['user_id'])
-          && newMembers().difference(oldMembers()).size() == 0;
+          && newMembers().difference(oldMembers()).size() == 0
+          && (legacyClients() || newInvited().difference(oldInvited()).size() == 0);
       }
       function isMemberUpdate() {
         return (isListedMember(resource.data) || (legacyClients() && isInvitedTo(resource.data)))
@@ -78,12 +81,20 @@ service cloud.firestore {
       allow read: if (legacyClients() && signedIn())
         || isOwnerOf(resource.data) || isListedMember(resource.data) || isInvitedTo(resource.data);
       allow create: if isOwnerOf(request.resource.data)
-        && request.resource.data.get('memberIds', []).size() == 0;
+        && request.resource.data.get('memberIds', []).size() == 0
+        && (legacyClients() || request.resource.data.get('invitedUsers', []).size() == 0);
       allow update: if isOwnerUpdate() || isMemberUpdate() || isAccepting();
       allow delete: if isOwnerOf(resource.data);
 
       match /productionPerDays/{doc} {
-        allow read, write: if memberOfId(id);
+        // The collection-group read below trusts ranch_id, so a doc here can't claim
+        // another ranch. Old docs without the field match no ranch filter.
+        function rightRanch(data) {
+          return !('ranch_id' in data)
+            || data.ranch_id == /databases/$(database)/documents/Ranches/$(id);
+        }
+        allow read, delete: if memberOfId(id);
+        allow create, update: if memberOfId(id) && rightRanch(request.resource.data);
       }
     }
 

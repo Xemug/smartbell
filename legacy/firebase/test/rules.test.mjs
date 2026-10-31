@@ -150,6 +150,20 @@ describe('final rules', () => {
       await assertFails(updateDoc(ranchA(f), { workesList: [] }));
     });
 
+    test('a member cannot file production records under another ranch', async () => {
+      const f = db(env, MEMBER);
+      await assertFails(setDoc(doc(ranchA(f), 'productionPerDays', 'forged'), { ranch_id: doc(f, 'Ranches', 'ranch-b') }));
+      await assertFails(updateDoc(doc(ranchA(f), 'productionPerDays', 'day-1'), { ranch_id: doc(f, 'Ranches', 'ranch-b') }));
+      await assertSucceeds(updateDoc(doc(ranchA(f), 'productionPerDays', 'day-1'), { total: 11 }));
+    });
+
+    test('owners cannot skip the invite function', async () => {
+      const f = db(env, OWNER);
+      await assertFails(updateDoc(ranchA(f), { invitedUsers: arrayUnion(doc(f, 'Users', STRANGER)) }));
+      await assertFails(setDoc(doc(f, 'Ranches', 'r2'), { user_id: doc(f, 'Users', OWNER), invitedUsers: [doc(f, 'Users', STRANGER)] }));
+      await assertSucceeds(updateDoc(ranchA(f), { invitedUsers: arrayRemove(doc(f, 'Users', INVITED)) }));
+    });
+
     test('the owner can remove a member but cannot add one or transfer the ranch', async () => {
       const f = db(env, OWNER);
       await assertFails(updateDoc(ranchA(f), { memberIds: arrayUnion(STRANGER) }));
@@ -277,6 +291,11 @@ describe('stage 1 rules (today\'s app versions)', () => {
 
   test('the old client premium write after a purchase still succeeds', async () => {
     await assertSucceeds(updateDoc(doc(db(env, STRANGER), 'Users', STRANGER), { premium: true }));
+  });
+
+  test('the old direct invite write still works', async () => {
+    const f = db(env, OWNER);
+    await assertSucceeds(updateDoc(ranchA(f), { invitedUsers: arrayUnion(doc(f, 'Users', STRANGER)) }));
   });
 
   test('the old bull weight form, which writes no ranch_id, still works', async () => {

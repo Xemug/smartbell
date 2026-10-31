@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
-import { PARENT_FIELD, RANCH_COLLECTIONS, planMemberIds, sameList } from '../scripts/backfill-plan.mjs';
+import { PARENT_FIELD, RANCH_COLLECTIONS, planInvitedUsers, planMemberIds, sameList } from '../scripts/backfill-plan.mjs';
 
 const ref = (id) => ({ id });
 
@@ -11,6 +11,11 @@ test('workers become members, without the owner or duplicates', () => {
 
 test('a ranch with no workers plans an empty list', () => {
   assert.deepEqual(planMemberIds({ user_id: ref('o') }), []);
+});
+
+test('a removed worker loses their leftover invite', () => {
+  const ranch = { invitedUsers: [ref('kept'), ref('removed')], workesList: [{ user: ref('kept') }] };
+  assert.deepEqual(planInvitedUsers(ranch).map((r) => r.id), ['kept']);
 });
 
 test('sameList ignores order', () => assert.equal(sameList(['a', 'b'], ['b', 'a']), true));

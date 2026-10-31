@@ -2,7 +2,7 @@
 
 Generated on 2026-10-31 from the FlutterFlow export. Paths are relative to `lib/`.
 
-**69 queries** across 10 collections.
+**70 queries** across 10 collections.
 
 Firestore rules are not filters: the final rules refuse any query that doesn't prove it stays inside one ranch. Each query below must add `where ranch_id == currentUserDocument.currentSelectedRanch` (a Firestore query equal-to filter in FlutterFlow), keeping its existing filters. A query with an `orderBy` plus the new filter may need a composite index; Firestore logs a link to create it.
 
@@ -88,6 +88,7 @@ Firestore rules are not filters: the final rules refuse any query that doesn't p
 | Paternal_Grandmother | `custom_code/actions/can_delete_cow.dart` | 32 |
 | Paternal_Grandmother | `sb_04_animals/sb_03_animal_profile/bull_profile_genealogy/bull_profile_genealogy_widget.dart` | 1320 |
 | SINIIGA | `custom_code/actions/bulk_import_cows.dart` | 248 |
+| SINIIGA | `custom_code/actions/validate_s_i_n_i_i_g_a.dart` | 39 |
 | groups | `custom_code/actions/update_cows_group_name.dart` | 28 |
 | none | `components/cow_milk_edit_log_antibiotics/cow_milk_edit_log_antibiotics_widget.dart` | 64 |
 | none | `components/cow_milk_edit_log_heifers/cow_milk_edit_log_heifers_widget.dart` | 64 |

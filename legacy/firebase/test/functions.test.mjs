@@ -1,12 +1,14 @@
 import { strict as assert } from 'node:assert';
 import { createRequire } from 'node:module';
 import { after, before, beforeEach, describe, test } from 'node:test';
-import { deleteApp, initializeApp } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
 
-const require = createRequire(import.meta.url);
-const { applyRevenueCatEvent, handleRevenueCatWebhook, hasActivePro, inviteUser } = require('../functions/lib.js');
+// Resolve firebase-admin from functions/, like lib.js does. If functions/node_modules
+// exists, a second copy would reject FieldValue objects made by the first.
+const require = createRequire(new URL('../functions/lib.js', import.meta.url));
+const { deleteApp, initializeApp } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
+const { getFirestore } = require('firebase-admin/firestore');
+const { applyRevenueCatEvent, handleRevenueCatWebhook, hasActivePro, inviteUser } = require('./lib.js');
 
 process.env.GCLOUD_PROJECT = 'demo-smartbell';
 let app, db, auth;
@@ -69,6 +71,10 @@ describe('inviteUser', () => {
   test('unknown email reports not_found and changes nothing', async () => {
     assert.deepEqual(await invite({ email: 'nobody@example.test' }), { status: 'not_found' });
     assert.deepEqual((await db.collection('Ranches').doc('r1').get()).get('invitedUsers'), []);
+  });
+
+  test('an email Auth rejects reads as not_found, not an internal error', async () => {
+    assert.deepEqual(await invite({ email: 'foo@' }), { status: 'not_found' });
   });
 
   test('inviting twice, inviting a member and inviting yourself change nothing', async () => {

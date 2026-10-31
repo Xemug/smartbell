@@ -60,7 +60,7 @@ async function inviteUser(db, auth, callerUid, data, now = Date.now()) {
   try {
     invitee = await auth.getUserByEmail(email.trim());
   } catch (err) {
-    if (err.code === 'auth/user-not-found') return { status: 'not_found' };
+    if (['auth/user-not-found', 'auth/invalid-email'].includes(err.code)) return { status: 'not_found' };
     throw err;
   }
   const inviteeRef = db.collection('Users').doc(invitee.uid);
