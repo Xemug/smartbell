@@ -2,7 +2,7 @@ import * as RadixDialog from '@radix-ui/react-dialog';
 import { useRef, useState, type PointerEvent, type ReactNode } from 'react';
 
 import { cx } from './cx';
-import { useReturnFocus } from './useReturnFocus';
+import { fromSnackbar, useReturnFocus } from './useReturnFocus';
 
 interface BottomSheetProps {
   open: boolean;
@@ -52,6 +52,9 @@ export function BottomSheet({
           aria-describedby={undefined}
           onOpenAutoFocus={remember}
           onCloseAutoFocus={onCloseAutoFocus}
+          onInteractOutside={(event) => {
+            if (fromSnackbar(event)) event.preventDefault();
+          }}
           style={offset ? { transform: `translateY(${offset}px)` } : undefined}
           className={cx(
             'fixed inset-x-0 bottom-0 z-40 mx-auto flex max-h-[85dvh] w-full max-w-[600px] flex-col gap-4 overflow-y-auto',

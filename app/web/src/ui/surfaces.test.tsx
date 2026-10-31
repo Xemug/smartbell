@@ -67,6 +67,25 @@ describe('ConfirmDialog', () => {
   });
 });
 
+describe('ConfirmDialog while loading', () => {
+  it('ignores Escape', async () => {
+    const onOpenChange = vi.fn();
+    render(
+      <ConfirmDialog
+        open
+        loading
+        onOpenChange={onOpenChange}
+        title="T"
+        description="D"
+        confirmLabel="Sí"
+        onConfirm={() => undefined}
+      />,
+    );
+    await userEvent.keyboard('{Escape}');
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+});
+
 describe('BottomSheet', () => {
   const drag = (distance: number) => {
     const handle = screen.getByTestId('sheet-handle');
@@ -266,6 +285,34 @@ describe('Tabs', () => {
       />,
     );
     expect(screen.getByRole('tabpanel')).toHaveTextContent('Contenido dos');
+  });
+});
+
+describe('dialogs and snackbars together', () => {
+  function Host() {
+    const { show } = useSnackbar();
+    const [open, setOpen] = useState(true);
+    return (
+      <Modal open={open} onOpenChange={setOpen} title="Formulario">
+        <button onClick={() => show({ kind: 'error', message: 'Falla' })}>Guardar</button>
+      </Modal>
+    );
+  }
+
+  it('keeps the dialog open when the snackbar is dismissed, and announces it', async () => {
+    render(
+      <SnackbarProvider>
+        <Host />
+      </SnackbarProvider>,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    const alert = screen.getByText('Falla').closest('[role=alert]') as HTMLElement;
+    expect(alert.closest('[aria-live]')).not.toHaveAttribute('aria-hidden');
+    await userEvent.click(within(alert).getByRole('button', { name: 'Cerrar', hidden: true }), {
+      pointerEventsCheck: 0,
+    });
+    expect(screen.queryByText('Falla')).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Formulario' })).toBeInTheDocument();
   });
 });
 

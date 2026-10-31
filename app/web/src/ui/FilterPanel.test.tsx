@@ -130,6 +130,22 @@ describe('FilterPanel inline', () => {
   });
 });
 
+describe('FilterPanel parents', () => {
+  it('keeps the unapplied choice when a re-render passes an equal new object', async () => {
+    const view = () => (
+      <FilterPanel
+        categories={categories}
+        value={{ category: 'salud', variable: 'enfermas' }}
+        onApply={() => undefined}
+      />
+    );
+    const { rerender } = render(view());
+    await pick('Categoría', 'Raza')();
+    rerender(view());
+    expect(screen.getByRole('combobox', { name: 'Categoría' })).toHaveTextContent('Raza');
+  });
+});
+
 describe('FilterPanel sheet', () => {
   it('asks for the variable once a category is chosen, then applies and closes', async () => {
     const onApply = vi.fn();

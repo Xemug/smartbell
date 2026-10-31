@@ -170,6 +170,20 @@ describe('DataTable', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
+  it('judges nothing from empty rows while loading', () => {
+    const onSelectionChange = vi.fn();
+    render(table({ rows: [], loading: true, selected: ['01'], onSelectionChange }));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByRole('table')).toHaveAttribute('aria-busy', 'true');
+    expect(onSelectionChange).not.toHaveBeenCalled();
+  });
+
+  it('asks a server for the last page when the current one stops existing', () => {
+    const onPageChange = vi.fn();
+    render(table({ rows: [], total: 20, page: 3, onPageChange }));
+    expect(onPageChange).toHaveBeenCalledWith(2);
+  });
+
   it('leaves paging and sorting to the server when given a total', async () => {
     const onSortChange = vi.fn();
     const onPageChange = vi.fn();

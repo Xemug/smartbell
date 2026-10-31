@@ -47,7 +47,9 @@ export function FilterPanel<T extends FilterCategories>({
 }: FilterPanelProps<T>) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState<FilterOf<T> | null>(value);
-  useEffect(() => setDraft(value), [value]);
+  // By content: a parent that rebuilds an equal object must not wipe the unapplied choice.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => setDraft(value), [value?.category, value?.variable]);
 
   const category = draft ? categories[draft.category] : undefined;
   const categoryOptions = Object.entries(categories).map(([key, { label }]) => ({

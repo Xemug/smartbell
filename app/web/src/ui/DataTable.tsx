@@ -9,6 +9,7 @@ import { iconArrowDown, iconArrowUp, type Glyph } from './icons/glyphs';
 import { Icon } from './icons/Icon';
 import { Pagination } from './Pagination';
 import { sortRows } from './sortRows';
+import { Spinner } from './Spinner';
 
 export const PAGE_SIZE = 10;
 
@@ -61,6 +62,7 @@ interface DataTableProps<Row> {
   onPageChange?: (page: number) => void;
   /** Replaces the default "no animals with this filter" alert. */
   empty?: ReactNode;
+  /** A fetch is running: empty `rows` then mean nothing, so nothing is judged from them. */
   loading?: boolean;
   className?: string;
 }
@@ -133,13 +135,22 @@ export function DataTable<Row>({
   // server the other pages are not here to check, so its caller clears them on a new filter.
   const known = serverSide ? null : rows.map(getRowId).join('\n');
   useEffect(() => {
-    if (known === null) return;
+    if (known === null || loading) return;
     const ids = new Set(known.split('\n'));
     const kept = selected.filter((id) => ids.has(id));
     if (kept.length !== selected.length) setSelected(kept);
     // Only a change in the rows should trigger this.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [known]);
+  }, [known, loading]);
+
+  // Deleting the last rows of the last page: move to a page that exists. With a server this is
+  // what fetches it.
+  const askedPage = pageProp ?? ownPage;
+  useEffect(() => {
+    if (!loading && askedPage > pageCount) setPage(pageCount);
+    // Only the page numbers matter here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [askedPage, pageCount, loading]);
 
   const visibleIds = visible.map(getRowId);
   const pageChecked = visibleIds.filter((id) => selected.includes(id)).length;
@@ -224,7 +235,13 @@ export function DataTable<Row>({
             {visible.length === 0 ? (
               <tr>
                 <td colSpan={colSpan} className="p-4">
-                  {empty ?? <Banner tone="error">{t('ui.noFilterResults')}</Banner>}
+                  {loading ? (
+                    <span className="flex justify-center text-primary">
+                      <Spinner size={24} />
+                    </span>
+                  ) : (
+                    (empty ?? <Banner tone="error">{t('ui.noFilterResults')}</Banner>)
+                  )}
                 </td>
               </tr>
             ) : (

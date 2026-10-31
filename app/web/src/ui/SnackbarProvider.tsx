@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 import { Snackbar } from './Snackbar';
+import { snackbarLayer } from './useReturnFocus';
 import { SnackbarContext, type SnackbarApi, type SnackbarOptions } from './useSnackbar';
 
 const maxVisible = 3;
@@ -44,8 +45,14 @@ export function SnackbarProvider({ children }: { children: ReactNode }) {
     <SnackbarContext.Provider value={api}>
       {children}
       {createPortal(
-        // Above open dialogs, whose layer turns off pointer events on the body.
-        <div className="pointer-events-none fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 flex flex-col items-center gap-2">
+        // Always mounted and aria-live, so a message is announced, even with a dialog open (dialogs
+        // hide the rest of the page from screen readers, except live regions). Sits above dialogs,
+        // whose layer turns off pointer events on the body.
+        <div
+          aria-live="polite"
+          {...{ [snackbarLayer]: '' }}
+          className="pointer-events-none fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 flex flex-col items-center gap-2"
+        >
           {items.map((item) => (
             <Entry key={item.id} item={item} dismiss={dismiss} />
           ))}

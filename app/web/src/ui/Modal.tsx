@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { cx } from './cx';
 import { IconButton } from './IconButton';
 import { iconX } from './icons/glyphs';
-import { useReturnFocus } from './useReturnFocus';
+import { fromSnackbar, useReturnFocus } from './useReturnFocus';
 
 interface ModalProps {
   open: boolean;
@@ -21,6 +21,8 @@ interface ModalProps {
   alert?: boolean;
   /** Receives focus on open; by default it is the first control. */
   initialFocus?: RefObject<HTMLElement>;
+  /** Receives focus on close, when set; by default it is whatever opened the dialog. */
+  returnFocus?: RefObject<HTMLElement>;
   className?: string;
 }
 
@@ -35,10 +37,11 @@ export function Modal({
   closeButton = true,
   alert = false,
   initialFocus,
+  returnFocus,
   className,
 }: ModalProps) {
   const { t } = useTranslation();
-  const { remember, onCloseAutoFocus } = useReturnFocus();
+  const { remember, onCloseAutoFocus } = useReturnFocus(returnFocus);
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
       <RadixDialog.Portal>
@@ -54,8 +57,9 @@ export function Modal({
             event.preventDefault();
             initialFocus.current.focus();
           }}
-          onPointerDownOutside={(event) => alert && event.preventDefault()}
-          onInteractOutside={(event) => alert && event.preventDefault()}
+          onInteractOutside={(event) => {
+            if (alert || fromSnackbar(event)) event.preventDefault();
+          }}
           className={cx(
             'fixed left-1/2 top-1/2 z-40 flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-[534px] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-y-auto',
             'rounded-moon-i-md bg-neutral-1 p-6 text-primary-text shadow-moon-lg outline-none',

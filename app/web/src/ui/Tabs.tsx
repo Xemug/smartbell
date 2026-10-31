@@ -38,7 +38,7 @@ const tabs: Record<TabsType, string> = {
   default:
     'rounded-moon-i-xs text-secondary-text hover:text-primary data-[state=active]:bg-primary-10 data-[state=active]:text-primary-dark',
   lined:
-    '-mb-px border-b-2 border-transparent text-secondary-text hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary',
+    'border-b-2 border-transparent text-secondary-text hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary',
   solid:
     'flex-1 rounded-moon-i-xs text-secondary-text hover:text-primary data-[state=active]:bg-neutral-1 data-[state=active]:text-primary data-[state=active]:shadow-moon-sm',
 };

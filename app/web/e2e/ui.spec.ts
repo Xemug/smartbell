@@ -199,6 +199,6 @@ test('wizard back with typed data asks before discarding', async ({ page }) => {
 
   await wizard.getByRole('button', { name: 'Regresar' }).click();
   await dialog.getByRole('button', { name: 'Sí, descartar' }).click();
-  await expect(wizard.getByRole('heading', { name: 'Datos generales' })).toBeVisible();
+  await expect(wizard.getByRole('heading', { name: 'Datos generales' })).toBeFocused();
   await expect(wizard.getByRole('textbox', { name: 'Nombre del potrero' })).toHaveValue('');
 });

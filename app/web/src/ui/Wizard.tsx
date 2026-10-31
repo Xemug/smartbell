@@ -48,6 +48,8 @@ export function Wizard({
   const { t } = useTranslation();
   const [confirming, setConfirming] = useState(false);
   const last = step >= steps.length - 1;
+  // Set on discard, so closing the dialog lands on the new step rather than on Regresar.
+  const afterDiscard = useRef<HTMLElement | null>(null);
 
   // A new step replaces the content, so focus moves with it instead of falling to the page.
   const heading = useRef<HTMLHeadingElement>(null);
@@ -71,7 +73,11 @@ export function Wizard({
           <Button
             variant="ghost"
             leadingIcon={iconChevronLeft}
-            onClick={() => (dirty ? setConfirming(true) : onBack())}
+            onClick={() => {
+              afterDiscard.current = null;
+              if (dirty) setConfirming(true);
+              else onBack();
+            }}
           >
             {t('ui.back')}
           </Button>
@@ -91,11 +97,13 @@ export function Wizard({
         danger
         open={confirming}
         onOpenChange={setConfirming}
+        returnFocus={afterDiscard}
         title={t('ui.discardTitle')}
         description={t('ui.discardBody')}
         confirmLabel={t('ui.discardConfirm')}
         cancelLabel={t('ui.keepEditing')}
         onConfirm={() => {
+          afterDiscard.current = heading.current;
           setConfirming(false);
           onDiscard?.();
           onBack?.();
