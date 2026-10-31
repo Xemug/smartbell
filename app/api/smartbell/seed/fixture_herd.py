@@ -3,8 +3,9 @@
     uv run python -m smartbell.seed.fixture_herd [--today YYYY-MM-DD]
 
 Dates are relative to `today`, so each prototype cow sits at the start of its flow whenever the
-herd is seeded. The repro engine doesn't exist yet: until it does, the projection fields on each
-animal are written here, by hand, to match the animal's events. Seeding twice changes nothing.
+herd is seeded. The builders below keep the projection fields in memory because the alerts, tasks
+and milk logs they write depend on them; the last step re-runs the repro engine, which has the final
+word on those fields. Seeding twice changes nothing.
 """
 
 import argparse
@@ -70,6 +71,7 @@ from smartbell.models import (
     VaccinationPlan,
     derive_kind,
 )
+from smartbell.services.projection import reproject_ranch
 from smartbell.settings import get_settings
 
 OWNER_EMAIL = "dueno@fixture.smartbell.test"
@@ -169,6 +171,12 @@ class Herd:
 
     def calved(self, cow: Animal, days_ago: int, *, lactation: int) -> None:
         on = self.ago(days_ago)
+        alta = next(
+            event
+            for event in self.events
+            if event.animal_id == cow.id and event.type is EventType.ALTA
+        )
+        alta.payload |= {"lactation_number": lactation - 1}  # What she had already calved.
         self.record(
             cow, EventType.CALVING, on, timing=CalvingTiming.ESPERADO, calf_registered=False
         )
@@ -308,6 +316,7 @@ class Herd:
             "type": kind,
             "presentation": DrugPresentation.INYECCION,
             "start_date": self.ago(days_ago).isoformat(),
+            "withdrawal_days": 5,
             **fields,
         }
 
@@ -641,6 +650,8 @@ async def seed_fixture_herd(session: AsyncSession, today: dt.date) -> bool:
     milking_herd(herd, bulls)
     milk_logs(herd)
     await herd.save(session)
+    await reproject_ranch(session, ranch.id, today)
+    await session.flush()
     return True
 
 

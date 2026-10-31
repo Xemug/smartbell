@@ -50,7 +50,8 @@ class Treatment(_Strict):
     presentation: DrugPresentation
     start_date: date
     duration_days: int = Field(default=5, ge=0)
-    withdrawal_days: int = Field(default=5, ge=0)
+    # None: nobody said. The engine then uses the default for the treatment, or the maximum (§3.6).
+    withdrawal_days: int | None = Field(default=None, ge=0)
 
     @model_validator(mode="after")
     def _subtype_only_for_corticoids(self) -> Self:
@@ -91,6 +92,7 @@ class AltaPayload(_Strict):
     repro_stage: ReproState | None = None
     repro_stage_date: date | None = None
     lactation_number: int | None = Field(default=None, ge=0)
+    last_calving_date: date | None = None
     group_id: UUID | None = None
 
 

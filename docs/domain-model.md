@@ -53,7 +53,7 @@ recorded_by, created_at, description, comments (≤160), payload (JSON, typed pe
 
 **Treatment** (embedded): type (ANTIBIOTICO, ANTISEPTICO, ANTIBACTERIANO, ANTIMICOTICO, QUIRURGICO,
 ANTIINFLAMATORIO, CORTICOIDE, ANTIMICROBIANO, ANTIPARASITARIO), corticoid_subtype?, presentation
-(TOPICO, ORAL, INYECCION), start_date, duration_days (default 5), withdrawal_days (default 5; see §3.6).
+(TOPICO, ORAL, INYECCION), start_date, duration_days (default 5), withdrawal_days (the form pre-fills 5; left empty, §3.6 applies).
 
 Deleting an event that is not deletable is refused. Deleting without the permission creates a
 **DeletionRequest** (event_id, requested_by, status), which goes to an admin.
@@ -102,7 +102,7 @@ any           --REMOVAL------------------------------> status REMOVED
 ```
 
 Implementation rule: the state is a **pure fold over the animal's events plus today's date**
-(`repro.project(events, settings, today)`). Deleting or editing an event re-projects; nothing is
+(`repro.project(animal, events, settings, today)`). Deleting or editing an event re-projects; nothing is
 mutated by hand. The scheduled job only re-runs the projection for date-driven transitions and emits
 alerts.
 
