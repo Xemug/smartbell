@@ -15,7 +15,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['favicon.svg', 'illustrations/*.svg'],
       workbox: {
         // Also the Latin subset of the self-hosted fonts (es-MX and en need no other), so text
         // keeps its typeface offline.

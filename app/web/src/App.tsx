@@ -4,9 +4,12 @@ import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 
 import { HomePage } from './pages/HomePage';
 
-// The token preview is internal, so it stays out of the main bundle.
+// The token and icon previews are internal, so they stay out of the main bundle.
 const DevTokensPage = lazy(() =>
   import('./pages/DevTokensPage').then((m) => ({ default: m.DevTokensPage })),
+);
+const DevIconsPage = lazy(() =>
+  import('./pages/DevIconsPage').then((m) => ({ default: m.DevIconsPage })),
 );
 
 const router = createBrowserRouter([
@@ -16,6 +19,14 @@ const router = createBrowserRouter([
     element: (
       <Suspense>
         <DevTokensPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: '/dev/icons',
+    element: (
+      <Suspense>
+        <DevIconsPage />
       </Suspense>
     ),
   },

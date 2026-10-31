@@ -21,5 +21,12 @@
     "shadows": "Shadows",
     "breakpoints": "Breakpoints",
     "sample": "Vacas en sistema 128"
+  },
+  "devIcons": {
+    "title": "Icons",
+    "intro": "Internal preview of the icons and illustrations exported from Figma.",
+    "line": "Line icons",
+    "color": "Colour icons",
+    "illustrations": "Illustrations and logos"
   }
 }
