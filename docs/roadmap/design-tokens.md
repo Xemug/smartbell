@@ -51,5 +51,5 @@ M.
 - [x] Every UI Kit color/type/spacing/radius/shadow variable exists in tokens.json with a semantic name.
 - [x] The domain tokens (heat, warning-orange, primary-dark, success-light) exist.
 - [x] `/dev/tokens` renders all tokens; the type ramp switches at 600 and 960.
-- [ ] The preview matches the UI Kit Foundations page side by side (human).
+- [x] The preview matches the UI Kit Foundations page side by side (human).
 - [x] Tests for the new code pass in CI.
