@@ -36,6 +36,7 @@ M.
 - [ ] Creating a cow with stage Gestante + service date returns a projection with an expected calving window.
 - [ ] Duplicate control_id in the same ranch → 409 with field error.
 - [ ] A SINIIGA held by an ACTIVE animal in any ranch → 409 with a field error that names no ranch, owner or animal (test with two ranches).
+- [ ] A SINIIGA whose last holder died or went to slaughter → 409 in any ranch; one sold to another ranch can be registered by the buyer (domain-model §7.7).
 - [ ] A SINIIGA with the wrong length or a state outside 01–32 → 422; a missing SINIIGA is accepted.
 - [ ] Filter `repro=SERVIDA&group=GENERAL` returns only matching cows (test).
 - [ ] Baja with ERROR_REGISTRO removes the row and its events; other reasons keep them with status REMOVED.
