@@ -34,6 +34,7 @@ H = HeatOutcome
 NOT_SERVED = [H.NOT_OBSERVED, H.VWP, H.NOT_INSEMINATED, H.DIRTY_MEDICATED, H.DIRTY_NOT_MEDICATED]
 OPEN_OUTCOMES = [H.NOT_OBSERVED, H.NOT_INSEMINATED, H.DIRTY_MEDICATED, H.DIRTY_NOT_MEDICATED]
 RETURN_OUTCOMES = [H.VWP, H.NOT_INSEMINATED, H.DIRTY_MEDICATED, H.DIRTY_NOT_MEDICATED]
+D = DevelopmentStage
 GESTATING = [calved(0), served(60), check(100, positive=True)]
 # Service on day 60, so dry-off is day 283 and the calving is due on day 343.
 DRY_DAY = 60 + 283 - 60
@@ -284,3 +285,71 @@ def test_a_female_with_no_alta_is_a_heifer() -> None:
     projection = project(HEIFER, [fact(EventType.WEIGHT, 0, kg=100)], SETTINGS, D0)
 
     assert projection.repro_state is ReproState.VAQUILLA
+
+
+def test_an_adult_registered_on_auto_defaults_to_one_lactation() -> None:
+    registered = EventFact(EventType.ALTA, D0, alta().payload)
+
+    cow = project(AnimalFacts(Sex.HEMBRA, BIRTH), [registered], SETTINGS, D0)
+
+    assert (cow.lactation_number, cow.has_calved) == (1, True)
+
+
+def test_a_heifer_registered_young_stays_one_as_she_ages() -> None:
+    registered = EventFact(EventType.ALTA, HEIFER.birth_date, alta().payload)
+
+    projection = project(HEIFER, [registered], SETTINGS, day(1200))
+
+    assert projection.has_calved is False
+
+
+@pytest.mark.parametrize(
+    ("positive", "state"), [(True, ReproState.GESTANTE), (False, ReproState.ABIERTA)]
+)
+def test_a_declared_service_with_no_date_still_takes_its_check(
+    positive: bool, state: ReproState
+) -> None:
+    cow = AnimalFacts(Sex.HEMBRA, BIRTH, D.VACA_ADULTA, repro_stage=ReproState.SERVIDA)
+
+    projection = project(cow, [alta(), check(10, positive=positive)], SETTINGS, day(11))
+
+    assert projection.repro_state is state
+    assert projection.expected_calving_date is None
+
+
+def test_a_re_service_inside_the_vwp_is_warned_too() -> None:
+    projection = run(calved(0), served(20), served(30), today=31)
+
+    assert ReproWarning(Flag.HEAT_DURING_VWP, day(30)) in projection.warnings
+
+
+def test_declared_fresh_with_no_calving_date_is_not_stuck() -> None:
+    cow = AnimalFacts(Sex.HEMBRA, BIRTH, D.VACA_ADULTA, repro_stage=ReproState.RECIEN_PARIDA)
+
+    projection = project(cow, [alta(), served(300)], SETTINGS, day(301))
+
+    assert projection.repro_state is ReproState.SERVIDA
+    assert Flag.MISSING_STAGE_DATE in {warning.flag for warning in projection.warnings}
+    assert Flag.HEAT_DURING_VWP not in {warning.flag for warning in projection.warnings}
+
+
+def test_vwp_heat_on_an_open_cow_is_kept_and_flagged() -> None:
+    projection = run(calved(0), heat(60, H.VWP), today=61)
+
+    assert ReproWarning(Flag.UNEXPECTED_EVENT, day(60)) in projection.warnings
+    assert projection.last_heat_date == day(60)
+
+
+def test_an_invalid_payload_is_skipped_and_flagged() -> None:
+    bad = EventFact(EventType.HEAT, day(10), {"outcome": "NOPE"})
+
+    projection = run(calved(0), bad, today=11)
+
+    assert ReproWarning(Flag.INVALID_EVENT, day(10)) in projection.warnings
+    assert projection.repro_state is ReproState.RECIEN_PARIDA
+
+
+def test_a_payload_the_fold_ignores_is_not_parsed() -> None:
+    bad = EventFact(EventType.WEIGHT, day(10), {"kg": "heavy"})
+
+    assert Flag.INVALID_EVENT not in {w.flag for w in run(bad, today=11).warnings}

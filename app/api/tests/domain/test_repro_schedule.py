@@ -61,6 +61,10 @@ def test_service_schedules_the_check_and_the_return_to_heat_watch() -> None:
     assert windows(projection, AlertKind.HEAT) == [Window(day(78), day(84))]
 
 
+def test_a_served_cow_is_not_told_to_wait_a_cycle() -> None:
+    assert ReminderKind.WAIT_NEXT_CYCLE not in reminder_kinds(run(calved(0), served(60), today=61))
+
+
 def test_the_watch_closes_when_no_heat_is_seen_or_its_window_passes() -> None:
     negated = run(calved(0), served(60), heat(81, HeatOutcome.NOT_OBSERVED), today=82)
     passed = run(calved(0), served(60), today=85)
@@ -156,6 +160,21 @@ def test_a_new_illness_after_a_cure_does_not_inherit_the_old_health_date() -> No
     )
 
     assert windows(projection, AlertKind.HEALTH) == [Window(day(14), day(16))]
+
+
+def test_an_illness_that_ran_out_does_not_stretch_the_next_one() -> None:
+    projection = run(illness(1, withdrawal_days=5), illness(200, withdrawal_days=5), today=201)
+
+    assert windows(projection, AlertKind.HEALTH) == [Window(day(200), day(210))]
+
+
+def test_changing_an_accident_treatment_keeps_the_accident_rule() -> None:
+    projection = run(
+        accident(10, withdrawal_days=0), followup(12, success=False, withdrawal_days=0), today=13
+    )
+
+    assert projection.milk_withdrawal_until is None
+    assert AlertKind.HEALTH not in kinds(projection)
 
 
 def test_accident_with_no_withdrawal_separates_no_milk() -> None:

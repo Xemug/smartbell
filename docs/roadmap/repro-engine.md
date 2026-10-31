@@ -46,6 +46,10 @@ Audit: `core-data-model` shipped everything this card builds on, the projection 
 - **A missed window rolls forward a cycle at a time** until it ends today or later ("cada celo perdido hay que esperar 21 días").
 - **`expected_calving_date` is set by the positive check**, not by the service: a served cow shows the check window (event-flows §3.4).
 - **Anything §2 has no arrow for is flagged `UNEXPECTED_EVENT` and leaves the state alone**, since the fold must be total. The exceptions are facts that happened anyway: a calving always counts, and an abortion while SERVIDA opens her. A negative re-check while GESTANTE or SECA opens her, unflagged.
+- **A payload that no longer parses is skipped and flagged `INVALID_EVENT`**, so one bad row can't stop a ranch's daily run. Types the fold ignores aren't parsed at all.
+- **`HEAT_DURING_VWP` goes by the dates**, not the state, so a re-service inside the VWP is warned too. ② on an ABIERTA cow has no arrow: it counts as a heat and is flagged.
+- **§4 wins over the event-flows §3.4 row:** a served cow gets no "wait a cycle" reminder, only the return-to-heat alert.
+- **A cow registered with no lactation number defaults to 1** if her stage is adult, or AUTO/CARGADA/A_VERIFICAR and she was over 27 months at registration. Age is measured at ALTA, so a heifer can't become a cow by ageing. RECIEN_PARIDA declared with no date becomes ABIERTA, flagged.
 - **Abortion leaves the lactation unchanged**, so a dry cow stays dry (event-flows marks it unclear).
 - **A never-calved heifer follows §2 literally**: ABIERTA after a failed service, SECA at −60 d, but she has no lactation to dry off and gets no DRY_OFF alert or milk reminder. The 18-month stop applies only in state VAQUILLA.
 - **`repro_stage_date` by stage:** ABIERTA last heat; SERVIDA service; RECIEN_PARIDA calving; GESTANTE diagnosis (service estimated as date − `preg_check_min_days`); SECA dry-off. A stage needing a date without one is flagged `MISSING_STAGE_DATE`. `AltaPayload` gained `last_calving_date`, which it needed for "Último parto".

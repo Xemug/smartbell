@@ -33,6 +33,7 @@ from smartbell.schemas.events import (
     AccidentPayload,
     AltaPayload,
     CalvingPayload,
+    EventPayload,
     HeatPayload,
     IllnessPayload,
     MedicalTreatmentPayload,
@@ -56,6 +57,21 @@ MIN_DAYS_BIRTH_TO_CALVING = 660
 
 PREGNANT_STATES = frozenset({ReproState.GESTANTE, ReproState.SECA})
 ADULT_STAGES = frozenset({DevelopmentStage.VACA_ADULTA, DevelopmentStage.VACA_ADULTA_VACIA})
+UNDATED_STAGES = frozenset(
+    {DevelopmentStage.AUTO, DevelopmentStage.CARGADA, DevelopmentStage.A_VERIFICAR}
+)
+# Only these touch the state, so nothing else is parsed: a weight can't stop a ranch's projection.
+FOLDED_EVENT_TYPES = frozenset(
+    {
+        EventType.HEAT,
+        EventType.PREGNANCY_CHECK,
+        EventType.CALVING,
+        EventType.ILLNESS,
+        EventType.ACCIDENT,
+        EventType.MEDICAL_TREATMENT,
+        EventType.TREATMENT_FOLLOWUP,
+    }
+)
 EPOCH = dt.datetime(1970, 1, 1, tzinfo=dt.UTC)
 
 
@@ -138,6 +154,7 @@ class Flag(StrEnum):
     HEAT_DURING_VWP = auto()  # Served inside the voluntary waiting period: allowed, but warned.
     NOT_FERTILE = auto()  # §3.11 "no ha sido fértil".
     UNEXPECTED_EVENT = auto()  # §2 has no such transition: the state stays put unless noted.
+    INVALID_EVENT = auto()  # A payload that no longer parses: skipped, not fatal.
     MISSING_STAGE_DATE = auto()  # A declared stage whose date is needed and wasn't given.
 
 
@@ -214,7 +231,7 @@ def calving_window(service_date: dt.date, settings: ReproSettings) -> Window:
 
 def heifer_birth_date_editable(birth_date: dt.date, today: dt.date) -> bool:
     """§3.11."""
-    return whole_months(birth_date, today) <= HEIFER_EDITABLE_UNTIL_MONTHS
+    return today <= add_months(birth_date, HEIFER_EDITABLE_UNTIL_MONTHS)
 
 
 def last_calving_date_valid(birth_date: dt.date, last_calving: dt.date) -> bool:
@@ -275,6 +292,7 @@ class _Fold:
     health_from: dt.date | None = None
     health_until: dt.date | None = None
     withdrawal_until: dt.date | None = None
+    treating: tuple[EventType, MedicalTreatmentKind | None] = (EventType.ILLNESS, None)
     removed: bool = False
     warnings: list[ReproWarning] = field(default_factory=list)
 
@@ -285,14 +303,24 @@ class _Fold:
     def warn(self, flag: Flag, on: dt.date) -> None:
         self.warnings.append(ReproWarning(flag, on))
 
-    def seed(self, alta: AltaPayload | None) -> None:
+    def registered_adult(self, registered_on: dt.date | None) -> bool:
+        """§7.1: an adult female defaults to one lactation. Age is taken at registration, so a
+        heifer doesn't turn into a cow by growing up."""
+        stage = self.animal.development_stage
+        if stage in ADULT_STAGES:
+            return True
+        if stage not in UNDATED_STAGES or registered_on is None:
+            return False
+        return registered_on > add_months(self.animal.birth_date, ADULT_AFTER_MONTHS)
+
+    def seed(self, alta: AltaPayload | None, registered_on: dt.date | None = None) -> None:
         """Start from what was declared at registration (§7.1). See the card for what the one
         generic `repro_stage_date` means at each stage."""
         if self.animal.sex is not Sex.HEMBRA:
             return
         declared = self.animal.repro_stage
         on = self.animal.repro_stage_date
-        adult = self.animal.development_stage in ADULT_STAGES
+        adult = self.registered_adult(registered_on)
         number = alta.lactation_number if alta else None
         self.lactation_number = 1 if number is None and adult else number or 0
         self.last_calving = alta.last_calving_date if alta else None
@@ -310,8 +338,9 @@ class _Fold:
         if declared is None or self.state is ReproState.VAQUILLA:
             return
         if self.state is ReproState.RECIEN_PARIDA:
-            if self.last_calving is None:
+            if self.last_calving is None:  # Without a calving nothing would ever end her VWP.
                 self.warn(Flag.MISSING_STAGE_DATE, self.animal.birth_date)
+                self.state = ReproState.ABIERTA
         elif on is None:
             self.warn(Flag.MISSING_STAGE_DATE, self.animal.birth_date)
         elif self.state is ReproState.ABIERTA:
@@ -376,15 +405,29 @@ class _Fold:
         self.rechecks_done = 0
         self.return_watch_closed = False
 
-    def open_after(self, on: dt.date, *, heat: bool = False) -> None:
+    def open_after(self, on: dt.date) -> None:
         self.state = ReproState.ABIERTA
         self.clear_pregnancy()
         self.heat_anchor = on
-        self.anchor_is_heat = heat
+        self.anchor_is_heat = False
 
     def apply(self, event: EventFact) -> None:
-        payload = validate_event_payload(event.type, event.payload)
         on = event.occurred_on
+        if event.type is EventType.ABORTION:
+            self.on_abortion(on)
+        elif event.type is EventType.DIET_CHANGE:
+            self.last_diet_change = on
+        elif event.type is EventType.REMOVAL:
+            self.removed = True
+        elif event.type in FOLDED_EVENT_TYPES:
+            try:
+                payload = validate_event_payload(event.type, event.payload)
+            except ValueError:  # One bad row must not stop the fold, here or for the whole ranch.
+                self.warn(Flag.INVALID_EVENT, on)
+                return
+            self.apply_payload(event.type, payload, on)
+
+    def apply_payload(self, event_type: EventType, payload: EventPayload, on: dt.date) -> None:
         match payload:
             case HeatPayload():
                 self.on_heat(payload, on)
@@ -394,17 +437,11 @@ class _Fold:
                 self.on_calving(payload, on)
             case IllnessPayload() | AccidentPayload():
                 self.sick_since = self.sick_since or on
-                self.treat(event.type, payload.treatment, on)
+                self.treat(event_type, payload.treatment, on)
             case MedicalTreatmentPayload():
-                self.treat(event.type, payload.treatment, on, payload.kind)
+                self.treat(event_type, payload.treatment, on, payload.kind)
             case TreatmentFollowupPayload():
                 self.on_followup(payload, on)
-            case _ if event.type is EventType.ABORTION:
-                self.on_abortion(on)
-            case _ if event.type is EventType.DIET_CHANGE:
-                self.last_diet_change = on
-            case _ if event.type is EventType.REMOVAL:
-                self.removed = True
 
     def on_heat(self, payload: HeatPayload, on: dt.date) -> None:
         if self.animal.sex is not Sex.HEMBRA:
@@ -417,17 +454,20 @@ class _Fold:
             if observed:
                 self.warn(Flag.UNEXPECTED_EVENT, on)
             return
+        if outcome is HeatOutcome.VWP and self.state is ReproState.ABIERTA:
+            self.warn(Flag.UNEXPECTED_EVENT, on)  # Her VWP is over: kept as a heat, but flagged.
         if self.state is ReproState.SERVIDA:
             if not observed:  # "No entró en celo": the service still stands.
                 self.return_watch_closed = True
                 return
-            self.open_after(on, heat=True)  # §7.6: a return to heat means the service failed.
+            self.open_after(on)  # §7.6: a return to heat means the service failed.
         if observed:
             self.last_heat = on
         self.heat_anchor = on
         self.anchor_is_heat = True
         if outcome is HeatOutcome.INSEMINATED:
-            if self.state is ReproState.RECIEN_PARIDA:
+            vwp = dt.timedelta(days=self.settings.vwp_days)
+            if self.last_calving is not None and on < self.last_calving + vwp:
                 self.warn(Flag.HEAT_DURING_VWP, on)
             self.state = ReproState.SERVIDA
             self.last_service = self.open_service = on
@@ -436,12 +476,13 @@ class _Fold:
 
     def on_check(self, payload: PregnancyCheckPayload, on: dt.date) -> None:
         positive = payload.result is PregnancyCheckResult.POSITIVE
-        if self.state is ReproState.SERVIDA and self.open_service is not None:
+        if self.state is ReproState.SERVIDA:
             if positive:
                 self.state = ReproState.GESTANTE
                 self.confirmed_on = on
-                gestation = dt.timedelta(days=self.settings.gestation_days)
-                self.expected_calving = self.open_service + gestation
+                if self.open_service is not None:  # A declared service may have no date.
+                    gestation = dt.timedelta(days=self.settings.gestation_days)
+                    self.expected_calving = self.open_service + gestation
             else:
                 self.open_after(on)
         elif self.state in PREGNANT_STATES:  # The re-checks of §7.5.
@@ -488,14 +529,18 @@ class _Fold:
         on: dt.date,
         medical_kind: MedicalTreatmentKind | None = None,
     ) -> None:
-        if event_type is EventType.TREATMENT_FOLLOWUP:
-            event_type = EventType.ILLNESS  # A changed treatment is still the illness's.
+        if event_type is EventType.TREATMENT_FOLLOWUP:  # §3.14 follows what is being treated.
+            event_type, medical_kind = self.treating
+        elif event_type is not EventType.HEAT:
+            self.treating = (event_type, medical_kind)
         if not separates_milk(event_type, treatment, medical_kind):
             return
         until = withdrawal_until(treatment, medical_kind)
         # Never shortened: a later, milder drug doesn't clear what the earlier one left in the milk.
         self.withdrawal_until = max(until, self.withdrawal_until or until)
         if event_type is not EventType.HEAT:
+            if self.health_until is not None and self.health_until < on:
+                self.health_from = self.health_until = None  # That episode ran out on its own.
             self.health_from = self.health_from or on
             self.health_until = max(until, self.health_until or until)
 
@@ -549,7 +594,7 @@ class _Fold:
             alerts.append(AlertSpec(AlertKind.HEAT, next_heat))
             if self.anchor_is_heat:
                 reminders.append(ReminderSpec(ReminderKind.WAIT_NEXT_CYCLE, next_heat.start))
-        self.schedule_pregnancy(today, alerts, reminders)
+        self.schedule_pregnancy(today, alerts)
         self.schedule_health(today, alerts, reminders)
         settings = self.settings
         if self.lactation_state is LactationState.LACTANDO and self.last_calving is not None:
@@ -560,9 +605,7 @@ class _Fold:
             reminders.append(ReminderSpec(ReminderKind.HEIFER_TO_REGISTER, self.last_calving))
         return alerts, reminders
 
-    def schedule_pregnancy(
-        self, today: dt.date, alerts: list[AlertSpec], reminders: list[ReminderSpec]
-    ) -> None:
+    def schedule_pregnancy(self, today: dt.date, alerts: list[AlertSpec]) -> None:
         settings = self.settings
         check = self.pregnancy_check()
         if check is not None and self.open_service is not None:
@@ -571,7 +614,6 @@ class _Fold:
             watch = Window.around(center, settings.heat_window_days)
             if watch.end >= today and not self.return_watch_closed:
                 alerts.append(AlertSpec(AlertKind.HEAT, watch))
-                reminders.append(ReminderSpec(ReminderKind.WAIT_NEXT_CYCLE, watch.start))
         calving = self.calving()
         if self.state not in PREGNANT_STATES or calving is None:
             return
@@ -601,8 +643,8 @@ class _Fold:
     def result(self, today: dt.date) -> Projection:
         female = self.animal.sex is Sex.HEMBRA
         if female and not self.has_calved and not self.removed:
-            months = whole_months(self.animal.birth_date, today)
-            if months > HEIFER_INFERTILE_AFTER_MONTHS and self.last_service is None:
+            limit = add_months(self.animal.birth_date, HEIFER_INFERTILE_AFTER_MONTHS)
+            if today > limit and self.last_service is None:
                 self.warn(Flag.NOT_FERTILE, today)
         next_heat = None if self.removed else self.next_heat(today)
         alerts, reminders = self.schedule(today, next_heat)
@@ -662,11 +704,15 @@ def project(
         ),
     )
     fold = _Fold(animal, settings)
-    alta = None
+    alta, registered_on = None, None
     if ordered and ordered[0].type is EventType.ALTA:
-        parsed = validate_event_payload(EventType.ALTA, ordered[0].payload)
-        alta = parsed if isinstance(parsed, AltaPayload) else None
-    fold.seed(alta)
+        registered_on = ordered[0].occurred_on
+        try:
+            parsed = validate_event_payload(EventType.ALTA, ordered[0].payload)
+            alta = parsed if isinstance(parsed, AltaPayload) else None
+        except ValueError:
+            fold.warn(Flag.INVALID_EVENT, registered_on)
+    fold.seed(alta, registered_on)
     for event in ordered:
         if event.type is EventType.ALTA or fold.removed:
             continue

@@ -197,9 +197,22 @@ def test_a_fertile_heifer_past_thirty_months_is_warned_only_without_a_service() 
     assert bred.warnings == ()
 
 
+def test_the_infertile_warning_starts_the_day_after_thirty_months() -> None:
+    old = AnimalFacts(Sex.HEMBRA, BIRTH, D.NOVILLA)
+    limit = add_months(BIRTH, 30)
+    events = [alta(lactation_number=0)]
+
+    on_the_day = project(old, events, SETTINGS, limit)
+    day_after = project(old, events, SETTINGS, limit + dt.timedelta(days=1))
+
+    assert Flag.NOT_FERTILE not in {warning.flag for warning in on_the_day.warnings}
+    assert Flag.NOT_FERTILE in {warning.flag for warning in day_after.warnings}
+
+
 def test_age_validations() -> None:
     assert heifer_birth_date_editable(BIRTH, add_months(BIRTH, 24)) is True
-    assert heifer_birth_date_editable(BIRTH, add_months(BIRTH, 25)) is False
+    one_day_over = add_months(BIRTH, 24) + dt.timedelta(days=1)
+    assert heifer_birth_date_editable(BIRTH, one_day_over) is False
     assert last_calving_date_valid(BIRTH, BIRTH + dt.timedelta(days=660)) is True
     assert last_calving_date_valid(BIRTH, BIRTH + dt.timedelta(days=659)) is False
 
