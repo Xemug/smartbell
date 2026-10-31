@@ -236,5 +236,5 @@ Source: the SINIIGA technical manual (rev. 4.0, 2016) §XI.1. This overrides the
   - **Seller hasn't recorded the sale yet:** the number is refused, and the buyer can send a transfer request. See `siniiga-transfer`.
   - **Dead or sold for slaughter (MUERTA_DESECHO, VENDIDA_RASTRO):** the number is retired and refused forever.
   - **ERROR_REGISTRO:** the row is deleted, so the number was never really used and is free.
-  - **Privacy:** nothing moves between ranches except the number. The seller's history stays with the seller.
+  - **Privacy:** nothing moves between ranches except the number. The seller's history stays with the seller. In a transfer request, the seller sees the buyer's ranch name, sale date and note, and the buyer sees nothing about the seller.
 - **Optional, but flagged:** an animal may have no SINIIGA. Missing numbers are shown to the user, and onboarding asks whether the ranch has them all. See `siniiga-compliance`.

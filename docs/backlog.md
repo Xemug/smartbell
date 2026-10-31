@@ -44,7 +44,7 @@ Ordered by dependency. Each row is one card; its spec is `docs/roadmap/<slug>.md
 | 33 | `milk-screens`: Milk screens: daily log, per-cow log and production history chart | feature | M | milk-api, ui-surfaces-feedback |
 | 34 | `dashboard`: Reportes 'General' dashboard (V4) | feature | M | alert-engine, animal-lists, milk-api |
 | 35 | `siniiga-compliance`: Flag animals with no SINIIGA and ask at onboarding if the ranch has them all | feature | S | animal-lists, onboarding-hub, tasks-engine |
-| 36 | `siniiga-transfer`: Transfer a SINIIGA when the seller hasn't recorded the sale | feature | S | animal-api, siniiga-compliance |
+| 36 | `siniiga-transfer`: Transfer a SINIIGA when the seller hasn't recorded the sale | feature | S | animal-api, siniiga-compliance, alert-engine |
 | | **5 Replace the live app** | | | |
 | 37 | `legacy-firestore-import`: Import legacy Firestore data into Postgres | feature | M | core-data-model, auth, milk-api, animal-api |
 | 38 | `app-favicon-and-install-icons`: App favicon and install icons | chore | S | icons-export |
