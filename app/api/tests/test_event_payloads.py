@@ -102,7 +102,7 @@ def test_treatment_defaults_to_five_days() -> None:
 
     assert isinstance(parsed, IllnessPayload)
     assert parsed.treatment.start_date == date(2026, 10, 1)
-    assert (parsed.treatment.duration_days, parsed.treatment.withdrawal_days) == (5, 5)
+    assert (parsed.treatment.duration_days, parsed.treatment.withdrawal_days) == (5, None)
 
 
 def test_inseminated_heat_needs_bull_and_method() -> None:

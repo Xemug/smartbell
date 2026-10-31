@@ -20,6 +20,7 @@ dev = [
     "aiosqlite>=0.20",
     "ruff>=0.8",
     "mypy>=1.13",
+    "import-linter>=2.1",
 ]
 
 [build-system]
@@ -43,6 +44,28 @@ select = ["E", "F", "W", "I", "B", "UP", "ASYNC", "S", "RUF"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "S105", "S106", "S608"]
+
+[tool.importlinter]
+root_package = "smartbell"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "The domain does no I/O"
+type = "forbidden"
+source_modules = ["smartbell.domain"]
+forbidden_modules = [
+    "smartbell.db",
+    "smartbell.models",
+    "smartbell.routes",
+    "smartbell.services",
+    "smartbell.settings",
+    "alembic",
+    "asyncpg",
+    "fastapi",
+    "httpx",
+    "sqlalchemy",
+    "uvicorn",
+]
 
 [tool.mypy]
 python_version = "3.12"
