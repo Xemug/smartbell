@@ -70,4 +70,4 @@ L.
 - [x] Projection is deterministic given (events, settings, today) and has no DB/network access (import-linted).
 - [x] Changing `gestation_days` in settings changes expected calving in tests.
 - [x] Fixture cows 00001–00007 project to the states shown in event-flows.md §3.5 (or deviations listed in the PR).
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
