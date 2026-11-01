@@ -50,4 +50,4 @@ M.
 - [x] Unbuilt tabs open the fake-door modal, whose WhatsApp button has the prefilled text.
 - [x] Avatar → Soporte opens WhatsApp with the prefilled message.
 - [x] Playwright: navigate every tab at both widths.
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
