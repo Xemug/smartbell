@@ -27,7 +27,18 @@ Gives feature cards a place to mount and makes navigation testable end to end.
 
 Per v4-onboarding-dashboard-tasks.md §1.13–1.14 and §3.6. Routes: `/` tasks home, `/vacas`, `/vacas/:id`, `/grupos`, `/reportes`, `/ranchos`, `/usuarios` (web), `/config/*`. Tabs whose feature is not built yet open the "Funcionalidad en construcción" modal with a WhatsApp button and prefilled copy ("Me interesa la funcionalidad {nombre}…"). Avatar menu items per §1.13, including Soporte → `https://wa.me/52…` with "Necesito que me ayuden a usar Smartbell." (the number lives in config). Ranch switcher and bell read from a stub context.
 
-**Stack note:** the platform for UI cards depends on the memo's revised decision (A′ React PWA, or G Flutter mobile + React web). Write UI cards against the chosen client; API cards are unaffected.
+**Stack note:** resolved. `app/web` is the React PWA (memo option A′), so the shell lives there and `src/app/` is new.
+
+**Decisions and assumptions (groomed while building):**
+
+- **Web nav is a top bar.** Frame 417-2212 draws it across the top, with the ranch dropdown on the page below it. §1.15's "Left nav" was wrong and is corrected.
+- **Layout switch:** the mobile shell below the `lg` token (960), the web shell from there up, per `docs/screen-inventory.md`. Only the chrome swaps; `<main>` stays mounted, so crossing the breakpoint keeps page state.
+- **Fake doors:** Grupos, Reportes and Ranchos per §1.14. Web Usuarios too, because `user-admin` is unbuilt. A card sets `built: true` in `src/app/navigation.ts` when its screen lands. Vacas has no asterisk in §3.6, so it is a link to a placeholder page. Direct visits to an unbuilt route show a placeholder page, not the modal; unknown paths redirect to `/`.
+- **Bell count:** on mobile the badge sits on the avatar (§1.9, where the bell is the logo); on web it sits on the bell, which links to `/config/mensajes`.
+- **Number:** 52 + 333-405-6398 (§3.5) in `src/app/config.ts`, overridable at build time with `VITE_WHATSAPP_NUMBER`. `whatsapp-support` makes it configurable without a deploy.
+- **Cerrar sesión** shows a snackbar until `auth` lands; there is no session to end.
+- **WhatsApp button** uses dark text on the kit's green, since the drawn white fails contrast. There is no WhatsApp icon in the export (see `icons-export`), so it uses the message icon.
+- **Left out, not asked for here:** the web footer, the "Vacas en Sistema" pill and the separate logout icon drawn in 417-2212.
 
 ## Effort
 
@@ -35,8 +46,8 @@ M.
 
 ## Acceptance
 
-- [ ] At 360px the bottom bar shows Tareas, Vacas, Grupos, Reportes, Ranchos; at 1280px the web nav shows its 6 items.
-- [ ] Unbuilt tabs open the fake-door modal, whose WhatsApp button has the prefilled text.
-- [ ] Avatar → Soporte opens WhatsApp with the prefilled message.
-- [ ] Playwright: navigate every tab at both widths.
-- [ ] Tests for the new code pass in CI.
+- [x] At 360px the bottom bar shows Tareas, Vacas, Grupos, Reportes, Ranchos; at 1280px the web nav shows its 6 items.
+- [x] Unbuilt tabs open the fake-door modal, whose WhatsApp button has the prefilled text.
+- [x] Avatar → Soporte opens WhatsApp with the prefilled message.
+- [x] Playwright: navigate every tab at both widths.
+- [x] Tests for the new code pass in CI.

@@ -11,11 +11,11 @@ export function HomePage() {
   else if (health.data) status = health.data.status;
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-4 p-4">
+    <div className="mx-auto flex max-w-md flex-col items-center justify-center gap-4 p-4">
       <h1 className="ramp-page-title text-primary">{t('app.name')}</h1>
       <p className="ramp-body text-secondary-text">
         {t('health.label')}: <span data-testid="api-health">{status}</span>
       </p>
-    </main>
+    </div>
   );
 }
