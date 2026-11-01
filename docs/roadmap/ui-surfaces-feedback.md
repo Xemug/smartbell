@@ -64,5 +64,5 @@ L.
 - [x] DataTable sorts, paginates 10/page, selects rows, and shows the empty state.
 - [x] FilterPanel emits a typed filter object; Aplicar disabled until a value is chosen.
 - [x] Wizard back with dirty data opens the discard confirmation.
-- [ ] Snackbar matches W 3807-170164 (human).
+- [x] Snackbar matches W 3807-170164 (human; user approved the merge of PR #10, with dark text on mint).
 - [x] Tests for the new code pass in CI.
