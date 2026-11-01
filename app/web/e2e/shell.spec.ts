@@ -52,6 +52,17 @@ test.describe('at 360px', () => {
     );
   });
 
+  test('a snackbar leaves the tab bar free', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /Menú de cuenta/ }).click();
+    await page.getByRole('menuitem', { name: 'Cerrar sesión' }).click();
+    const snackbar = await page
+      .getByText('El inicio de sesión aún no está disponible')
+      .boundingBox();
+    const bar = await nav(page).boundingBox();
+    expect((snackbar?.y ?? 0) + (snackbar?.height ?? 0)).toBeLessThanOrEqual(bar?.y ?? 0);
+  });
+
   test('has no horizontal scroll and no axe violations', async ({ page }) => {
     await page.goto('/vacas');
     await expect(page.getByRole('heading', { name: 'Vacas' })).toBeVisible();
@@ -81,6 +92,13 @@ test.describe('at 1280px', () => {
     for (const tab of ['Grupos', 'Reportes', 'Usuarios', 'Ranchos']) {
       await expectFakeDoor(page, tab);
     }
+  });
+
+  test('has no axe violations on the page', async ({ page }) => {
+    await page.goto('/vacas');
+    await expect(page.getByRole('heading', { name: 'Vacas' })).toBeVisible();
+    const { violations } = await new AxeBuilder({ page }).analyze();
+    expect(violations.map((v) => `${v.id}: ${v.nodes[0]?.html}`)).toEqual([]);
   });
 
   test('has no axe violations with the fake door open', async ({ page }) => {

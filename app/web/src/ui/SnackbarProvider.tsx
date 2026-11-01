@@ -51,7 +51,7 @@ export function SnackbarProvider({ children }: { children: ReactNode }) {
         <div
           aria-live="polite"
           {...{ [snackbarLayer]: '' }}
-          className="pointer-events-none fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 flex flex-col items-center gap-2"
+          className="pointer-events-none fixed inset-x-4 bottom-[calc(max(1rem,env(safe-area-inset-bottom))+var(--snackbar-lift,0px))] z-50 flex flex-col items-center gap-2"
         >
           {items.map((item) => (
             <Entry key={item.id} item={item} dismiss={dismiss} />

@@ -32,8 +32,8 @@ Per v4-onboarding-dashboard-tasks.md §1.13–1.14 and §3.6. Routes: `/` tasks 
 **Decisions and assumptions (groomed while building):**
 
 - **Web nav is a top bar.** Frame 417-2212 draws it across the top, with the ranch dropdown on the page below it. §1.15's "Left nav" was wrong and is corrected.
-- **Layout switch:** the mobile shell below the `lg` token (960), the web shell from there up, per `docs/screen-inventory.md`. Only one shell mounts.
-- **Fake doors:** Grupos, Reportes and Ranchos per §1.14. Web Usuarios too, because `user-admin` is unbuilt. A card sets `built: true` in `src/app/navigation.ts` when its screen lands. Vacas has no asterisk in §3.6, so it is a link to a placeholder page. Direct visits to an unbuilt route show a placeholder page, not the modal.
+- **Layout switch:** the mobile shell below the `lg` token (960), the web shell from there up, per `docs/screen-inventory.md`. Only the chrome swaps; `<main>` stays mounted, so crossing the breakpoint keeps page state.
+- **Fake doors:** Grupos, Reportes and Ranchos per §1.14. Web Usuarios too, because `user-admin` is unbuilt. A card sets `built: true` in `src/app/navigation.ts` when its screen lands. Vacas has no asterisk in §3.6, so it is a link to a placeholder page. Direct visits to an unbuilt route show a placeholder page, not the modal; unknown paths redirect to `/`.
 - **Bell count:** on mobile the badge sits on the avatar (§1.9, where the bell is the logo); on web it sits on the bell, which links to `/config/mensajes`.
 - **Number:** 52 + 333-405-6398 (§3.5) in `src/app/config.ts`, overridable at build time with `VITE_WHATSAPP_NUMBER`. `whatsapp-support` makes it configurable without a deploy.
 - **Cerrar sesión** shows a snackbar until `auth` lands; there is no session to end.

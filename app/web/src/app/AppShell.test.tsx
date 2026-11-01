@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, within } from '@testing-library/react';
+import { act, cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
@@ -8,15 +8,25 @@ import { SnackbarProvider } from '../ui/SnackbarProvider';
 import { shellRoute } from './routes';
 import { whatsappUrl } from './whatsapp';
 
-function renderShell({ desktop, path = '/' }: { desktop: boolean; path?: string }) {
+interface ShellOptions {
+  desktop: boolean;
+  path?: string;
+  media?: object;
+}
+
+function renderShell({ desktop, path = '/', media }: ShellOptions) {
   vi.stubGlobal(
     'matchMedia',
-    vi.fn(() => ({
-      matches: desktop,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-    })),
+    vi.fn(
+      () =>
+        media ?? {
+          matches: desktop,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        },
+    ),
   );
+  vi.stubGlobal('scrollTo', vi.fn());
   vi.stubGlobal(
     'fetch',
     vi.fn(async () => Response.json({ status: 'ok' })),
@@ -114,6 +124,39 @@ describe('AppShell', () => {
       'href',
       '/config/mensajes',
     );
+  });
+
+  it('keeps the page mounted when the layout crosses the breakpoint', async () => {
+    const listeners: (() => void)[] = [];
+    const media = {
+      matches: false,
+      addEventListener: (_: string, fn: () => void) => listeners.push(fn),
+      removeEventListener: vi.fn(),
+    };
+    renderShell({ desktop: false, path: '/vacas', media });
+    const heading = screen.getByRole('heading', { name: 'Vacas' });
+    expect(screen.queryByRole('link', { name: 'Usuarios' })).toBeNull();
+
+    media.matches = true;
+    act(() => listeners.forEach((fn) => fn()));
+
+    expect(await screen.findByRole('button', { name: 'Usuarios' })).toBeInTheDocument();
+    expect(heading).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Vacas' })).toBe(heading);
+  });
+
+  it('lifts snackbars over the tab bar only while it is on screen', () => {
+    renderShell({ desktop: false });
+    const lift = () => document.documentElement.style.getPropertyValue('--snackbar-lift');
+    expect(lift()).toBe('4rem');
+    cleanup();
+    expect(lift()).toBe('');
+  });
+
+  it('sends unknown paths home, inside the shell', () => {
+    const router = renderShell({ desktop: true, path: '/grupos/12' });
+    expect(router.state.location.pathname).toBe('/');
+    expect(screen.getByRole('navigation')).toBeInTheDocument();
   });
 
   it('holds deep links to unbuilt features on a placeholder page', () => {

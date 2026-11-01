@@ -1,4 +1,4 @@
-import type { RouteObject } from 'react-router-dom';
+import { Navigate, type RouteObject } from 'react-router-dom';
 
 import { HomePage } from '../pages/HomePage';
 import { AppShell } from './AppShell';
@@ -19,5 +19,6 @@ export const shellRoute: RouteObject = {
     { path: '/config/mensajes', element: <PlaceholderPage titleKey="config.messages" /> },
     { path: '/config/usuarios', element: <PlaceholderPage titleKey="config.users" /> },
     { path: '/config/*', element: <PlaceholderPage titleKey="config.title" /> },
+    { path: '*', element: <Navigate to="/" replace /> },
   ],
 };
