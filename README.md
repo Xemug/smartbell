@@ -50,3 +50,4 @@ previews them all.
 
 The base components are in `app/web/src/ui/`; http://localhost:5173/dev/ui shows every variant.
 `FormField` binds the form controls to `react-hook-form`.
+`SnackbarProvider` is mounted in `App.tsx`, so any screen can call `useSnackbar()`.

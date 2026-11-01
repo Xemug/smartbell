@@ -3,6 +3,7 @@ import { lazy, Suspense } from 'react';
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 
 import { HomePage } from './pages/HomePage';
+import { SnackbarProvider } from './ui/SnackbarProvider';
 
 // The token, icon and component previews are internal, so they stay out of the main bundle.
 const DevTokensPage = lazy(() =>
@@ -45,7 +46,9 @@ const queryClient = new QueryClient();
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <SnackbarProvider>
+        <RouterProvider router={router} />
+      </SnackbarProvider>
     </QueryClientProvider>
   );
 }

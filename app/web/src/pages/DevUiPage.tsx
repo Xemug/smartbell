@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
@@ -39,6 +39,9 @@ import { TextArea } from '../ui/TextArea';
 import { TextField } from '../ui/TextField';
 import { Toggle } from '../ui/Toggle';
 
+import { DevSection as Section } from './DevSection';
+import { DevSurfaces } from './DevSurfaces';
+
 // Internal preview of the base components. Sample labels are fixture data, in Spanish like the app.
 
 const variants: ButtonVariant[] = ['fill', 'outline', 'ghost', 'danger'];
@@ -64,17 +67,6 @@ const schema = z.object({
   terms: z.boolean().refine(Boolean, 'validation.required'),
 });
 type Sample = z.input<typeof schema>;
-
-function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
-  return (
-    <section aria-labelledby={id} className="flex flex-col gap-4">
-      <h2 id={id} className="ramp-section-title">
-        {title}
-      </h2>
-      {children}
-    </section>
-  );
-}
 
 function SampleForm() {
   const { t } = useTranslation();
@@ -377,6 +369,8 @@ export function DevUiPage() {
       <Section id="form" title={t('devUi.form')}>
         <SampleForm />
       </Section>
+
+      <DevSurfaces />
     </main>
   );
 }

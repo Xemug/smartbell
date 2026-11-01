@@ -9,3 +9,9 @@
     @apply bg-primary-background font-body text-primary-text;
   }
 }
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
