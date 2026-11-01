@@ -2,6 +2,38 @@
   "app": {
     "name": "Smartbell"
   },
+  "nav": {
+    "tareas": "Tareas",
+    "vacas": "Vacas",
+    "grupos": "Grupos",
+    "reportes": "Reportes",
+    "usuarios": "Usuarios",
+    "ranchos": "Ranchos"
+  },
+  "shell": {
+    "mainNav": "Navegación principal",
+    "accountMenu": "Menú de cuenta",
+    "accountMenuCount": "Menú de cuenta, {{count}} sin leer",
+    "notifications": "Notificaciones: {{count}}",
+    "ranchSwitcher": "Cambiar de rancho: {{ranch}}",
+    "support": "Soporte",
+    "supportPrefill": "Necesito que me ayuden a usar Smartbell.",
+    "logout": "Cerrar sesión",
+    "logoutSoon": "El inicio de sesión aún no está disponible"
+  },
+  "config": {
+    "title": "Configuración",
+    "profile": "Mi perfil",
+    "ranches": "Mis ranchos",
+    "messages": "Mensajes recibidos",
+    "users": "Administrar usuarios"
+  },
+  "fakeDoor": {
+    "title": "Funcionalidad en construcción",
+    "body": "Me interesa conocer más detalles",
+    "cta": "Contactar en WhatsApp",
+    "prefill": "Me interesa la funcionalidad {{nombre}}, quisiera conocer más acerca de la misma"
+  },
   "health": {
     "label": "Estado de la API",
     "loading": "Comprobando…",

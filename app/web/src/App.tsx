@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { lazy, Suspense } from 'react';
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 
-import { HomePage } from './pages/HomePage';
+import { shellRoute } from './app/routes';
 import { SnackbarProvider } from './ui/SnackbarProvider';
 
 // The token, icon and component previews are internal, so they stay out of the main bundle.
@@ -15,7 +15,7 @@ const DevIconsPage = lazy(() =>
 const DevUiPage = lazy(() => import('./pages/DevUiPage').then((m) => ({ default: m.DevUiPage })));
 
 const router = createBrowserRouter([
-  { path: '/', element: <HomePage /> },
+  shellRoute,
   {
     path: '/dev/tokens',
     element: (

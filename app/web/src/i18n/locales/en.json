@@ -2,6 +2,38 @@
   "app": {
     "name": "Smartbell"
   },
+  "nav": {
+    "tareas": "Tasks",
+    "vacas": "Cows",
+    "grupos": "Groups",
+    "reportes": "Reports",
+    "usuarios": "Users",
+    "ranchos": "Ranches"
+  },
+  "shell": {
+    "mainNav": "Main navigation",
+    "accountMenu": "Account menu",
+    "accountMenuCount": "Account menu, {{count}} unread",
+    "notifications": "Notifications: {{count}}",
+    "ranchSwitcher": "Switch ranch: {{ranch}}",
+    "support": "Support",
+    "supportPrefill": "I need help using Smartbell.",
+    "logout": "Log out",
+    "logoutSoon": "Sign-in is not available yet"
+  },
+  "config": {
+    "title": "Settings",
+    "profile": "My profile",
+    "ranches": "My ranches",
+    "messages": "Received messages",
+    "users": "Manage users"
+  },
+  "fakeDoor": {
+    "title": "Feature under construction",
+    "body": "I'd like to know more",
+    "cta": "Contact on WhatsApp",
+    "prefill": "I'm interested in the {{nombre}} feature and would like to know more about it"
+  },
   "health": {
     "label": "API status",
     "loading": "Checking…",

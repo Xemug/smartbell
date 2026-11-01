@@ -263,7 +263,7 @@ Method: text layers were parsed from the saved page XML. Screenshots were checke
 
 ### 1.15 Web dashboard (v4 visible) `417:2212`
 - [417-2212](https://www.figma.com/design/hmrArjwi6iI4cOlPkR5hQD/x?node-id=417-2212) `Empty_Dashboard` (1366).
-- Left nav: **Tareas | Vacas | Grupos | Reportes | Usuarios | Ranchos**.
+- Top nav: **Tareas | Vacas | Grupos | Reportes | Usuarios | Ranchos**.
 - Visible content:
   - progress banner "¿Cómo va el registro de tus vacas?" (500 wide)
   - button **Nuevo animal**
