@@ -18,8 +18,7 @@
     "ranchSwitcher": "Switch ranch: {{ranch}}",
     "support": "Support",
     "supportPrefill": "I need help using Smartbell.",
-    "logout": "Log out",
-    "logoutSoon": "Sign-in is not available yet"
+    "logout": "Log out"
   },
   "config": {
     "title": "Settings",
@@ -128,5 +127,80 @@
     "tabs": "Tabs",
     "filters": "Filters",
     "wizard": "Wizard"
+  },
+  "auth": {
+    "loading": "Loading Smartbell",
+    "welcomeBanner": "Welcome, you're making an excellent decision.",
+    "valueTitle": "Digitize your ranch and improve your profitability",
+    "value": {
+      "heat": "Improve your heat detection and raise your productivity",
+      "calving": "Keep a more accurate record of your herd's calvings",
+      "sick": "Spot your sick cows and improve your milk quality",
+      "dim": "Improve days in milk"
+    },
+    "welcome": {
+      "headline": "<b>Smart</b> solutions to raise your ranch's <b>profitability</b>",
+      "login": "Log in",
+      "signup": "Create account"
+    },
+    "accessWith": "Continue with:",
+    "orDetails": "Or enter your details:",
+    "continueWith": "Continue with {{provider}}",
+    "clickHere": "Click here",
+    "fields": {
+      "name": "Name",
+      "phone": "Phone",
+      "email": "Email",
+      "password": "Password",
+      "confirm": "Confirm password"
+    },
+    "placeholders": {
+      "email": "name@email.com"
+    },
+    "login": {
+      "title": "Log in",
+      "submit": "Log in",
+      "forgot": "Forgot your password?",
+      "noAccount": "Don't have an account yet?"
+    },
+    "signup": {
+      "title": "Create account",
+      "submit": "Create account",
+      "submitWeb": "Sign up",
+      "acceptTerms": "I accept the",
+      "terms": "Terms and conditions",
+      "acceptTermsFull": "I accept the Terms and conditions",
+      "haveAccount": "Already have an account?"
+    },
+    "forgot": {
+      "title": "Reset your password",
+      "intro": "Enter your email and we'll send you a link to set a new password.",
+      "submit": "Send link",
+      "sent": "If there's an account with that email, we sent a link to change your password. Check your spam folder too.",
+      "remembered": "Remembered it?"
+    },
+    "validation": {
+      "email": "Enter a valid email",
+      "passwordLength": "Use at least 6 characters",
+      "passwordMismatch": "The passwords don't match",
+      "terms": "Accept the Terms and conditions to continue"
+    },
+    "errors": {
+      "invalidCredentials": "The email or password is wrong",
+      "invalidEmail": "Enter a valid email",
+      "emailInUse": "There's already an account with that email. Log in.",
+      "weakPassword": "That password is too weak. Use at least 6 characters.",
+      "tooManyRequests": "Too many attempts. Wait a few minutes and try again.",
+      "network": "No connection. Check your internet and try again.",
+      "differentProvider": "That email already signs in another way. Use the one you signed up with.",
+      "popupBlocked": "Your browser blocked the window. Allow pop-ups and try again.",
+      "disabled": "This account is disabled. Contact Support.",
+      "accountConflict": "That email belongs to another account. Contact Support to merge them.",
+      "emailRequired": "We need an email to create your account. Choose another method.",
+      "generic": "Something went wrong. Try again."
+    },
+    "sessionError": "We couldn't open your account",
+    "retry": "Try again",
+    "firstCow": "Register your first cow"
   }
 }

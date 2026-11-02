@@ -1,53 +1,20 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { lazy, Suspense } from 'react';
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 
-import { shellRoute } from './app/routes';
+import { appRoutes } from './app/appRoutes';
+import { AuthProvider } from './features/auth/AuthProvider';
 import { SnackbarProvider } from './ui/SnackbarProvider';
 
-// The token, icon and component previews are internal, so they stay out of the main bundle.
-const DevTokensPage = lazy(() =>
-  import('./pages/DevTokensPage').then((m) => ({ default: m.DevTokensPage })),
-);
-const DevIconsPage = lazy(() =>
-  import('./pages/DevIconsPage').then((m) => ({ default: m.DevIconsPage })),
-);
-const DevUiPage = lazy(() => import('./pages/DevUiPage').then((m) => ({ default: m.DevUiPage })));
-
-const router = createBrowserRouter([
-  shellRoute,
-  {
-    path: '/dev/tokens',
-    element: (
-      <Suspense>
-        <DevTokensPage />
-      </Suspense>
-    ),
-  },
-  {
-    path: '/dev/icons',
-    element: (
-      <Suspense>
-        <DevIconsPage />
-      </Suspense>
-    ),
-  },
-  {
-    path: '/dev/ui',
-    element: (
-      <Suspense>
-        <DevUiPage />
-      </Suspense>
-    ),
-  },
-]);
+const router = createBrowserRouter(appRoutes);
 const queryClient = new QueryClient();
 
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <SnackbarProvider>
-        <RouterProvider router={router} />
+        <AuthProvider>
+          <RouterProvider router={router} />
+        </AuthProvider>
       </SnackbarProvider>
     </QueryClientProvider>
   );

@@ -1,5 +1,6 @@
 import { Navigate, type RouteObject } from 'react-router-dom';
 
+import { FIRST_COW_PATH } from '../features/auth/guards';
 import { HomePage } from '../pages/HomePage';
 import { AppShell } from './AppShell';
 import { PlaceholderPage } from './PlaceholderPage';
@@ -8,6 +9,8 @@ export const shellRoute: RouteObject = {
   element: <AppShell />,
   children: [
     { path: '/', element: <HomePage /> },
+    // Held for `onboarding-hub`, which builds the first-cow form.
+    { path: FIRST_COW_PATH, element: <PlaceholderPage titleKey="auth.firstCow" /> },
     { path: '/vacas', element: <PlaceholderPage titleKey="nav.vacas" /> },
     { path: '/vacas/:id', element: <PlaceholderPage titleKey="nav.vacas" /> },
     { path: '/grupos', element: <PlaceholderPage titleKey="nav.grupos" /> },
