@@ -100,4 +100,4 @@ async def list_ranches(session: AsyncSession, user: User) -> list[tuple[Ranch, R
         .where(Membership.user_id == user.id)
         .order_by(Ranch.created_at, Ranch.id)
     )
-    return [(ranch, role) for ranch, role in rows.tuples()]
+    return [(ranch, role) for ranch, role in rows.all()]
