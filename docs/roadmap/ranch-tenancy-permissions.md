@@ -2,6 +2,7 @@
 id: ranch-tenancy-permissions
 title: Ranches, memberships, roles and permission guard
 summary: Ranch CRUD, multi-ranch membership with the 5 roles and their permission presets, an API permission guard, and the live ranch switcher.
+verifiedAt: 2026-11-02
 ---
 
 # Ranches, memberships, roles and permission guard
