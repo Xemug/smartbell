@@ -51,8 +51,8 @@ M.
 
 ## Acceptance
 
-- [ ] Sign up by email, Google or Apple lands on the first-cow step with a ranch created.
+- [x] Sign up by email, Google or Apple lands on the first-cow step with a ranch created (verified on the Firebase Auth emulator).
 - [ ] An existing legacy account logs in with its old password and gets the same uid.
-- [ ] The API rejects expired or forged tokens (401).
+- [x] The API rejects expired or forged tokens (401).
 - [ ] Screens match V 2901-5565 and V 3291-9399 (human).
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
