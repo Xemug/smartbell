@@ -15,7 +15,7 @@ export function SwitchLink({
   return (
     <p className="text-center text-primary type-body-md">
       {question}{' '}
-      <Link to={to} className={cx('font-semibold text-secondary underline', focusRing)}>
+      <Link to={to} className={cx('font-semibold text-primary underline', focusRing)}>
         {action}
       </Link>
     </p>

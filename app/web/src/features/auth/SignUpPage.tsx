@@ -72,7 +72,7 @@ export function SignUpPage() {
           href={termsUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className={cx('text-secondary underline', focusRing)}
+          className={cx('text-primary underline', focusRing)}
         >
           {t('auth.signup.terms')}
         </a>
@@ -148,7 +148,7 @@ export function SignUpPage() {
             />
           )}
         />
-        <div className={cx('flex flex-col items-center gap-1', isDesktop && 'col-span-2')}>
+        <div className={cx('flex items-start justify-center gap-2', isDesktop && 'col-span-2')}>
           <FormField
             control={control}
             name="terms"
@@ -167,14 +167,14 @@ export function SignUpPage() {
           size="lg"
           loading={formState.isSubmitting}
           className={cx(
-            'justify-self-center bg-alternate px-8 text-primary-text hover:bg-alternate/90',
+            'justify-self-center !bg-alternate px-8 !text-primary-text hover:!bg-alternate/90',
             isDesktop && 'col-span-2',
           )}
         >
           {t(isDesktop ? 'auth.signup.submitWeb' : 'auth.signup.submit')}
         </Button>
       </form>
-      {isDesktop && <SocialButtons onError={setError} />}
+      {isDesktop && <SocialButtons onError={setError} placement="below" />}
       <SwitchLink
         question={t('auth.signup.haveAccount')}
         action={t('auth.clickHere')}

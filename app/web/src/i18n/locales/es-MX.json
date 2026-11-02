@@ -201,6 +201,8 @@
     },
     "sessionError": "No pudimos abrir tu cuenta",
     "retry": "Reintentar",
-    "firstCow": "Registra tu primera vaca"
+    "firstCow": "Registra tu primera vaca",
+    "or": "ó",
+    "signUpWith": "Registrarme con:"
   }
 }

@@ -201,6 +201,8 @@
     },
     "sessionError": "We couldn't open your account",
     "retry": "Try again",
-    "firstCow": "Register your first cow"
+    "firstCow": "Register your first cow",
+    "or": "or",
+    "signUpWith": "Sign up with:"
   }
 }

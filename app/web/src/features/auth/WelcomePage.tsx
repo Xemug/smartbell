@@ -28,7 +28,7 @@ export function WelcomePage() {
           className={cx(
             buttonClass('fill'),
             big,
-            'bg-alternate text-primary-text hover:bg-alternate/90',
+            '!bg-alternate !text-primary-text hover:!bg-alternate/90',
           )}
         >
           {t('auth.welcome.signup')}

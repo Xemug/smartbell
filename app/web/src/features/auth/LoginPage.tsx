@@ -75,7 +75,7 @@ export function LoginPage() {
         />
         <Link
           to="/recuperar"
-          className={cx('self-end text-secondary underline type-body-md', focusRing)}
+          className={cx('self-end text-primary underline type-body-md', focusRing)}
         >
           {t('auth.login.forgot')}
         </Link>
@@ -84,7 +84,7 @@ export function LoginPage() {
           size="lg"
           fullWidth
           loading={formState.isSubmitting}
-          className="bg-alternate text-primary-text hover:bg-alternate/90"
+          className="!bg-alternate !text-primary-text hover:!bg-alternate/90"
         >
           {t('auth.login.submit')}
         </Button>

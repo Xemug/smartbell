@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useIsDesktop } from '../../app/useIsDesktop';
+import { cx } from '../../ui/cx';
 import { iconDiscCalving, iconDiscDim, iconDiscHeat, iconDiscSick } from '../../ui/icons/glyphs';
 import { Icon } from '../../ui/icons/Icon';
 import { Illustration } from '../../ui/icons/Illustration';
@@ -18,7 +19,12 @@ export function AuthLayout({ title, children }: { title: string; children: React
   const { t } = useTranslation();
   const isDesktop = useIsDesktop();
   const form = (
-    <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 py-8">
+    <main
+      className={cx(
+        'mx-auto flex w-full flex-col gap-4 px-4 py-8',
+        isDesktop ? 'max-w-xl' : 'max-w-md',
+      )}
+    >
       <Illustration name="logo" alt="" className="mx-auto h-16" />
       <h1 className="sr-only">{title}</h1>
       {children}
@@ -33,7 +39,7 @@ export function AuthLayout({ title, children }: { title: string; children: React
       <div className="grid flex-1 grid-cols-2">
         <section
           aria-label={t('auth.valueTitle')}
-          className="flex flex-col justify-center gap-6 bg-secondary px-16 text-button-text"
+          className="flex flex-col justify-center gap-6 bg-primary px-16 text-button-text"
         >
           <p className="max-w-md border-b border-neutral-1/60 pb-2 type-heading-md">
             {t('auth.valueTitle')}
