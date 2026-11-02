@@ -46,4 +46,4 @@ S.
 - [ ] The browser tab shows the Smartbell icon, not a placeholder.
 - [ ] The installed PWA shows the Smartbell icon, and the maskable icon isn't cropped.
 - [ ] The icon matches the current store listing, or the user approved a new one (human).
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
