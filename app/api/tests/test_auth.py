@@ -250,6 +250,20 @@ async def test_an_imported_row_is_linked_by_verified_email(
     assert response.json()["ranches"] == []
 
 
+async def test_an_imported_email_with_capitals_still_links(
+    api: AsyncClient, db: AsyncSession
+) -> None:
+    imported = await _imported_user(db, "Legacy.User@Example.com")
+
+    response = await api.post(
+        "/api/auth/session",
+        headers=bearer(make_token("legacy-uid", email="legacy.user@example.com")),
+    )
+
+    assert response.json()["user"]["id"] == str(imported.id)
+    assert await db.scalar(select(func.count()).select_from(User)) == 1
+
+
 async def test_an_unverified_email_cannot_claim_an_imported_row(
     api: AsyncClient, db: AsyncSession
 ) -> None:

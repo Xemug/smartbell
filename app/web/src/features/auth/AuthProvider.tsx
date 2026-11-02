@@ -42,7 +42,12 @@ export function AuthProvider({
     } else if (accountRefusals.has(result.code)) {
       pendingProfile.current = undefined;
       pendingError.current = result.code;
-      await auth.signOut();
+      try {
+        await auth.signOut();
+      } catch {
+        // Firebase still thinks it's signed in, but the app must not sit on the splash.
+        if (run === generation.current) setState({ status: 'signedOut', error: result.code });
+      }
     } else setState({ status: 'sessionError' });
   }, [auth]);
 
@@ -54,6 +59,8 @@ export function AuthProvider({
         return;
       }
       generation.current++;
+      // Whatever a failed sign-up left behind must not be sent with the next person's account.
+      pendingProfile.current = undefined;
       queryClient.clear();
       setState({ status: 'signedOut', error: pendingError.current });
       pendingError.current = undefined;

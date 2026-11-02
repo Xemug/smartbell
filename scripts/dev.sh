@@ -23,11 +23,13 @@ if [[ -z "${SKIP_DOCKER:-}" ]] && command -v docker >/dev/null 2>&1; then
 fi
 
 pids=()
-trap 'kill "${pids[@]}" 2>/dev/null || true' EXIT INT TERM
+# The odd expansion keeps macOS's bash 3.2 from calling an empty array unbound under set -u.
+trap 'kill ${pids[@]+"${pids[@]}"} 2>/dev/null || true' EXIT INT TERM
 
 if [[ -z "${SKIP_AUTH_EMULATOR:-}" ]]; then
   # Same firebase-tools version as legacy/firebase.
-  (cd "$root/app" && npx --yes firebase-tools@13.35.1 emulators:start --only auth \
+  # exec, so the PID is firebase-tools itself, which shuts its emulator down on SIGTERM.
+  (cd "$root/app" && exec npx --yes firebase-tools@13.35.1 emulators:start --only auth \
     --project demo-smartbell --config firebase.json) &
   pids+=($!)
 fi

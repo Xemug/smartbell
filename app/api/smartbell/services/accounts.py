@@ -4,7 +4,7 @@ import datetime as dt
 import uuid
 from dataclasses import dataclass
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,7 +35,8 @@ class Profile:
 async def _link_or_create(
     session: AsyncSession, claims: TokenClaims, email: str, profile: Profile
 ) -> tuple[User, bool]:
-    existing = await session.scalar(select(User).where(User.email == email))
+    # Imported rows may keep the legacy app's capitals; Firebase hands us the address lowercased.
+    existing = await session.scalar(select(User).where(func.lower(User.email) == email))
     if existing is not None:
         # Firebase lets anyone register an unconfirmed address, so an imported row is only claimed
         # with a verified one. Otherwise that sign-up would take over someone else's herd.

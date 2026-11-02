@@ -262,6 +262,41 @@ describe('auth', () => {
     expect(await screen.findByRole('navigation')).toBeInTheDocument();
   });
 
+  it("a failed sign-up's profile is not sent with the next account", async () => {
+    let fail = true;
+    const calls = stubApi(() =>
+      fail ? new Response('down', { status: 500 }) : Response.json(account(true)),
+    );
+    const backend = new FakeBackend();
+    renderApp(backend, '/registro');
+    await screen.findByRole('button', { name: 'Crear Cuenta' });
+    await fillSignUp();
+    await user.click(screen.getByRole('checkbox', { name: 'Acepto los Términos y condiciones' }));
+    await user.click(screen.getByRole('button', { name: 'Crear Cuenta' }));
+    await user.click(await screen.findByRole('button', { name: 'Cerrar sesión' }));
+
+    fail = false;
+    // Signing out leaves them on the sign-up form, whose footer goes to log-in.
+    await user.click(await screen.findByRole('link', { name: 'Da click aquí' }));
+    await user.type(await screen.findByLabelText('Correo electrónico'), 'luis@example.com');
+    await user.type(screen.getByLabelText('Contraseña', { selector: 'input' }), PASSWORD);
+    await user.click(screen.getByRole('button', { name: 'Ingresar' }));
+
+    await screen.findByRole('heading', { name: 'Registra tu primera vaca' });
+    const last = calls.filter((call) => call.url === '/api/auth/session').at(-1);
+    expect(last?.authorization).toBe('Bearer token-for-luis@example.com');
+    expect(last?.body).toEqual({});
+  });
+
+  it('a refusal still leaves the splash when Firebase sign-out fails', async () => {
+    stubApi(() => Response.json({ detail: 'email_in_use' }, { status: 409 }));
+    const backend = new FakeBackend('ana@example.com');
+    backend.signOut.mockRejectedValueOnce(new Error('storage'));
+    renderApp(backend, '/entrar');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Ese correo ya pertenece');
+  });
+
   it('forgot password answers the same whether or not the account exists', async () => {
     stubApi(() => Response.json(account(false)));
     const backend = new FakeBackend();
