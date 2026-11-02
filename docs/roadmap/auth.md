@@ -27,7 +27,7 @@ Gate for every authenticated card.
 
 Before building, open every linked frame with the Figma MCP (`get_screenshot`; load the figma:figma-design-to-code skill before `get_design_context`). Use only components from `app/web/src/ui` and tokens from the design-system cards; Spanish copy goes in the es-MX i18n catalog. Build the mobile layout (<960px) and the web layout (≥960px) in the same route. Smartbell 4.0 (V links) supersedes the older Mobile/Web frames where both exist; see `docs/reconciliation-v4.md` §2.
 - Identity stays in Firebase Auth, project `smartbell-app-2025` (memo, recommendation after the audit). Web and Capacitor use the Firebase JS SDK. The API verifies ID tokens with `firebase-admin` and upserts a `users` row keyed by `firebase_uid`. No password storage in our DB.
-- Providers: email/password, Google, Apple (required on iOS when Google is offered), Facebook only if the user confirms.
+- Providers: email/password, Google, Apple (required on iOS when Google is offered). No Facebook (user decision, 2026-11-02: live users sign in with email, Google and Apple, never Facebook).
 - V4 sign-up: name, phone (+52), email, password + confirm, T&C. The ranch is not asked: auto-create "Mi rancho".
 - Forgot password uses Firebase's reset email.
 - Splash and Home per V4. dairy-milk-tracker's auth is NOT ported.
@@ -38,7 +38,7 @@ Before building, open every linked frame with the Figma MCP (`get_screenshot`; l
 - The API holds an anonymous credential: it verifies tokens only and cannot write to Firebase.
 - `firebase-admin` skips signature checks when `FIREBASE_AUTH_EMULATOR_HOST` is set, so Settings refuses that host unless the project is `demo-*`, and refuses a `demo-*` project when `ENV=prod`.
 - An imported row (`firebase_uid` empty) is linked by email only when the token's email is verified; otherwise 409. This blocks takeover through an unconfirmed sign-up.
-- Facebook is left out: the spec requires confirmation and none was given. Apple takes its slot, though no frame draws it.
+- Facebook is out by user decision (2026-11-02), though V4 draws it. Apple takes its slot. Existing Google and Apple accounts keep their uid because the provider links live in the same Firebase project. Apple on the web needs a Services ID, a return URL and a key in the Apple Developer account and the Firebase console: user steps in the PR.
 - Login asks for an email: the frame's "Usuario" is ambiguous and Firebase needs an email. A forgot-password link is added though no frame draws it.
 - T&C acceptance is enforced in the client only; storing it needs a column and a migration.
 - The whole "Nombre" goes in `first_name`.

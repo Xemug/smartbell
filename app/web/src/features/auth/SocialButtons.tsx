@@ -7,8 +7,8 @@ import { authErrorKey, isCancelled } from './errors';
 import { useAuth } from './useAuth';
 
 // V4 draws Google in a light blue that white text can't be read on; primary keeps the contrast.
-// Facebook is drawn in V4 but waits on the user's go-ahead (docs/roadmap/auth.md). Apple is
-// required by the App Store whenever Google is offered.
+// V4 draws Facebook, but live users never sign in with it, so it is out (user decision, see
+// docs/roadmap/auth.md). Apple is required by the App Store whenever Google is offered.
 const providers: { id: SocialProvider; label: string; className: string }[] = [
   { id: 'google', label: 'Google', className: '!bg-primary hover:!bg-primary/90' },
   { id: 'apple', label: 'Apple', className: '!bg-primary-text hover:!bg-primary-text/90' },
