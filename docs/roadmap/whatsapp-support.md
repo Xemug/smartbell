@@ -48,4 +48,4 @@ S.
 
 - [x] Each fake-door tap is counted by feature and viewable by an admin endpoint.
 - [x] The number and messages are configurable without a deploy.
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
