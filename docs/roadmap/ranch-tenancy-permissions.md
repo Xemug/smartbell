@@ -26,7 +26,7 @@ Every write endpoint after this declares a permission code instead of inventing 
 
 ## Approach
 
-Permission codes and presets from mobile-core.md §Role permission matrix (Dueño = all; flag the Médico/Técnico oddities as TODO comments linked to the memo). Every request carries `X-Ranch-Id`; the guard checks membership + permission. Ranch switcher (from app-shell) now lists the user's ranches and persists the choice. Owner can't be removed from their ranch.
+Permission codes and role presets from `docs/domain-model.md` §7.8, the confirmed matrix. It replaces mobile-core.md's, so no TODOs are left. Every request carries `X-Ranch-Id`; the guard checks membership + permission. Ranch switcher (from app-shell) now lists the user's ranches and persists the choice. Owner can't be removed from their ranch.
 
 ## Effort
 
@@ -35,6 +35,7 @@ M.
 ## Acceptance
 
 - [ ] A Técnico de campo gets 403 on cow creation; a Médico gets 201 (API tests from the matrix).
+- [ ] Every role's preset matches §7.8 cell by cell (one table-driven test).
 - [ ] Data from ranch A is never returned when the active ranch is B (test on every list endpoint added later via a shared fixture).
 - [ ] Switching ranch in the UI refetches all queries.
 - [ ] Tests for the new code pass in CI.

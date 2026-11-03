@@ -29,6 +29,8 @@ Per `docs/spikes/flutterflow-audit.md` §2 and §8. Read with a read-only creden
 
 SINIIGA: convert `484-00-…` to `MX-00-…` (domain-model §7.7). Values that don't parse, or that two active animals share, import as empty and are listed in the dry-run report, so the import never stops on them and the owner can fix them. `Ranches.siniigaNumbers` becomes `has_siniiga_numbers`, with missing as false, so nobody is asked again.
 
+Roles: map each `workesList.rol` value, in English or Spanish, to a role in domain-model §7.8. A value that doesn't map imports as Nutriólogo, the role with the least access, and is listed in the report.
+
 ## Effort
 
 M.

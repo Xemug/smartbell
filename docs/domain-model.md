@@ -155,7 +155,7 @@ one service module, `reports/kpis`, with a test per KPI on a fixture herd.
 4. Reproductive events marked non-deletable, yet their cards show Editar/Eliminar. Proposal: editable by admins, never deletable.
 5. Calf sex appears in the notes but has no field.
 6. No dry-off event screen; the backlog assumes an automatic transition.
-7. The permission matrix oddities (Médico, Técnico).
+7. ~~The permission matrix oddities (Médico, Técnico).~~ Resolved in §7.8.
 8. No snooze or dismiss on alerts.
 
 ## 7. Changes from Smartbell 4.0, the UI Kit and the shipped app (2026-10-29)
@@ -222,7 +222,7 @@ Confirmed by the user (2026-10-31, after `repro-engine` shipped):
 - **The service date is the reference for a pregnant cow.** A declared or logged service is used. If there is none, it is assumed to be 45 days before the diagnosis (`preg_check_max_days`).
 - **Dry-off alerts** go out 10, 5 and 0 days before the dry-off date (expected calving − 60 d).
 
-Still open: the permission-matrix oddities (§6).
+The permission-matrix oddities are resolved in §7.8.
 
 ### 7.7 SINIIGA (confirmed 2026-10-31)
 
@@ -238,3 +238,41 @@ Source: the SINIIGA technical manual (rev. 4.0, 2016) §XI.1. This overrides the
   - **ERROR_REGISTRO:** the row is deleted, so the number was never really used and is free.
   - **Privacy:** nothing moves between ranches except the number. The seller's history stays with the seller. In a transfer request, the seller sees the buyer's ranch name, sale date and note, and the buyer sees nothing about the seller.
 - **Optional, but flagged:** an animal may have no SINIIGA. Missing numbers are shown to the user, and onboarding keeps the live app's yes-or-no question (`Ranches.siniigaNumbers`). See `siniiga-compliance`.
+
+### 7.8 Role permissions (confirmed 2026-11-02)
+
+The user accepted the planner's fixes to the Figma matrix (mobile-core.md §Role permission matrix). This table replaces it. The live app let members do almost everything because it had no access control; nobody gets more access than their role allows.
+
+| Permission | Dueño | Admin | Médico | Nutriólogo | Técnico |
+|---|---|---|---|---|---|
+| Altas vacas | ✓ | ✓ | ✓ | ✗ | ✗ |
+| Consulta inventario vacas | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Editar información de vaca | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Eliminar vacas | ✓ | ✓ | ✓ | ✗ | ✗ |
+| Agregar grupos | ✓ | ✓ | ✓ | ✗ | ✓ |
+| Consulta / Editar grupos | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Eliminar grupos | ✓ | ✓ | ✓ | ✗ | ✗ |
+| Agregar usuarios | ✓ | ✓ | ✗ | ✗ | ✗ |
+| Consulta listado / actividad usuarios | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Editar usuarios | ✓ | ✓ | ✗ | ✗ | ✗ |
+| Eliminar usuarios | ✓ | ✗ | ✗ | ✗ | ✗ |
+| Agregar / consultar dispositivos | ✓ | ✓ | ✓ | ✗ | ✗ |
+| Asignar dispositivo a vaca | ✓ | ✓ | ✓ | ✗ | ✗ |
+| Eliminar dispositivo | ✓ | ✓ | ✗ | ✗ | ✗ |
+| Confirmación alertas reproducción, registro / seguimiento salud | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Ver reportes | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Reportes personalizados imprimir / descargar | ✓ | ✓ | ✓ | ✓ | ✗ |
+| REEMO / SINIIGA | ✓ | ✗ | ✗ | ✗ | ✗ |
+| Ingresos y egresos | ✓ | ✓ | ✗ | ✗ | ✗ |
+| Envío de declaración | ✓ | ✗ | ✗ | ✗ | ✗ |
+| Facturación planes smartbell | ✓ | ✗ | ✗ | ✗ | ✗ |
+
+Changes from Figma:
+- **Médico:** can delete groups, to match deleting cows.
+- **Técnico:** can't delete cows or groups, like Nutriólogo.
+- **Admin:** can confirm repro alerts, record health and assign devices.
+- **Dueño:** has everything; its frame was never captured.
+- **Unchanged:** only the Dueño deletes users. Billing is Dueño only, because its Admin row was cut off and the planner chose the safe side.
+
+Legacy members keep their `workesList.rol` and get these limits. A role that doesn't map imports as Nutriólogo, the role with the least access, and is listed in the import report.
+

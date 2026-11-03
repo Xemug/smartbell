@@ -45,3 +45,6 @@ The user corrected the lockdown: SINIIGA is unique nationally. `docs/domain-mode
 
 PR #9 merged, nothing deployed. The user accepted the Stage 1 `cow_id` gap until Stage 3. `ui-surfaces-feedback` is building. Next for the user: Stage 0 of `legacy/firebase/notes/deploy-runbook.md`. Open acceptance items stay with the user: invite end to end, RevenueCat sandbox, app flows, tamper check. Raise the permission-matrix oddities before `ranch-tenancy-permissions`.
 
+## Update 2026-11-02: permissions settled
+
+The user accepted the planner's permission-matrix fixes, recorded in `docs/domain-model.md` §7.8. Legacy members keep their role and its new limits. `ranch-tenancy-permissions` can start.
