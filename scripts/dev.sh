@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the whole stack: Postgres (docker compose, when docker is installed), the Firebase Auth
+# Run the whole stack: Postgres (docker compose; stops if Docker is missing), the Firebase Auth
 # emulator, migrations, the FastAPI app and the Vite dev server. Ctrl-C stops everything.
 #
 # Auth runs on the emulator with the demo-smartbell project, which can't reach any real Firebase
@@ -18,7 +18,17 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 api_port="${API_PORT:-8000}"
 web_port="${WEB_PORT:-5173}"
 
-if [[ -z "${SKIP_DOCKER:-}" ]] && command -v docker >/dev/null 2>&1; then
+if [[ -z "${SKIP_DOCKER:-}" ]]; then
+  # Docker Desktop puts its CLI here and adds it to PATH only in new terminal windows.
+  [[ -x "$HOME/.docker/bin/docker" ]] && export PATH="$PATH:$HOME/.docker/bin"
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "dev.sh: docker isn't installed. Install Docker Desktop, or set SKIP_DOCKER=1 and DATABASE_URL." >&2
+    exit 1
+  fi
+  if ! docker info >/dev/null 2>&1; then
+    echo "dev.sh: Docker Desktop isn't running. Open it, wait for the whale icon to settle, retry." >&2
+    exit 1
+  fi
   docker compose -f "$root/docker-compose.yml" up -d --wait db
 fi
 
