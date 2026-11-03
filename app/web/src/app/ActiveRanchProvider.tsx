@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { setActiveRanchId } from '../api/client';
 import { useOptionalAuth } from '../features/auth/useAuth';
@@ -48,6 +48,8 @@ export function ActiveRanchProvider({ children }: { children: ReactNode }) {
   // Set during render, not in an effect: children's queries start in their effects, which run
   // before this component's own, and must already carry the right ranch.
   setActiveRanchId(account ? activeRanch.id || null : null);
+  // Signing out unmounts the shell: the next account's first calls must not carry this ranch.
+  useEffect(() => () => setActiveRanchId(null), []);
 
   const setActiveRanch = useCallback(
     (id: string) => {

@@ -159,6 +159,17 @@ describe('ActiveRanchProvider', () => {
     expect(calls.every((call) => call.ranch === 'ranch-a')).toBe(true);
   });
 
+  it('stops sending the ranch once the shell unmounts (sign-out)', async () => {
+    const { unmount } = renderWith();
+    await screen.findByText('loaded');
+    unmount();
+    calls = [];
+
+    await api.GET('/api/ranches');
+
+    expect(calls).toEqual([{ path: '/api/ranches', ranch: null }]);
+  });
+
   it('answers can() from the active ranch permissions', async () => {
     localStorage.setItem(activeRanchKey('user-1'), 'ranch-b');
     renderWith();

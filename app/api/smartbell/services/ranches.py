@@ -110,19 +110,20 @@ async def update_member(
 ) -> Membership:
     """A new role resets the codes to its preset unless `permissions` says otherwise.
 
-    Nobody can hand out a code they don't hold, so an Admin can't make anyone a billing manager.
+    The editor must hold every code the member has now and every code they get, so nobody hands
+    out a code they lack (an Admin can't make anyone a billing manager) or strips one from a
+    member who outranks them there.
     """
     membership = await _editable_membership(session, ctx, user_id)
     if role is Role.DUENO:
         raise MembershipRefused("owner_role_reserved", 403)
+    current = effective(membership.role, membership.permissions)
     new_role = role or membership.role
     if permissions is not None:
-        codes = list(dict.fromkeys(permissions))
-    elif role is not None:
-        codes = [Permission(code) for code in preset(new_role)]
+        codes = frozenset(permissions)
     else:
-        codes = [Permission(code) for code in membership.permissions if code in Permission]
-    if not set(codes) <= ctx.permissions:
+        codes = frozenset(Permission(code) for code in preset(new_role))
+    if not (current | codes) <= ctx.permissions:
         raise MembershipRefused("cannot_grant", 403)
     membership.role = new_role
     membership.permissions = [code.value for code in Permission if code in codes]

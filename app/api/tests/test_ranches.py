@@ -352,3 +352,35 @@ async def test_a_member_of_another_ranch_is_not_found(
     remove = await tenant_api.delete(url, headers=headers)
 
     assert edit.status_code == remove.status_code == 404
+
+
+async def test_an_admin_cannot_strip_codes_they_lack(
+    ranch_pair: RanchPair, tenant_api: AsyncClient, tenant_db: AsyncSession
+) -> None:
+    """The Dueño gave member_a billing; an Admin, who lacks it, can't demote them."""
+    admin = await sign_up(tenant_api, "admin")
+    await add_member(tenant_db, admin, ranch_pair.ranch_a, Role.ADMINISTRADOR)
+    url = f"/api/ranch/members/{ranch_pair.member_a.user_id}"
+    grant = await tenant_api.patch(
+        url,
+        headers=ranch_pair.owner.headers(ranch_pair.ranch_a),
+        json={"permissions": [*preset(Role.MEDICO), "BILLING"]},
+    )
+
+    demote = await tenant_api.patch(
+        url, headers=admin.headers(ranch_pair.ranch_a), json={"role": "TECNICO_CAMPO"}
+    )
+
+    assert grant.status_code == 200
+    assert demote.status_code == 403
+    assert demote.json()["detail"] == "cannot_grant"
+
+
+async def test_an_empty_edit_is_422(ranch_pair: RanchPair, tenant_api: AsyncClient) -> None:
+    response = await tenant_api.patch(
+        f"/api/ranch/members/{ranch_pair.member_a.user_id}",
+        headers=ranch_pair.owner.headers(ranch_pair.ranch_a),
+        json={},
+    )
+
+    assert response.status_code == 422

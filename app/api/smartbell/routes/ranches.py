@@ -128,12 +128,21 @@ async def update_member(
     ctx: Annotated[RanchContext, Depends(require(Permission.USERS_EDIT))],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> MemberOut:
+    if body.role is None and body.permissions is None:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="nothing_to_change")
     try:
-        await ranches.update_member(session, ctx, user_id, body.role, body.permissions)
+        membership = await ranches.update_member(session, ctx, user_id, body.role, body.permissions)
     except MembershipRefused as error:
         raise _refused(error) from error
-    rows = await ranches.list_members(session, ctx.ranch_id)
-    return next(member_out(row) for row in rows if row.user.id == user_id)
+    user = await session.get(User, user_id)
+    assert user is not None  # noqa: S101 - the membership's foreign key holds it.
+    row = ranches.MemberRow(
+        user=user,
+        role=membership.role,
+        permissions=effective(membership.role, membership.permissions),
+        is_owner=False,  # The owner can't be edited.
+    )
+    return member_out(row)
 
 
 @router.delete(
