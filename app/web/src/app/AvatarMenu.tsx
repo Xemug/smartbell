@@ -11,7 +11,7 @@ import { CountBadge } from './CountBadge';
 import { menuContent, menuItem } from './menuStyles';
 import { useActiveRanch } from './useActiveRanch';
 import { useOptionalAuth } from '../features/auth/useAuth';
-import { whatsappUrl } from './whatsapp';
+import { useSupportLinks } from './support';
 import { cx } from '../ui/cx';
 
 const configItems: { key: string; path: string; icon: Glyph }[] = [
@@ -26,6 +26,7 @@ export function AvatarMenu({ showCount = false }: { showCount?: boolean }) {
   const navigate = useNavigate();
   const auth = useOptionalAuth();
   const { unreadCount } = useActiveRanch();
+  const links = useSupportLinks();
   const count = showCount ? unreadCount : 0;
   return (
     <Menu.Root>
@@ -45,11 +46,7 @@ export function AvatarMenu({ showCount = false }: { showCount?: boolean }) {
             </Menu.Item>
           ))}
           <Menu.Item asChild className={menuItem}>
-            <a
-              href={whatsappUrl(t('shell.supportPrefill'))}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a href={links.support} target="_blank" rel="noopener noreferrer">
               <Icon icon={iconMessage} size={20} />
               {t('shell.support')}
             </a>

@@ -454,3 +454,12 @@ class HistoryKey(_Name):
     RANCH_ADDED = auto()
     RANCH_REMOVED = auto()
     RANCH_EDITED = auto()
+
+
+class FakeDoorFeature(_Name):
+    """Unbuilt features behind the "Funcionalidad en construcción" modal (v4 §1.14, §3.6)."""
+
+    GRUPOS = auto()
+    REPORTES = auto()
+    USUARIOS = auto()
+    RANCHOS = auto()

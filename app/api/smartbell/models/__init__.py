@@ -3,6 +3,7 @@
 from smartbell.models.animals import Animal, Group, derive_kind
 from smartbell.models.events import DeletionRequest, Event
 from smartbell.models.milk import MilkCowLog, MilkHerdLog
+from smartbell.models.support import FakeDoorTap, SupportSettings
 from smartbell.models.tenancy import (
     Membership,
     Notification,
@@ -19,6 +20,7 @@ __all__ = [
     "Animal",
     "DeletionRequest",
     "Event",
+    "FakeDoorTap",
     "Group",
     "HistoryEntry",
     "Membership",
@@ -29,6 +31,7 @@ __all__ = [
     "PlanVaccine",
     "Ranch",
     "RanchSettings",
+    "SupportSettings",
     "Task",
     "User",
     "VaccinationPlan",

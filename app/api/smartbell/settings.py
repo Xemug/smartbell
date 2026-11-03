@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     firebase_project_id: str = ""
     # firebase-admin skips signature checks when this is set, so anyone could forge a token.
     firebase_auth_emulator_host: str = ""
+    # Smartbell staff, not ranch roles: who may read fake-door counts and edit support copy.
+    # Matched against a token's *verified* email, so an unconfirmed sign-up can't claim one.
+    admin_emails: list[str] = []
 
     @model_validator(mode="after")
     def _require_secrets_outside_dev(self) -> "Settings":
@@ -43,6 +46,7 @@ class Settings(BaseSettings):
             raise ValueError("FIREBASE_AUTH_EMULATOR_HOST needs a demo- FIREBASE_PROJECT_ID")
         if self.env == "prod" and self.firebase_project_id.startswith("demo-"):
             raise ValueError("FIREBASE_PROJECT_ID can't be a demo- project when ENV=prod")
+        self.admin_emails = [email.strip().lower() for email in self.admin_emails if email.strip()]
         return self
 
 
