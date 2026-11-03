@@ -20,10 +20,25 @@ FEATURE_PLACEHOLDER = "{nombre}"
 # A second tap on the same door this soon is a double-click or a re-render, not more demand.
 TAP_DEBOUNCE = dt.timedelta(seconds=10)
 
+MAX_URL = 500
 Message = Annotated[str, Field(min_length=1, max_length=500)]
 HttpsUrl = Annotated[
-    AnyUrl, UrlConstraints(max_length=500, allowed_schemes=["https"], host_required=True)
+    AnyUrl, UrlConstraints(max_length=MAX_URL, allowed_schemes=["https"], host_required=True)
 ]
+
+
+def _fits_column(url: AnyUrl | None) -> AnyUrl | None:
+    # Normalising (a trailing slash, punycode) can lengthen the URL past what was checked.
+    if url is not None and len(str(url)) > MAX_URL:
+        raise ValueError(f"must be at most {MAX_URL} characters")
+    return url
+
+
+def _utc(when: dt.datetime | None) -> dt.datetime | None:
+    """A `since` without an offset is UTC, not whatever zone the API host runs in."""
+    if when is not None and when.tzinfo is None:
+        return when.replace(tzinfo=dt.UTC)
+    return when
 
 
 def _has_placeholder(message: str | None) -> str | None:
@@ -50,7 +65,8 @@ class SupportConfigIn(BaseModel):
     support_message: Message | None = None
     payment_message: Message | None = None
     feature_message: Annotated[Message | None, AfterValidator(_has_placeholder)] = None
-    community_url: HttpsUrl | None = None  # The WhatsApp community invite (inventory §1.15).
+    # The WhatsApp community invite (inventory §1.15).
+    community_url: Annotated[HttpsUrl | None, AfterValidator(_fits_column)] = None
 
 
 class FakeDoorTapIn(BaseModel):
@@ -125,7 +141,7 @@ async def record_fake_door_tap(
 async def fake_door_report(
     _: Annotated[TokenClaims, Depends(get_admin_claims)],
     session: Annotated[AsyncSession, Depends(get_session)],
-    since: Annotated[dt.datetime | None, Query()] = None,
+    since: Annotated[dt.datetime | None, Query(), AfterValidator(_utc)] = None,
 ) -> FakeDoorReport:
     """Taps per feature, most wanted first. Features nobody tapped are listed with zero."""
     query = select(

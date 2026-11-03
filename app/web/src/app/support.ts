@@ -48,13 +48,25 @@ export function useSupportLinks() {
   };
 }
 
+// Typed both ways: a new unbuilt tab won't compile until the api's allowlist knows it, so its taps
+// can't be lost to a 422. Built tabs never open the fake door, but stay mapped in case they flip.
+const fakeDoorFeatures: Record<Exclude<NavId, 'tareas' | 'vacas'>, FakeDoorFeature> = {
+  grupos: 'GRUPOS',
+  reportes: 'REPORTES',
+  usuarios: 'USUARIOS',
+  ranchos: 'RANCHOS',
+};
+
 /** Counts a tap on an unbuilt feature. Best effort: a failed count never blocks the modal. */
-export async function recordFakeDoorTap(feature: NavId): Promise<void> {
+export async function recordFakeDoorTap(id: NavId): Promise<void> {
+  const feature =
+    id in fakeDoorFeatures ? fakeDoorFeatures[id as keyof typeof fakeDoorFeatures] : null;
+  if (!feature) return;
   try {
-    await api.POST('/api/support/fake-door-taps', {
-      body: { feature: feature.toUpperCase() as FakeDoorFeature },
-    });
+    const { error } = await api.POST('/api/support/fake-door-taps', { body: { feature } });
+    // HTTP errors come back as `error`, not thrown. Logged so a broken count is visible in dev.
+    if (error) console.warn('fake-door tap not counted', error);
   } catch {
-    // Offline or signed out: the demand signal is lost, the user isn't bothered.
+    // Offline: the demand signal is lost, the user isn't bothered.
   }
 }

@@ -118,6 +118,8 @@ async def test_admin_changes_the_config_without_a_deploy(api: AsyncClient) -> No
         pytest.param({"community_url": "http://chat.whatsapp.com/x"}, id="not https"),
         pytest.param({"community_url": "javascript:alert(1)"}, id="script url"),
         pytest.param({"community_url": "https://x.mx/" + "a" * 500}, id="long url"),
+        # 500 characters as typed; the punycode host makes it longer once normalised.
+        pytest.param({"community_url": "https://ñ.mx/" + "a" * 487}, id="long once normalised"),
         pytest.param({"extra": "field"}, id="unknown field"),
     ],
 )
