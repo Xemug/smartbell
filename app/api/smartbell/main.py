@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from smartbell.db import make_engine, make_sessionmaker
-from smartbell.routes import auth, health
+from smartbell.routes import auth, health, ranches
 from smartbell.security import FirebaseTokenVerifier
 from smartbell.settings import Settings, get_settings
 
@@ -37,4 +37,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.include_router(health.router, prefix="/api")
     app.include_router(auth.router, prefix="/api")
+    app.include_router(ranches.router, prefix="/api")
     return app
