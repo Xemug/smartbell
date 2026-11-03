@@ -129,7 +129,7 @@ async def update_member(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> MemberOut:
     if body.role is None and body.permissions is None:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail="nothing_to_change")
+        raise HTTPException(422, detail="nothing_to_change")
     try:
         membership = await ranches.update_member(session, ctx, user_id, body.role, body.permissions)
     except MembershipRefused as error:
