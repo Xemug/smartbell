@@ -52,7 +52,7 @@ M.
 ## Acceptance
 
 - [x] Sign up by email, Google or Apple lands on the first-cow step with a ranch created (verified on the Firebase Auth emulator).
-- [ ] An existing legacy account logs in with its old password and gets the same uid.
+- [x] An existing legacy account logs in with its old password and gets the same uid (the user checked on the live project 2026-11-02, by email/password and by Google, which reached the same uid).
 - [x] The API rejects expired or forged tokens (401).
 - [x] Screens match V 2901-5565 and V 3291-9399 (human; the user checked the phone and web layouts on 2026-11-02).
 - [x] Tests for the new code pass in CI.

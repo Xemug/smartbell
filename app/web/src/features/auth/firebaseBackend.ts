@@ -27,7 +27,13 @@ async function mapErrors<T>(work: () => Promise<T>): Promise<T> {
 }
 
 function providerFor(provider: SocialProvider) {
-  if (provider === 'google') return new GoogleAuthProvider();
+  if (provider === 'google') {
+    const google = new GoogleAuthProvider();
+    // Always ask which account: ranch phones are often shared, and Google otherwise signs in
+    // silently with whichever account the browser already has.
+    google.setCustomParameters({ prompt: 'select_account' });
+    return google;
+  }
   const apple = new OAuthProvider('apple.com');
   apple.addScope('email');
   apple.addScope('name');
