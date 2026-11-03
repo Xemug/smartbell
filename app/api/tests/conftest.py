@@ -25,6 +25,7 @@ from smartbell.main import create_app
 from smartbell.settings import Settings
 
 TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL", "")
+FIREBASE_PROJECT_ID = "demo-smartbell-test"
 
 
 @pytest.fixture
@@ -34,6 +35,8 @@ def settings() -> Settings:
         env="test",
         database_url=TEST_DATABASE_URL or "sqlite+aiosqlite:///:memory:",
         secret_key="test-secret",
+        firebase_project_id=FIREBASE_PROJECT_ID,
+        firebase_auth_emulator_host="",
     )
 
 

@@ -21,14 +21,124 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/auth/session': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Open Session
+     * @description Called after every Firebase sign-in. Identity comes from the token, never from the body.
+     */
+    post: operations['openSession'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/auth/me': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Me */
+    get: operations['getMe'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** AccountOut */
+    AccountOut: {
+      user: components['schemas']['UserOut'];
+      /** Ranches */
+      ranches: components['schemas']['RanchOut'][];
+    };
+    /** HTTPValidationError */
+    HTTPValidationError: {
+      /** Detail */
+      detail?: components['schemas']['ValidationError'][];
+    };
     /** Health */
     Health: {
       /** Status */
       status: string;
+    };
+    /** RanchOut */
+    RanchOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Name */
+      name: string;
+      role: components['schemas']['Role'];
+    };
+    /**
+     * Role
+     * @enum {string}
+     */
+    Role: 'DUENO' | 'ADMINISTRADOR' | 'MEDICO' | 'NUTRIOLOGO' | 'TECNICO_CAMPO';
+    /** SessionOut */
+    SessionOut: {
+      user: components['schemas']['UserOut'];
+      /** Ranches */
+      ranches: components['schemas']['RanchOut'][];
+      /** Created */
+      created: boolean;
+    };
+    /** SessionRequest */
+    SessionRequest: {
+      /** First Name */
+      first_name?: string | null;
+      /** Phone */
+      phone?: string | null;
+    };
+    /** UserOut */
+    UserOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** First Name */
+      first_name: string;
+      /** Last Name */
+      last_name: string | null;
+      /** Email */
+      email: string;
+      /** Phone */
+      phone: string | null;
+      /** Photo Url */
+      photo_url: string | null;
+    };
+    /** ValidationError */
+    ValidationError: {
+      /** Location */
+      loc: (string | number)[];
+      /** Message */
+      msg: string;
+      /** Error Type */
+      type: string;
+      /** Input */
+      input?: unknown;
+      /** Context */
+      ctx?: Record<string, never>;
     };
   };
   responses: never;
@@ -55,6 +165,59 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['Health'];
+        };
+      };
+    };
+  };
+  openSession: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['SessionRequest'] | null;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SessionOut'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  getMe: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AccountOut'];
         };
       };
     };

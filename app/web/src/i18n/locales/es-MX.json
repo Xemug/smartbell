@@ -18,8 +18,7 @@
     "ranchSwitcher": "Cambiar de rancho: {{ranch}}",
     "support": "Soporte",
     "supportPrefill": "Necesito que me ayuden a usar Smartbell.",
-    "logout": "Cerrar sesión",
-    "logoutSoon": "El inicio de sesión aún no está disponible"
+    "logout": "Cerrar sesión"
   },
   "config": {
     "title": "Configuración",
@@ -128,5 +127,82 @@
     "tabs": "Pestañas",
     "filters": "Filtros",
     "wizard": "Asistente"
+  },
+  "auth": {
+    "loading": "Cargando Smartbell",
+    "welcomeBanner": "Bienvenido, estás tomando una excelente decisión.",
+    "valueTitle": "Digitaliza tu rancho y mejora tu rentabilidad",
+    "value": {
+      "heat": "Mejora tu identificación de celos e incrementa tu productividad",
+      "calving": "Lleva un registro más preciso de los partos en tu hato",
+      "sick": "Identifica tus vacas enfermas, y mejora la calidad de tu leche",
+      "dim": "Mejora los días en leche"
+    },
+    "welcome": {
+      "headline": "Soluciones <b>inteligentes</b> para aumentar la <b>rentabilidad</b> de tu rancho",
+      "login": "Iniciar Sesión",
+      "signup": "Crear Cuenta"
+    },
+    "accessWith": "Acceder con:",
+    "orDetails": "O proporciona tus datos:",
+    "continueWith": "Continuar con {{provider}}",
+    "clickHere": "Da click aquí",
+    "fields": {
+      "name": "Nombre",
+      "phone": "Teléfono",
+      "email": "Correo electrónico",
+      "password": "Contraseña",
+      "confirm": "Confirmar contraseña"
+    },
+    "placeholders": {
+      "email": "nombre@correo.com"
+    },
+    "login": {
+      "title": "Iniciar sesión",
+      "submit": "Ingresar",
+      "forgot": "¿Olvidaste tu contraseña?",
+      "noAccount": "¿Aún no tienes cuenta?"
+    },
+    "signup": {
+      "title": "Crear cuenta",
+      "submit": "Crear Cuenta",
+      "submitWeb": "Registrarme",
+      "acceptTerms": "Acepto los",
+      "terms": "Términos y condiciones",
+      "acceptTermsFull": "Acepto los Términos y condiciones",
+      "haveAccount": "¿Ya tienes cuenta?"
+    },
+    "forgot": {
+      "title": "Recupera tu contraseña",
+      "intro": "Escribe tu correo y te enviaremos un enlace para crear una contraseña nueva.",
+      "submit": "Enviar enlace",
+      "sent": "Si hay una cuenta con ese correo, te enviamos un enlace para cambiar tu contraseña. Revisa también tu carpeta de spam.",
+      "remembered": "¿Ya la recordaste?"
+    },
+    "validation": {
+      "email": "Escribe un correo válido",
+      "passwordLength": "Usa al menos 6 caracteres",
+      "passwordMismatch": "Las contraseñas no coinciden",
+      "terms": "Acepta los Términos y condiciones para continuar"
+    },
+    "errors": {
+      "invalidCredentials": "El correo o la contraseña no son correctos",
+      "invalidEmail": "Escribe un correo válido",
+      "emailInUse": "Ya hay una cuenta con ese correo. Inicia sesión.",
+      "weakPassword": "La contraseña es muy débil. Usa al menos 6 caracteres.",
+      "tooManyRequests": "Demasiados intentos. Espera unos minutos e inténtalo de nuevo.",
+      "network": "Sin conexión. Revisa tu internet e inténtalo de nuevo.",
+      "differentProvider": "Ese correo ya entra con otro método. Usa el que elegiste al registrarte.",
+      "popupBlocked": "Tu navegador bloqueó la ventana. Permite las ventanas emergentes e inténtalo de nuevo.",
+      "disabled": "Esta cuenta está desactivada. Escríbenos a Soporte.",
+      "accountConflict": "Ese correo ya pertenece a otra cuenta. Escríbenos a Soporte para unirlas.",
+      "emailRequired": "Necesitamos un correo para crear tu cuenta. Elige otro método.",
+      "generic": "Algo salió mal. Inténtalo de nuevo."
+    },
+    "sessionError": "No pudimos abrir tu cuenta",
+    "retry": "Reintentar",
+    "firstCow": "Registra tu primera vaca",
+    "or": "ó",
+    "signUpWith": "Registrarme con:"
   }
 }

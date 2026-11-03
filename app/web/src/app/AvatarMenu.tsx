@@ -10,7 +10,7 @@ import { focusRingOnDark } from './shellStyles';
 import { CountBadge } from './CountBadge';
 import { menuContent, menuItem } from './menuStyles';
 import { useActiveRanch } from './useActiveRanch';
-import { useSnackbar } from '../ui/useSnackbar';
+import { useOptionalAuth } from '../features/auth/useAuth';
 import { whatsappUrl } from './whatsapp';
 import { cx } from '../ui/cx';
 
@@ -24,7 +24,7 @@ const configItems: { key: string; path: string; icon: Glyph }[] = [
 export function AvatarMenu({ showCount = false }: { showCount?: boolean }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const snackbar = useSnackbar();
+  const auth = useOptionalAuth();
   const { unreadCount } = useActiveRanch();
   const count = showCount ? unreadCount : 0;
   return (
@@ -56,8 +56,8 @@ export function AvatarMenu({ showCount = false }: { showCount?: boolean }) {
           </Menu.Item>
           <Menu.Item
             className={menuItem}
-            // Auth has not landed, so there is no session to end yet.
-            onSelect={() => snackbar.show({ message: t('shell.logoutSoon') })}
+            // Signing out sends the guard back to the V4 Home.
+            onSelect={() => void auth?.signOut()}
           >
             <Icon icon={iconLogOut} size={20} />
             {t('shell.logout')}

@@ -2,7 +2,12 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
-// Needs only the web server.
+import { signUp } from './support/auth';
+
+// Needs the whole stack (`scripts/dev.sh`): each test signs up a fresh account on the emulator.
+test.beforeEach(async ({ page }) => {
+  await signUp(page);
+});
 const nav = (page: Page) => page.getByRole('navigation', { name: 'Navegación principal' });
 
 async function expectFakeDoor(page: Page, tab: string) {
@@ -50,17 +55,6 @@ test.describe('at 360px', () => {
     expect(href).toBe(
       'https://wa.me/523334056398?text=Necesito%20que%20me%20ayuden%20a%20usar%20Smartbell.',
     );
-  });
-
-  test('a snackbar leaves the tab bar free', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: /Menú de cuenta/ }).click();
-    await page.getByRole('menuitem', { name: 'Cerrar sesión' }).click();
-    const snackbar = await page
-      .getByText('El inicio de sesión aún no está disponible')
-      .boundingBox();
-    const bar = await nav(page).boundingBox();
-    expect((snackbar?.y ?? 0) + (snackbar?.height ?? 0)).toBeLessThanOrEqual(bar?.y ?? 0);
   });
 
   test('has no horizontal scroll and no axe violations', async ({ page }) => {
