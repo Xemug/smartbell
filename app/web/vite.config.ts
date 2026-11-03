@@ -15,7 +15,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'illustrations/*.svg'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'illustrations/*.svg'],
       workbox: {
         // Also the Latin subset of the self-hosted fonts (es-MX and en need no other), so text
         // keeps its typeface offline.
@@ -31,10 +31,12 @@ export default defineConfig({
         display: 'standalone',
         theme_color: color('primary'),
         background_color: color('primary-background'),
-        // Placeholder icons; the real set lands with the design tokens.
+        // Rendered from public/favicon.svg by `npm run app-icons`. The mark's ring sits inside the
+        // maskable safe zone (a centred circle of 80% of the width), so the 512 icon is also maskable.
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
     }),
