@@ -49,9 +49,9 @@ M.
 
 ## Acceptance
 
-- [ ] A Técnico de campo gets 403 on cow creation; a Médico gets 201 (API tests from the matrix).
-- [ ] Every role's preset matches §7.8 cell by cell (one table-driven test).
-- [ ] Data from ranch A is never returned when the active ranch is B (test on every list endpoint added later via a shared fixture).
-- [ ] Switching ranch in the UI refetches all queries.
-- [ ] Tests for the new code pass in CI.
-- [ ] Owner can't be removed from their ranch (API test).
+- [x] A Técnico de campo gets 403 on cow creation; a Médico gets 201 (API tests from the matrix). Run on a test route guarded with `ANIMALS_CREATE` until `animal-api` adds the real one.
+- [x] Every role's preset matches §7.8 cell by cell (one table-driven test, read from the doc's own table).
+- [x] Data from ranch A is never returned when the active ranch is B (test on every list endpoint added later via a shared fixture).
+- [x] Switching ranch in the UI refetches all queries.
+- [x] Tests for the new code pass in CI.
+- [x] Owner can't be removed from their ranch (API test).
