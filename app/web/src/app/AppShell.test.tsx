@@ -12,9 +12,18 @@ interface ShellOptions {
   desktop: boolean;
   path?: string;
   media?: object;
+  supportConfig?: object;
 }
 
-function renderShell({ desktop, path = '/', media }: ShellOptions) {
+const defaultConfig = {
+  whatsapp_number: '523334056398',
+  support_message: null,
+  payment_message: null,
+  feature_message: null,
+  community_url: null,
+};
+
+function renderShell({ desktop, path = '/', media, supportConfig = defaultConfig }: ShellOptions) {
   vi.stubGlobal(
     'matchMedia',
     vi.fn(
@@ -27,10 +36,13 @@ function renderShell({ desktop, path = '/', media }: ShellOptions) {
     ),
   );
   vi.stubGlobal('scrollTo', vi.fn());
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () => Response.json({ status: 'ok' })),
-  );
+  const fetch = vi.fn(async (request: Request) => {
+    const { pathname } = new URL(request.url);
+    if (pathname === '/api/support/config') return Response.json(supportConfig);
+    if (pathname === '/api/support/fake-door-taps') return new Response(null, { status: 204 });
+    return Response.json({ status: 'ok' });
+  });
+  vi.stubGlobal('fetch', fetch);
   const router = createMemoryRouter([shellRoute], { initialEntries: [path] });
   render(
     <QueryClientProvider client={new QueryClient()}>
@@ -39,7 +51,7 @@ function renderShell({ desktop, path = '/', media }: ShellOptions) {
       </SnackbarProvider>
     </QueryClientProvider>,
   );
-  return router;
+  return { router, fetch };
 }
 
 const prefilled = (href: string | null) => new URL(href ?? '').searchParams.get('text');
@@ -60,7 +72,7 @@ describe('AppShell', () => {
   });
 
   it('goes to built tabs and marks the active one', async () => {
-    const router = renderShell({ desktop: false });
+    const { router } = renderShell({ desktop: false });
     await userEvent.click(screen.getByRole('link', { name: 'Vacas' }));
     expect(router.state.location.pathname).toBe('/vacas');
     expect(screen.getByRole('link', { name: 'Vacas' })).toHaveAttribute('aria-current', 'page');
@@ -73,7 +85,7 @@ describe('AppShell', () => {
     [false, 'Ranchos'],
     [true, 'Usuarios'],
   ])('fake door (desktop %s): %s opens the modal and stays put', async (desktop, tab) => {
-    const router = renderShell({ desktop });
+    const { router } = renderShell({ desktop });
     await userEvent.click(screen.getByRole('button', { name: tab }));
     const dialog = await screen.findByRole('dialog', { name: 'Funcionalidad en construcción' });
     const link = within(dialog).getByRole('link', { name: 'Contactar en WhatsApp' });
@@ -103,8 +115,49 @@ describe('AppShell', () => {
     );
   });
 
+  it('counts each fake-door tap by feature', async () => {
+    const { fetch } = renderShell({ desktop: true });
+    await userEvent.click(screen.getByRole('button', { name: 'Reportes' }));
+    await screen.findByRole('dialog');
+    await vi.waitFor(() => {
+      const taps = fetch.mock.calls
+        .map(([request]) => request)
+        .filter((request) => new URL(request.url).pathname === '/api/support/fake-door-taps');
+      expect(taps).toHaveLength(1);
+      expect(taps[0]?.method).toBe('POST');
+    });
+    const tap = fetch.mock.calls
+      .map(([request]) => request)
+      .find((request) => new URL(request.url).pathname === '/api/support/fake-door-taps');
+    expect(await tap?.json()).toEqual({ feature: 'REPORTES' });
+  });
+
+  it('uses the number and copy the api serves', async () => {
+    renderShell({
+      desktop: false,
+      supportConfig: {
+        ...defaultConfig,
+        whatsapp_number: '5213312345678',
+        support_message: 'Ayuda, por favor.',
+        feature_message: 'Quiero {nombre} ya.',
+      },
+    });
+    await userEvent.click(screen.getByRole('button', { name: /Menú de cuenta/ }));
+    const soporte = await screen.findByRole('menuitem', { name: 'Soporte' });
+    await vi.waitFor(() =>
+      expect(new URL(soporte.getAttribute('href') ?? '').pathname).toBe('/5213312345678'),
+    );
+    expect(prefilled(soporte.getAttribute('href'))).toBe('Ayuda, por favor.');
+    await userEvent.keyboard('{Escape}');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Grupos' }));
+    const dialog = await screen.findByRole('dialog');
+    const link = within(dialog).getByRole('link', { name: 'Contactar en WhatsApp' });
+    expect(prefilled(link.getAttribute('href'))).toBe('Quiero Grupos ya.');
+  });
+
   it('avatar items route to their config placeholder', async () => {
-    const router = renderShell({ desktop: true });
+    const { router } = renderShell({ desktop: true });
     await userEvent.click(screen.getByRole('button', { name: /Menú de cuenta/ }));
     await userEvent.click(await screen.findByRole('menuitem', { name: 'Mi perfil' }));
     expect(router.state.location.pathname).toBe('/config/perfil');
@@ -154,7 +207,7 @@ describe('AppShell', () => {
   });
 
   it('sends unknown paths home, inside the shell', () => {
-    const router = renderShell({ desktop: true, path: '/grupos/12' });
+    const { router } = renderShell({ desktop: true, path: '/grupos/12' });
     expect(router.state.location.pathname).toBe('/');
     expect(screen.getByRole('navigation')).toBeInTheDocument();
   });
@@ -170,5 +223,9 @@ describe('whatsappUrl', () => {
     expect(whatsappUrl('¿Hola & adiós?')).toBe(
       'https://wa.me/523334056398?text=%C2%BFHola%20%26%20adi%C3%B3s%3F',
     );
+  });
+
+  it('takes the number from the config when given', () => {
+    expect(whatsappUrl('Hola', '5213312345678')).toBe('https://wa.me/5213312345678?text=Hola');
   });
 });

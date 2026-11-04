@@ -18,6 +18,7 @@ def clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "SECRET_KEY",
         "FIREBASE_PROJECT_ID",
         "FIREBASE_AUTH_EMULATOR_HOST",
+        "ADMIN_EMAILS",
     ):
         monkeypatch.delenv(name, raising=False)
 
@@ -86,3 +87,19 @@ def test_prod_refuses_a_demo_project() -> None:
             secret_key="s",
             firebase_project_id="demo-smartbell",
         )
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("", []),
+        ("Ana@Smartbell.mx", ["ana@smartbell.mx"]),
+        (" ana@smartbell.mx , luis@smartbell.mx ,", ["ana@smartbell.mx", "luis@smartbell.mx"]),
+    ],
+)
+def test_admin_emails_are_comma_separated_and_lowercased(
+    monkeypatch: pytest.MonkeyPatch, raw: str, expected: list[str]
+) -> None:
+    monkeypatch.setenv("ADMIN_EMAILS", raw)
+
+    assert Settings(_env_file=None).admin_emails == expected

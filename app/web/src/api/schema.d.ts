@@ -114,6 +114,83 @@ export interface paths {
     patch: operations['updateMember'];
     trace?: never;
   };
+  '/api/support/config': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Support Config
+     * @description Public: the support link also serves people who can't sign in.
+     */
+    get: operations['getSupportConfig'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/support/fake-door-taps': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Record Fake Door Tap */
+    post: operations['recordFakeDoorTap'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/fake-door-taps': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Fake Door Report
+     * @description Taps per feature, most wanted first. Features nobody tapped are listed with zero.
+     */
+    get: operations['getFakeDoorReport'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/admin/support/config': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Update Support Config
+     * @description Replaces the whole config: a message left out goes back to the app's default.
+     */
+    put: operations['updateSupportConfig'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -123,6 +200,33 @@ export interface components {
       user: components['schemas']['UserOut'];
       /** Ranches */
       ranches: components['schemas']['RanchOut'][];
+    };
+    /** FakeDoorCount */
+    FakeDoorCount: {
+      feature: components['schemas']['FakeDoorFeature'];
+      /** Taps */
+      taps: number;
+      /** Users */
+      users: number;
+      /** Last Tapped At */
+      last_tapped_at: string | null;
+    };
+    /**
+     * FakeDoorFeature
+     * @description Unbuilt features behind the "Funcionalidad en construcción" modal (v4 §1.14, §3.6).
+     * @enum {string}
+     */
+    FakeDoorFeature: 'GRUPOS' | 'REPORTES' | 'USUARIOS' | 'RANCHOS';
+    /** FakeDoorReport */
+    FakeDoorReport: {
+      /** Since */
+      since: string | null;
+      /** Features */
+      features: components['schemas']['FakeDoorCount'][];
+    };
+    /** FakeDoorTapIn */
+    FakeDoorTapIn: {
+      feature: components['schemas']['FakeDoorFeature'];
     };
     /** HTTPValidationError */
     HTTPValidationError: {
@@ -226,6 +330,35 @@ export interface components {
       first_name?: string | null;
       /** Phone */
       phone?: string | null;
+    };
+    /** SupportConfigIn */
+    SupportConfigIn: {
+      /** Whatsapp Number */
+      whatsapp_number: string;
+      /** Support Message */
+      support_message?: string | null;
+      /** Payment Message */
+      payment_message?: string | null;
+      /** Feature Message */
+      feature_message?: string | null;
+      /** Community Url */
+      community_url?: string | null;
+    };
+    /**
+     * SupportConfigOut
+     * @description A null message means the app shows its own translated default.
+     */
+    SupportConfigOut: {
+      /** Whatsapp Number */
+      whatsapp_number: string;
+      /** Support Message */
+      support_message: string | null;
+      /** Payment Message */
+      payment_message: string | null;
+      /** Feature Message */
+      feature_message: string | null;
+      /** Community Url */
+      community_url: string | null;
     };
     /** UserOut */
     UserOut: {
@@ -479,6 +612,121 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['MemberOut'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  getSupportConfig: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SupportConfigOut'];
+        };
+      };
+    };
+  };
+  recordFakeDoorTap: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['FakeDoorTapIn'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  getFakeDoorReport: {
+    parameters: {
+      query?: {
+        since?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FakeDoorReport'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  updateSupportConfig: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SupportConfigIn'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SupportConfigOut'];
         };
       };
       /** @description Validation Error */

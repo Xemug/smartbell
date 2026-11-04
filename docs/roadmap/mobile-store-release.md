@@ -14,7 +14,9 @@ The app is live in both stores with a RevenueCat paywall; the rebuild must repla
 
 Keeps the listings, installs and subscribers.
 
-**Depends on:** `auth`, `tasks-home`, `milk-screens`.
+**Depends on:** `auth`, `tasks-home`, `milk-screens`, `groups`, `profile-ranch-config`, `user-admin`, `legacy-firestore-import`, `report-export`.
+
+This build replaces the live app under the same bundle id, so it must not take away anything live users have today. The founder raised this on 2026-11-03. See the parity check below.
 
 ## What it touches
 
@@ -36,4 +38,6 @@ L.
 - [ ] A TestFlight / internal-track build installs over the legacy app and keeps the user logged in (human).
 - [ ] A sandbox purchase unlocks Pro through the webhook; restore works.
 - [ ] Push arrives on a real device (human).
+- [ ] Parity check: every live feature in `docs/spikes/flutterflow-audit.md` §1.2 is listed with its new card. That covers auth, onboarding, milk, animals, groups and group diet change, tasks, profile, ranches and invites, workers, membership, and the CSV exports. Each one must have shipped, or the user must have approved its drop in writing. No live feature stays a fake door (human).
+- [ ] Live data is imported before release: users open the new build and see their ranches, animals and records.
 - [ ] Tests for the new code pass in CI.

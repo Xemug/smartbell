@@ -27,11 +27,24 @@ Subscription models, Stripe (or local MX provider) integration, `features/config
 
 Per reconciliation-v4.md §4.5. If the mobile client stays in the stores, billing must use store subscriptions (RevenueCat is the usual bridge); web can use Stripe or a Mexican provider. The OTO screen (onboarding card) links here.
 
+**Upsell doors (user decision, 2026-11-03):** the avatar-menu items Mi perfil, Mis ranchos, Mensajes recibidos and Administrar usuarios become upsell doors, not fake doors that count interest. They follow the live FlutterFlow pattern, "Feature under development" with a "See Plans" button, and open the plans screen. Until this card lands they keep their placeholder pages.
+
+**Which items are paid (user decision, 2026-11-03):**
+- **Mi perfil:** free for everyone.
+- **Mis ranchos:** free with one owned ranch. Creating a second ranch shows the upsell (See Plans). This matches the live app, which already gates adding a ranch behind premium (`ranchlist`). Ranches a user only belongs to as a member don't count.
+- **Administrar usuarios:** upsell. This matches the live app, where inviting users is premium.
+- **Mensajes recibidos:** upsell.
+
+**Free users with several ranches (user decision, 2026-11-03):** a free legacy user who already owns more than one ranch keeps all of them, with full access. Only creating a new ranch is blocked, and it shows the upsell. Free accounts with one ranch or none stay limited to one. `legacy-firestore-import` reports how many such users exist.
+
 ## Effort
 
 XL.
 
 ## Acceptance
 
+- [ ] A free user with one owned ranch who tries to create another sees the upsell, and a member-only ranch doesn't count (test).
+- [ ] A free legacy user with several owned ranches keeps them all with full access, and creating another shows the upsell (test).
+- [ ] Administrar usuarios and Mensajes recibidos show the upsell to free users; Mi perfil never does (test).
 - [ ] Spec to be expanded when unparked.
 - [ ] Tests for the new code pass in CI.

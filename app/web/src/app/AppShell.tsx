@@ -7,6 +7,7 @@ import { FakeDoorModal } from './FakeDoorModal';
 import { MobileHeader, MobileTabBar } from './MobileShell';
 import type { NavId } from './navigation';
 import { RanchSwitcher } from './RanchSwitcher';
+import { recordFakeDoorTap } from './support';
 import { useIsDesktop } from './useIsDesktop';
 import { WebHeader } from './WebShell';
 
@@ -15,11 +16,16 @@ import { WebHeader } from './WebShell';
 export function AppShell() {
   const isDesktop = useIsDesktop();
   const [fakeDoor, setFakeDoor] = useState<NavId | null>(null);
+  // Counted on the tap itself, not on render, so strict mode and re-renders don't inflate it.
+  const openFakeDoor = (id: NavId) => {
+    setFakeDoor(id);
+    void recordFakeDoorTap(id);
+  };
   return (
     <ActiveRanchProvider>
       <ScrollRestoration />
       <div className="flex min-h-dvh flex-col bg-primary-background">
-        {isDesktop ? <WebHeader onFakeDoor={setFakeDoor} /> : <MobileHeader />}
+        {isDesktop ? <WebHeader onFakeDoor={openFakeDoor} /> : <MobileHeader />}
         <main
           className={cx(
             'flex-1',
@@ -36,7 +42,7 @@ export function AppShell() {
           )}
           <Outlet />
         </main>
-        {!isDesktop && <MobileTabBar onFakeDoor={setFakeDoor} />}
+        {!isDesktop && <MobileTabBar onFakeDoor={openFakeDoor} />}
       </div>
       <FakeDoorModal feature={fakeDoor} onClose={() => setFakeDoor(null)} />
     </ActiveRanchProvider>

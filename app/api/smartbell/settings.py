@@ -1,10 +1,10 @@
 """Settings read from the environment (and an optional `.env` file)."""
 
 from functools import lru_cache
-from typing import Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator, model_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 DEV_DATABASE_URL = "postgresql+asyncpg://smartbell:smartbell@localhost:5432/smartbell"
 DEV_SECRET_KEY = "dev-only-insecure-secret-key"  # noqa: S105 - dev default, refused outside dev
@@ -23,6 +23,18 @@ class Settings(BaseSettings):
     firebase_project_id: str = ""
     # firebase-admin skips signature checks when this is set, so anyone could forge a token.
     firebase_auth_emulator_host: str = ""
+    # Smartbell staff, not ranch roles: who may read fake-door counts and edit support copy.
+    # Matched against a token's *verified* email, so an unconfirmed sign-up can't claim one.
+    # Comma-separated in the environment: ADMIN_EMAILS=ana@smartbell.mx,luis@smartbell.mx
+    admin_emails: Annotated[list[str], NoDecode] = []
+
+    @field_validator("admin_emails", mode="before")
+    @classmethod
+    def _split_admin_emails(cls, value: Any) -> Any:
+        emails = value.split(",") if isinstance(value, str) else value
+        if not isinstance(emails, list):
+            return emails
+        return [str(email).strip().lower() for email in emails if str(email).strip()]
 
     @model_validator(mode="after")
     def _require_secrets_outside_dev(self) -> "Settings":
