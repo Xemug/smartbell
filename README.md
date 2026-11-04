@@ -12,19 +12,49 @@ roadmap specs are in `docs/`.
 
 ## Setup
 
-Needs Docker (for Postgres), [uv](https://docs.astral.sh/uv/) and Node 22.
+Needs Docker (for Postgres), [uv](https://docs.astral.sh/uv/) and Node 22 (`.nvmrc`).
+
+### Node 22 on a Mac
+
+On an Apple silicon Mac, Node must be the arm64 build: an Intel (x64) build can't load the
+installed packages. Do this once per machine, in Terminal:
+
+1. Open a new Terminal window. Run `uname -m`; it should print `arm64`. If it prints `x86_64`,
+   Terminal is running under Rosetta: quit it, untick "Open using Rosetta" in its Get Info window,
+   and open it again.
+2. Install [nvm](https://github.com/nvm-sh/nvm#installing-and-updating) if `nvm --version` prints
+   nothing, then open a new Terminal window.
+3. Go to this folder and run `nvm install`. It reads `.nvmrc` and installs Node 22.
+4. Run `nvm alias default 22`, so every new Terminal uses it ahead of any other Node (for example
+   one in `/usr/local/bin`).
+5. Open a new Terminal window, go to this folder and check: `node -v` prints `v22.` and something,
+   and `node -p process.arch` prints `arm64`. Don't install packages until both are right; then
+   run the setup below. If `node_modules` was installed with another Node, delete
+   `app/web/node_modules` first.
+
+Never install packages with an x64 Node or from a Rosetta shell. `dev.sh` stops with these steps
+if the Node on your PATH is the wrong version or architecture.
+
+### Install and run
 
 ```bash
-docker compose up -d                   # Postgres 16 on :5432
 (cd app/api && uv sync)                # api dependencies
 (cd app/web && npm ci)                 # web dependencies
-./scripts/dev.sh                       # migrate, then api on :8000 and web on :5173
+./scripts/dev.sh                       # Postgres, migrate, then api on :8000 and web on :5173
 ```
+
+`dev.sh` uses ports 8000 (api), 5173 (web), 9099 (auth emulator) and 5432 (Postgres, via docker
+compose), or the next free port for any that is taken (another checkout running, say), and prints
+each port it moved. So two checkouts can run at once. When Postgres isn't on 5432, `dev.sh` also prints
+an `export DATABASE_URL=…` line. Run it before api commands you run yourself in that checkout
+(`alembic`, `uvicorn`): without it they use localhost:5432, which may be another checkout's database. If Postgres fails to start, it removes the
+half-made container so running it again works.
 
 Open http://localhost:5173: the placeholder page shows the API health ("ok").
 
 Without Docker, point `DATABASE_URL` at any Postgres and run `SKIP_DOCKER=1 ./scripts/dev.sh`.
-`API_PORT` and `WEB_PORT` move the servers off 8000 and 5173.
+`API_PORT`, `WEB_PORT` and `POSTGRES_PORT` fix those ports instead.
+`bash scripts/test-dev-checks.sh` tests the Node and port checks.
 
 ## Checks
 

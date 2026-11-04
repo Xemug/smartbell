@@ -29,6 +29,36 @@ The user tests every PR in their own Terminal and is learning as they go. Setup 
   - `node -p process.arch` matches `uname -m`, or it stops with the exact fix.
 - **`dev.sh` database port:** when `POSTGRES_PORT` isn't set and 5432 or the chosen port is in use, pick a free port and print it. After a failed compose start, remove the half-made container so a retry works.
 
+## Decisions (groomed 2026-11-03)
+
+- The checks live in `scripts/dev-checks.sh`, which `dev.sh` sources, so `scripts/test-dev-checks.sh`
+  can test them with a stub `node` on PATH. A `scripts` job in CI runs that test.
+- The architecture check compares Node's arch with the machine's real CPU, not plain `uname -m`:
+  on an Apple silicon Mac it reads `sysctl hw.optional.arm64`, because `uname -m` says `x86_64`
+  inside a Rosetta shell, where an Intel Node would "match" and still fail on arm64 `node_modules`.
+- A fresh shell can still find `/usr/local/bin/node` (v24) first (planner note). The version check
+  catches it, and the fix it prints (and the README) is `nvm install` from `.nvmrc`, then
+  `nvm alias default 22`.
+- Port: with `POSTGRES_PORT` unset, `dev.sh` keeps the port of this checkout's Postgres if it is
+  already running, else uses 5432 or the first free port above it, and points `DATABASE_URL` at it.
+  An explicit `POSTGRES_PORT` is used as given, but if something else already holds it, `dev.sh`
+  stops before compose recreates this checkout's working container. A native Postgres on 127.0.0.1:5432 counts as taken
+  (it did on the user's Mac). After a failed `compose up`, `compose rm --stop --force db` removes the
+  container compose made in that run and keeps the data volume. A container that was already running
+  on the same port (compose keeps it) is left as it was, with a pointer to `docker compose logs db`.
+- "Two worktrees at once" needs every port free, not just the database's: the api (8000), web (5173)
+  and auth emulator (9099) also move to the next free port when theirs is taken. `firebase.json`
+  fixes the emulator's port, so `dev.sh` starts it from a temporary copy and points the api
+  (`FIREBASE_AUTH_EMULATOR_HOST`) and web (`VITE_FIREBASE_AUTH_EMULATOR_URL`) at it.
+- Ports count as taken on 127.0.0.1 or ::1: Vite on macOS listens on ::1 only.
+- Ports are picked when `dev.sh` starts but bound later (after migrations), so a listener check alone
+  races. Each pick happens under a machine-wide lock and records the port with dev.sh's PID in
+  `$TMPDIR/smartbell-dev-ports`. Another dev.sh skips reserved ports, reservations go when dev.sh
+  exits, and a dead run's reservations are reclaimed.
+- `app/api` settings still default to localhost:5432; changing that would change app behaviour, so
+  it is out of scope. When Postgres isn't on 5432, `dev.sh` prints the `export DATABASE_URL=…`
+  line to run before api commands you run yourself in that checkout.
+
 ## Effort
 
 S.
@@ -36,6 +66,6 @@ S.
 ## Acceptance
 
 - [x] On the user's Mac, `node -p process.arch` prints arm64 and `node -v` prints v22 after the steps (human; the user replaced nvm's Node with arm64 v22.23.4 on 2026-11-03).
-- [ ] `scripts/dev.sh` stops with a clear message under the wrong Node major version or architecture (test with a stub node on PATH).
-- [ ] Two worktrees can run `dev.sh` at once without a port clash, and a failed start leaves nothing to clean up.
-- [ ] Tests for the new code pass in CI.
+- [x] `scripts/dev.sh` stops with a clear message under the wrong Node major version or architecture (test with a stub node on PATH).
+- [x] Two worktrees can run `dev.sh` at once without a port clash, and a failed start leaves nothing to clean up.
+- [x] Tests for the new code pass in CI.
