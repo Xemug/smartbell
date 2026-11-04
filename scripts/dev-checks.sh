@@ -30,10 +30,14 @@ then run ./scripts/dev.sh again. Don't install packages until both lines are rig
     printf 'dev.sh: node isn'\''t installed (or isn'\''t on PATH).\n%s\n' "$fix" >&2
     return 1
   fi
-  local where version arch major want
+  local where info version arch major want
   where="$(command -v node)"
   # One call, so a stub node in the tests only has to print one line.
-  read -r version arch <<<"$(node -p 'process.version + " " + process.arch')"
+  if ! info="$(node -p 'process.version + " " + process.arch' 2>/dev/null)" || [[ -z "$info" ]]; then
+    printf 'dev.sh: %s won'\''t run (often a Node built for another CPU).\n%s\n' "$where" "$fix" >&2
+    return 1
+  fi
+  read -r version arch <<<"$info"
   major="${version#v}"
   major="${major%%.*}"
   if [[ "$major" != 22 ]]; then

@@ -53,5 +53,5 @@ S.
 
 - [x] On the user's Mac, `node -p process.arch` prints arm64 and `node -v` prints v22 after the steps (human; the user replaced nvm's Node with arm64 v22.23.4 on 2026-11-03).
 - [x] `scripts/dev.sh` stops with a clear message under the wrong Node major version or architecture (test with a stub node on PATH).
-- [x] Two worktrees can run `dev.sh` at once without a port clash, and a failed start leaves nothing to clean up.
-- [ ] Tests for the new code pass in CI.
+- [x] Two worktrees can run `dev.sh` at once without a database port clash, and a failed start leaves nothing to clean up. (The api, web and auth emulator ports stay fixed: a second checkout still sets `API_PORT`, `WEB_PORT` and `SKIP_AUTH_EMULATOR=1`, as before; out of scope here.)
+- [x] Tests for the new code pass in CI.

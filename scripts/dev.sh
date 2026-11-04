@@ -36,8 +36,9 @@ if [[ -z "${SKIP_DOCKER:-}" ]]; then
   if [[ -z "${POSTGRES_PORT:-}" ]]; then
     # Postgres already running from an earlier dev.sh in this checkout keeps its port.
     running="$("${compose[@]}" port db 5432 2>/dev/null | head -n 1 || true)"
-    if [[ -n "$running" ]]; then
-      POSTGRES_PORT="${running##*:}"
+    running="${running##*:}"
+    if [[ "$running" =~ ^[1-9][0-9]*$ ]]; then
+      POSTGRES_PORT="$running"
     else
       POSTGRES_PORT="$(first_free_port 5432)"
       if [[ "$POSTGRES_PORT" != 5432 ]]; then

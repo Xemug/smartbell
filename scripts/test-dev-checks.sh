@@ -64,7 +64,22 @@ else
   fail "dev.sh under Node 24: exit $status. Output: $out"
 fi
 
-# first_free_port skips a port something listens on.
+# A node that can't run at all (e.g. built for another CPU).
+mkdir -p "$tmp/bin"
+printf '#!/bin/sh\nexit 126\n' >"$tmp/bin/node"
+chmod +x "$tmp/bin/node"
+status=0
+out="$(PATH="$tmp/bin:$PATH" check_node 2>&1)" || status=$?
+if [[ "$status" == 1 && "$out" == *"won't run"* ]]; then
+  pass "a node that won't run stops"
+else
+  fail "node that won't run: exit $status. Output: $out"
+fi
+
+# first_free_port skips a port something listens on (needs python3 for the listener).
+if ! python3 -c pass >/dev/null 2>&1; then
+  echo "skip first_free_port (no python3)"
+else
 port=$(first_free_port 47000)
 python3 -c 'import socket, sys, time
 s = socket.socket(); s.bind(("127.0.0.1", int(sys.argv[1]))); s.listen(); time.sleep(60)' "$port" &
@@ -79,6 +94,7 @@ else
   else
     fail "first_free_port $port returned $next"
   fi
+fi
 fi
 
 if [[ "$failures" -gt 0 ]]; then
