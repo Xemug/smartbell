@@ -35,7 +35,7 @@ Per reconciliation-v4.md §4.5. If the mobile client stays in the stores, billin
 - **Administrar usuarios:** upsell. This matches the live app, where inviting users is premium.
 - **Mensajes recibidos:** upsell.
 
-**Open, waiting for the user:** a free legacy user may already own more than one ranch, from before the gate or after premium lapsed. The planner recommends they keep every ranch with full access and are only blocked from creating another. `legacy-firestore-import` reports how many such users exist.
+**Free users with several ranches (user decision, 2026-11-03):** a free legacy user who already owns more than one ranch keeps all of them, with full access. Only creating a new ranch is blocked, and it shows the upsell. Free accounts with one ranch or none stay limited to one. `legacy-firestore-import` reports how many such users exist.
 
 ## Effort
 
@@ -43,5 +43,8 @@ XL.
 
 ## Acceptance
 
+- [ ] A free user with one owned ranch who tries to create another sees the upsell, and a member-only ranch doesn't count (test).
+- [ ] A free legacy user with several owned ranches keeps them all with full access, and creating another shows the upsell (test).
+- [ ] Administrar usuarios and Mensajes recibidos show the upsell to free users; Mi perfil never does (test).
 - [ ] Spec to be expanded when unparked.
 - [ ] Tests for the new code pass in CI.
