@@ -124,6 +124,33 @@ s.listen(); time.sleep(60)' "$1" "$2" &
   fi
 fi
 
+# Six dev.sh-like processes picking at the same moment get six different ports, before any binds.
+export SMARTBELL_PORT_DIR="$tmp/ports"
+start=$(first_free_port 47300)
+for i in 1 2 3 4 5 6; do
+  # Each stays alive a moment, as dev.sh would while its servers start.
+  bash -c 'source "$1"; pick_port "$2" "test" 2>/dev/null; sleep 2' _ "$root/scripts/dev-checks.sh" "$start" \
+    >"$tmp/pick.$i" &
+done
+wait
+picked="$(cat "$tmp"/pick.* | sort -n)"
+if [[ "$(echo "$picked" | wc -l | tr -d ' ')" == 6 && "$(echo "$picked" | sort -u | wc -l | tr -d ' ')" == 6 ]]; then
+  pass "concurrent picks get different ports ($(echo $picked))"
+else
+  fail "concurrent picks collided: $(echo $picked)"
+fi
+
+# A reservation whose dev.sh is gone doesn't hold its port, and release_ports drops only its own.
+rm -f "$SMARTBELL_PORT_DIR"/[0-9]*
+echo 999999 >"$SMARTBELL_PORT_DIR/$start"
+got="$(bash -c 'source "$1"; pick_port "$2" "test" 2>/dev/null; release_ports; ls "$SMARTBELL_PORT_DIR"' _ \
+  "$root/scripts/dev-checks.sh" "$start")"
+if [[ "$got" == "$start" ]]; then
+  pass "a dead dev.sh's reservation is reclaimed and released on exit"
+else
+  fail "stale reservation: got '$got', want '$start' with nothing left reserved"
+fi
+
 if [[ "$failures" -gt 0 ]]; then
   echo "$failures failed" >&2
   exit 1

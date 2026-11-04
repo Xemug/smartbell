@@ -20,6 +20,16 @@ source "$root/scripts/dev-checks.sh"
 # Node 22 for this machine's CPU, before anything starts (see .nvmrc).
 check_node || exit 1
 
+pids=()
+tmp_config_dir=""
+cleanup() {
+  # The odd expansion keeps macOS's bash 3.2 from calling an empty array unbound under set -u.
+  kill ${pids[@]+"${pids[@]}"} 2>/dev/null || true
+  if [[ -n "$tmp_config_dir" ]]; then rm -rf "$tmp_config_dir"; fi
+  release_ports
+}
+trap cleanup EXIT INT TERM
+
 api_port="${API_PORT:-$(pick_port 8000 "the api")}"
 web_port="${WEB_PORT:-$(pick_port 5173 "the web app")}"
 
@@ -48,10 +58,7 @@ if [[ -z "${SKIP_DOCKER:-}" ]]; then
     if [[ "$running" =~ ^[1-9][0-9]*$ ]]; then
       POSTGRES_PORT="$running"
     else
-      POSTGRES_PORT="$(first_free_port 5432)"
-      if [[ "$POSTGRES_PORT" != 5432 ]]; then
-        echo "dev.sh: port 5432 is in use (another checkout's Postgres?), so this one runs on $POSTGRES_PORT."
-      fi
+      POSTGRES_PORT="$(pick_port 5432 "Postgres")"
     fi
     export POSTGRES_PORT
   fi
@@ -72,15 +79,6 @@ fi
 if [[ -n "${POSTGRES_PORT:-}" && -z "${DATABASE_URL:-}" ]]; then
   export DATABASE_URL="postgresql+asyncpg://smartbell:smartbell@localhost:$POSTGRES_PORT/smartbell"
 fi
-
-pids=()
-tmp_config_dir=""
-cleanup() {
-  # The odd expansion keeps macOS's bash 3.2 from calling an empty array unbound under set -u.
-  kill ${pids[@]+"${pids[@]}"} 2>/dev/null || true
-  if [[ -n "$tmp_config_dir" ]]; then rm -rf "$tmp_config_dir"; fi
-}
-trap cleanup EXIT INT TERM
 
 if [[ -z "${SKIP_AUTH_EMULATOR:-}" ]]; then
   auth_port="$(pick_port 9099 "the auth emulator")"

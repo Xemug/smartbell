@@ -67,10 +67,63 @@ first_free_port() {
   echo "$port"
 }
 
-# The first free port from $1 upwards; says so on stderr when it isn't $1 ($2 names the server).
+# Ports a dev.sh has picked but not yet bound (its api waits for migrations, say). Each file is
+# named for a port and holds the PID of the dev.sh that picked it, so a dev.sh started at the same
+# moment skips it. Shared by every checkout of this machine's user.
+port_dir="${SMARTBELL_PORT_DIR:-${TMPDIR:-/tmp}/smartbell-dev-ports}"
+
+# Runs "$@" while holding a machine-wide lock, so two dev.sh can't pick the same port.
+with_port_lock() {
+  local lock="$port_dir/.lock" owner waited=0 status=0
+  mkdir -p "$port_dir"
+  until mkdir "$lock" 2>/dev/null; do
+    owner="$(cat "$lock/pid" 2>/dev/null || true)"
+    # A lock whose dev.sh is gone, or one held for over 10 s, is stale.
+    if { [[ -n "$owner" ]] && ! kill -0 "$owner" 2>/dev/null; } || [[ "$waited" -ge 100 ]]; then
+      rm -rf "$lock"
+      waited=0
+      continue
+    fi
+    sleep 0.1
+    waited=$((waited + 1))
+  done
+  echo $$ >"$lock/pid"
+  "$@" || status=$?
+  rm -rf "$lock"
+  return "$status"
+}
+
+# Prints the first port from $1 upwards that nothing listens on and no other running dev.sh has
+# picked, and reserves it for this dev.sh ($$ is the script's PID, in subshells too).
+reserve_free_port() {
+  local port="$1" owner
+  while true; do
+    if ! port_in_use "$port"; then
+      owner="$(cat "$port_dir/$port" 2>/dev/null || true)"
+      if [[ -z "$owner" ]] || ! kill -0 "$owner" 2>/dev/null; then
+        echo $$ >"$port_dir/$port"
+        echo "$port"
+        return
+      fi
+    fi
+    port=$((port + 1))
+  done
+}
+
+# Drops the ports this dev.sh reserved (dev.sh calls it on exit).
+release_ports() {
+  local file
+  for file in "$port_dir"/[0-9]*; do
+    [[ -f "$file" && "$(cat "$file" 2>/dev/null)" == "$$" ]] && rm -f "$file"
+  done
+  return 0
+}
+
+# Picks and reserves a free port from $1 upwards; says so on stderr when it isn't $1 ($2 names
+# the server).
 pick_port() {
   local port
-  port="$(first_free_port "$1")"
+  port="$(with_port_lock reserve_free_port "$1")"
   if [[ "$port" != "$1" ]]; then
     echo "dev.sh: port $1 is in use (another checkout?), so $2 runs on $port." >&2
   fi

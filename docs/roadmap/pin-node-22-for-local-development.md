@@ -51,8 +51,10 @@ The user tests every PR in their own Terminal and is learning as they go. Setup 
   fixes the emulator's port, so `dev.sh` starts it from a temporary copy and points the api
   (`FIREBASE_AUTH_EMULATOR_HOST`) and web (`VITE_FIREBASE_AUTH_EMULATOR_URL`) at it.
 - Ports count as taken on 127.0.0.1 or ::1: Vite on macOS listens on ::1 only.
-- Ports are chosen when `dev.sh` starts, so two runs started within the same few seconds can still
-  pick the same port; the one that loses fails clearly, and running it again works.
+- Ports are picked when `dev.sh` starts but bound later (after migrations), so a listener check alone
+  races. Each pick happens under a machine-wide lock and records the port with dev.sh's PID in
+  `$TMPDIR/smartbell-dev-ports`. Another dev.sh skips reserved ports, reservations go when dev.sh
+  exits, and a dead run's reservations are reclaimed.
 
 ## Effort
 
