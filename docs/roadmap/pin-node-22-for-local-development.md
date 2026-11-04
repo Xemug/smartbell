@@ -44,7 +44,8 @@ The user tests every PR in their own Terminal and is learning as they go. Setup 
   An explicit `POSTGRES_PORT` is used as given, but if something else already holds it, `dev.sh`
   stops before compose recreates this checkout's working container. A native Postgres on 127.0.0.1:5432 counts as taken
   (it did on the user's Mac). After a failed `compose up`, `compose rm --stop --force db` removes the
-  container and keeps the data volume.
+  container compose made in that run and keeps the data volume. A container that was already running
+  on the same port (compose keeps it) is left as it was, with a pointer to `docker compose logs db`.
 - "Two worktrees at once" needs every port free, not just the database's: the api (8000), web (5173)
   and auth emulator (9099) also move to the next free port when theirs is taken. `firebase.json`
   fixes the emulator's port, so `dev.sh` starts it from a temporary copy and points the api

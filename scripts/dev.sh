@@ -56,9 +56,15 @@ if [[ -z "${SKIP_DOCKER:-}" ]]; then
     export POSTGRES_PORT
   fi
   if ! "${compose[@]}" up -d --wait db; then
-    # Remove the half-made container so the next run starts clean (the data volume stays).
-    "${compose[@]}" rm --stop --force db >/dev/null 2>&1 || true
-    echo "dev.sh: Postgres didn't start on port $POSTGRES_PORT (see above). Its container is removed; run dev.sh again." >&2
+    if [[ "$POSTGRES_PORT" == "$running" ]]; then
+      # compose kept the container that was already running on this port: leave it alone.
+      echo "dev.sh: this checkout's Postgres on port $POSTGRES_PORT isn't healthy (see above). It's left as it was; check it with 'docker compose logs db'." >&2
+    else
+      # Compose made this container in this run: remove the half-made one so the next run starts
+      # clean (the data volume stays).
+      "${compose[@]}" rm --stop --force db >/dev/null 2>&1 || true
+      echo "dev.sh: Postgres didn't start on port $POSTGRES_PORT (see above). Its container is removed; run dev.sh again." >&2
+    fi
     exit 1
   fi
 fi
