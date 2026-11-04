@@ -459,6 +459,7 @@ async def test_other_reasons_keep_the_row_and_events_as_removed(
     assert response.status_code == 200
     assert response.json()["status"] == "REMOVED"
     assert response.json()["removed_reason"] == "VENTA_RASTRO"
+    assert response.json()["removed_at"].startswith("2026-11-01")
     types = (
         await tenant_db.scalars(select(Event.type).where(Event.animal_id == uuid.UUID(body["id"])))
     ).all()
@@ -475,6 +476,44 @@ async def test_a_removal_date_cannot_be_in_the_future(
     response = await remove(tenant_api, owner, body["id"], "MUERTE", removed_on="2026-11-04")
 
     assert field_error(response) == (["body", "removed_on"], "date_in_future")
+
+
+async def test_a_retired_animal_cannot_be_deleted_to_free_its_siniiga(
+    tenant_api: AsyncClient, owner: Account, neighbor: Account
+) -> None:
+    holder = await created(tenant_api, owner, control_id="1", birth_date=COW_BIRTH, siniiga=NUMBER)
+    await remove(tenant_api, owner, holder["id"], "MUERTE")
+
+    deleted = await remove(tenant_api, owner, holder["id"], "ERROR_REGISTRO")
+    reused = await create(
+        tenant_api, neighbor, control_id="1", birth_date=COW_BIRTH, siniiga=NUMBER
+    )
+
+    assert deleted.status_code == 409
+    assert reused.status_code == 409
+
+
+async def test_a_bull_named_in_another_cows_events_cannot_be_deleted(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
+) -> None:
+    bull = await created(tenant_api, owner, control_id="T", birth_date=COW_BIRTH, sex="MACHO")
+    served = await created(tenant_api, owner, **cow("1"))
+    tenant_db.add(
+        Event(
+            ranch_id=owner.ranch_id,
+            animal_id=uuid.UUID(served["id"]),
+            type=EventType.HEAT,
+            occurred_on=dt.date(2026, 10, 1),
+            payload={"type": "HEAT", "outcome": "INSEMINATED", "clean": True,
+                     "bull_id": bull["id"], "method": "IA"},
+        )
+    )  # fmt: skip
+    await tenant_db.commit()
+
+    response = await remove(tenant_api, owner, bull["id"], "ERROR_REGISTRO")
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "animal_in_use"
 
 
 # --- Edit --------------------------------------------------------------------------------------
@@ -546,6 +585,39 @@ async def test_a_cow_birth_date_must_leave_660_days_before_her_calving(
     response = await patch(tenant_api, owner, body["id"], birth_date="2025-06-01")
 
     assert field_error(response) == (["body", "birth_date"], "calving_too_young")
+
+
+async def test_a_birth_date_cannot_move_after_recorded_history(
+    tenant_api: AsyncClient, owner: Account
+) -> None:
+    body = await created(
+        tenant_api, owner, control_id="1", birth_date="2024-01-01", repro_stage="SERVIDA",
+        repro_stage_date="2025-06-01",
+    )  # fmt: skip
+
+    response = await patch(tenant_api, owner, body["id"], birth_date="2025-07-01")
+
+    assert field_error(response) == (["body", "birth_date"], "birth_after_records")
+
+
+async def test_parents_are_born_before_their_offspring(
+    tenant_api: AsyncClient, owner: Account
+) -> None:
+    late_dam = await create(
+        tenant_api, owner, control_id="Hija", birth_date="2026-03-01",
+        dam={"control_id": "Madre", "birth_date": "2026-04-01"},
+    )  # fmt: skip
+    assert field_error(late_dam) == (["body", "dam", "birth_date"], "parent_born_after")
+
+    dam = await created(tenant_api, owner, **cow("Madre"))
+    calf = await created(
+        tenant_api, owner, control_id="Hija", birth_date="2026-03-01", dam_id=dam["id"]
+    )
+    cycle = await patch(tenant_api, owner, dam["id"], dam_id=calf["id"])
+    younger = await patch(tenant_api, owner, dam["id"], birth_date="2026-03-02")
+
+    assert field_error(cycle) == (["body", "dam_id"], "parent_born_after")
+    assert field_error(younger)[0] == ["body", "birth_date"]
 
 
 async def test_a_removed_animal_cannot_be_edited(tenant_api: AsyncClient, owner: Account) -> None:

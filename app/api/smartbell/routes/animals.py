@@ -39,6 +39,7 @@ from smartbell.services import animals
 from smartbell.services.animals import (
     PAGE_SIZE,
     AnimalFilters,
+    AnimalInUse,
     AnimalNotFound,
     AnimalRemoved,
     FieldError,
@@ -92,6 +93,9 @@ async def _writing(session: AsyncSession) -> AsyncIterator[None]:
     except AnimalRemoved as error:
         await session.rollback()
         raise _removed() from error
+    except AnimalInUse as error:
+        await session.rollback()
+        raise HTTPException(status.HTTP_409_CONFLICT, detail="animal_in_use") from error
 
 
 def _projection_out(projection: Projection) -> ProjectionOut:
@@ -147,7 +151,7 @@ async def list_animals(
         RemovalReason | None, Query(description="Lists the removed animals with this reason")
     ] = None,
     sort: SortKey = "control_id",
-    page: Annotated[int, Query(ge=1)] = 1,
+    page: Annotated[int, Query(ge=1, le=100_000)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = PAGE_SIZE,
 ) -> AnimalPage:
     filters = AnimalFilters(

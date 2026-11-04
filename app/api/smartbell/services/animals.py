@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import ColumnElement, Select, delete, func, or_, select, update
+from sqlalchemy import ColumnElement, Select, String, cast, delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -111,7 +111,12 @@ class AnimalNotFound(Exception):
 
 
 class AnimalRemoved(Exception):
-    """Removed animals are read-only; ERROR_REGISTRO is the one way to touch them."""
+    """Removed animals are read-only, and can't be deleted either: a death or slaughter retires
+    the SINIIGA for good (§7.7), which a deletion would undo."""
+
+
+class AnimalInUse(Exception):
+    """Another animal's events name this one (a service bull, a calf), so it can't be deleted."""
 
 
 def _invalid(loc: Sequence[str], code: str, msg: str) -> FieldError:
@@ -226,6 +231,14 @@ def _check_after_birth(day: dt.date, birth: dt.date, loc: tuple[str, ...], name:
     if day < birth:
         raise _invalid(
             (*loc, name), "date_before_birth", "La fecha no puede ser anterior al nacimiento"
+        )
+
+
+def _check_born_before(parent_birth: dt.date, child_birth: dt.date, loc: tuple[str, ...]) -> None:
+    """A parent is born before its offspring, which also keeps the pedigree free of cycles."""
+    if parent_birth >= child_birth:
+        raise _invalid(
+            loc, "parent_born_after", "Un padre o una madre debe nacer antes que su cría"
         )
 
 
@@ -391,6 +404,13 @@ async def create_animal(
     elif body.sire_id is not None:
         sire = await _parent(session, ctx.ranch_id, body.sire_id, Sex.MACHO, "sire_id")
 
+    if dam is not None:
+        loc = ("dam", "birth_date") if body.dam is not None else ("dam_id",)
+        _check_born_before(dam.birth_date, body.birth_date, loc)
+    if sire is not None:
+        loc = ("sire", "birth_date") if body.sire is not None else ("sire_id",)
+        _check_born_before(sire.birth_date, body.birth_date, loc)
+
     extra = {
         "photo_url": body.photo_url,
         "birth_length_cm": body.birth_length_cm,
@@ -462,16 +482,20 @@ async def update_animal(
     _check_crossbreed(level, contributing, ())
     if "development_stage" in changes:
         _check_stage(animal.sex, changes["development_stage"], ())
+    final_birth: dt.date = changes.get("birth_date") or animal.birth_date
     for slot, sex in (("dam_id", Sex.HEMBRA), ("sire_id", Sex.MACHO)):
-        parent_id = changes.get(slot)
+        parent_id = changes[slot] if slot in changes else getattr(animal, slot)
         if parent_id is None:
             continue
         if parent_id == animal.id:
             raise _invalid((slot,), "parent_is_self", "Un animal no puede ser su propio padre")
-        await _parent(session, ctx.ranch_id, parent_id, sex, slot)
+        parent = await _parent(session, ctx.ranch_id, parent_id, sex, slot)
+        loc = (slot,) if slot in changes else ("birth_date",)
+        _check_born_before(parent.birth_date, final_birth, loc)
 
     birth = changes.get("birth_date")
     if birth is not None and birth != animal.birth_date:
+        await _check_birth_keeps_records(session, animal, birth)
         _check_past(birth, today, (), "birth_date")
         if animal.kind is AnimalKind.VAQUILLA and not heifer_birth_date_editable(birth, today):
             raise _invalid(
@@ -502,6 +526,37 @@ async def update_animal(
     return animal, projection
 
 
+async def _check_birth_keeps_records(session: AsyncSession, animal: Animal, birth: dt.date) -> None:
+    """A new birth date can't come after anything already recorded about the animal: its
+    declared or projected repro dates, its events, or its offspring."""
+    first_event = await session.scalar(
+        select(func.min(Event.occurred_on)).where(
+            Event.animal_id == animal.id, Event.type != EventType.ALTA
+        )
+    )
+    recorded = [
+        animal.repro_stage_date,
+        animal.last_calving_date,
+        animal.last_heat_date,
+        animal.last_service_date,
+        first_event,
+    ]
+    if any(day is not None and day < birth for day in recorded):
+        raise _invalid(
+            ("birth_date",),
+            "birth_after_records",
+            "La fecha de nacimiento es posterior a eventos ya registrados",
+        )
+    eldest = await session.scalar(
+        select(func.min(Animal.birth_date)).where(
+            Animal.ranch_id == animal.ranch_id,
+            or_(Animal.dam_id == animal.id, Animal.sire_id == animal.id),
+        )
+    )
+    if eldest is not None:
+        _check_born_before(birth, eldest, ("birth_date",))
+
+
 # --- Remove ------------------------------------------------------------------------------------
 
 
@@ -527,7 +582,10 @@ async def _retire(
     )
     animal.status = AnimalStatus.REMOVED
     animal.removed_reason = reason
-    animal.removed_at = dt.datetime.now(dt.UTC)
+    if on == today:
+        animal.removed_at = dt.datetime.now(dt.UTC)
+    else:  # Midday at the ranch, so the date reads the same in any zone near it.
+        animal.removed_at = dt.datetime.combine(on, dt.time(12), RANCH_TIMEZONE)
     await session.flush()
     await reproject_animal(session, animal, settings, today)
     await history.record(
@@ -548,8 +606,23 @@ async def remove_animal(
 ) -> Animal | None:
     """Baja. Returns the removed animal, or None when ERROR_REGISTRO deleted it."""
     animal = await get_animal(session, ctx.ranch_id, animal_id)
+    if animal.status is AnimalStatus.REMOVED:
+        raise AnimalRemoved
     if body.reason is RemovalReason.ERROR_REGISTRO:
         # The record was a mistake: it goes, with its events, and its SINIIGA is free again.
+        # Unless another animal's events name it: folding them would bring the id back.
+        named = await session.scalar(
+            select(Event.id)
+            .where(
+                Event.ranch_id == ctx.ranch_id,
+                Event.animal_id != animal.id,
+                Event.type.in_((EventType.HEAT, EventType.CALVING)),
+                cast(Event.payload, String).contains(str(animal.id)),
+            )
+            .limit(1)
+        )
+        if named is not None:
+            raise AnimalInUse
         for column in (Animal.dam_id, Animal.sire_id, Animal.service_bull_id):
             await session.execute(
                 update(Animal)
@@ -566,8 +639,6 @@ async def remove_animal(
             HistoryRefs(animal_ids=[animal.id]),
         )
         return None
-    if animal.status is AnimalStatus.REMOVED:
-        raise AnimalRemoved
     on = body.removed_on or today
     _check_past(on, today, (), "removed_on")
     _check_after_birth(on, animal.birth_date, (), "removed_on")
@@ -635,7 +706,7 @@ def _filters(ranch_id: uuid.UUID, filters: AnimalFilters) -> list[ColumnElement[
     return conditions
 
 
-def _ordered(query: Select[Any], sort: SortKey) -> Select[Any]:
+def _ordered(query: Select[Animal], sort: SortKey) -> Select[Animal]:
     column = getattr(Animal, sort.lstrip("-"))
     key = column.desc() if sort.startswith("-") else column.asc()
     return query.order_by(key.nulls_last(), Animal.id)
@@ -649,4 +720,4 @@ async def list_animals(
     query = _ordered(select(Animal).where(*conditions), filters.sort)
     offset = (filters.page - 1) * filters.page_size
     rows = await session.scalars(query.offset(offset).limit(filters.page_size))
-    return [row for row in rows if isinstance(row, Animal)], total or 0
+    return list(rows.all()), total or 0
