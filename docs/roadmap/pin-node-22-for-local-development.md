@@ -22,7 +22,7 @@ The user tests every PR in their own Terminal and is learning as they go. Setup 
 
 ## Approach
 
-- **User steps, first in the PR:** numbered steps for a non-technical founder to install an arm64 Node 22 with nvm from an arm64 shell, make it the default, and check it with `node -p process.arch`, which should print `arm64`. Then reinstall `node_modules` in the main checkout. Never write x64 packages into any folder.
+- **User steps (done by the user on 2026-11-03; keep them in the README for a new machine):** numbered steps for a non-technical founder to install an arm64 Node 22 with nvm from an arm64 shell, make it the default, and check it with `node -p process.arch`, which should print `arm64`. Then reinstall `node_modules` in the main checkout. Never write x64 packages into any folder.
 - **`.nvmrc`:** `22`. **`engines`:** `>=22 <23`, matching CI.
 - **`dev.sh` checks before starting:**
   - Node's major version is 22, or it stops with the exact fix.
@@ -35,7 +35,7 @@ S.
 
 ## Acceptance
 
-- [ ] On the user's Mac, `node -p process.arch` prints arm64 and `node -v` prints v22 after the steps (human).
+- [x] On the user's Mac, `node -p process.arch` prints arm64 and `node -v` prints v22 after the steps (human; the user replaced nvm's Node with arm64 v22.23.4 on 2026-11-03).
 - [ ] `scripts/dev.sh` stops with a clear message under the wrong Node major version or architecture (test with a stub node on PATH).
 - [ ] Two worktrees can run `dev.sh` at once without a port clash, and a failed start leaves nothing to clean up.
 - [ ] Tests for the new code pass in CI.

@@ -1,49 +1,45 @@
 ---
 id: soporte-y-demanda-admin-page-for-whatsapp-copy-and-fake-door
-title: Soporte y demanda: admin page for WhatsApp copy and fake-door counts
-summary: "A staff-only page to edit the WhatsApp support number, prefilled messages and community link, and to see fake-door taps per feature, so the founder does it in the browser instead of the terminal."
+title: "Soporte y demanda: admin page for WhatsApp copy and fake-door taps"
+summary: A staff-only page in the web app where Smartbell admins edit the WhatsApp number, prefilled messages and community link, and see fake-door taps per feature.
 ---
 
-# Soporte y demanda: admin page for WhatsApp copy and fake-door counts
+# Soporte y demanda: admin page for WhatsApp copy and fake-door taps
 
 ## Problem
 
-<The pain, in one or two sentences. What is hard, slow, or impossible today?
-Concrete and grounded — not "it would be nice if". Who hits this and when?>
+`whatsapp-support` made the support number, messages and community link editable without a deploy, and counts fake-door taps. Both work only through admin API calls, so the founder can't use them without a terminal script.
 
 ## Why
 
-<Why this is worth doing now. Tie it to the product north-star (the repo's
-CLAUDE.md / README) and to what is already shipped. What does it unlock?>
+Requested by the user on 2026-11-03. The founder changes support copy and reads feature demand without help.
+
+**Depends on:** `whatsapp-support`.
 
 ## What it touches
 
-<The surfaces, modules, and data this reaches. Name real files / components /
-tables where you can — this is the "blast radius" reviewers care about.>
+`app/web/src/features/admin/*` (a "Soporte y demanda" page and its route), the avatar menu entry, and `GET /api/auth/me`, which gains `is_admin`. It uses the existing `GET`/`PUT /api/admin/support/config` and `GET /api/admin/fake-door-taps`.
+
+**Inventory:** no Figma frame. Use the existing form, table, filter and snackbar components from `app/web/src/ui`.
 
 ## Approach
 
-<The intended shape of the solution. Enough that an agent could start. Note key
-decisions, anything explicitly out of scope, and dependencies on other specs.>
+- **Who is an admin:** the same rule as the admin endpoints, a verified email listed in `ADMIN_EMAILS`. This is Smartbell staff, not a ranch role. `/api/auth/me` returns `is_admin`, and nothing else about the list.
+- **Hidden from everyone else:** the menu entry and route show only for admins. Anyone else is sent home, and the API still answers 403.
+- **Soporte form:**
+  - **Fields:** the WhatsApp number, the support, payment and feature-interest messages, and the community link.
+  - **Behaviour:** validated as the API does, and saved with `PUT`. A snackbar confirms the save, and an empty message falls back to the app's default copy.
+  - **Preview:** a "Probar en WhatsApp" link opens the saved number with the support message.
+- **Demanda table:** feature, taps, distinct users and last tap, from `GET /api/admin/fake-door-taps`. It has a "since" date filter, defaulting to the last 30 days, and an empty state.
 
 ## Effort
 
-<S / M / L / XL and a one-line justification. What makes it that size?>
+S.
 
 ## Acceptance
 
-<Bulleted, checkable outcomes. "Done" means these are true. Each should be
-observable — a behavior to demo or a check that passes, not a vibe. End a
-criterion with `(human)` when a person has to verify it by hand; the board's
-card shows these as the test checklist once the PR is ready for review.>
-
-- [ ] <criterion>
-- [ ] <criterion>
-
-## Verify
-
-<Optional. What to RE-CHECK before this spec is trusted again — the claims most
-likely to rot, written as prose or as commands (a `grep`, a file to open,
-`hc roadmap list --json`). `hc roadmap audit` surfaces this section and an
-AGENT runs what it says, under its own permissions; the CLI and the app never
-execute it. Delete this section if the mechanical check is enough.>
+- [ ] A non-admin never sees the menu entry, is redirected from the route, and gets 403 from the API (tests).
+- [ ] An admin saves each field, and an invalid number or link is refused with a field error.
+- [ ] The table matches the API for a fixture with taps across two dates, and the "since" filter narrows it.
+- [ ] The founder edits the Soporte message in the browser and sees it in WhatsApp (human).
+- [ ] Tests for the new code pass in CI.
