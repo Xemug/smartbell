@@ -40,7 +40,7 @@ async def test_upgrade_head_on_empty_database(db_conn: AsyncConnection) -> None:
     await db_conn.run_sync(_upgrade_head)
 
     version = (await db_conn.execute(text("SELECT version_num FROM alembic_version"))).scalar_one()
-    assert version == "0003"
+    assert version == "0004"
 
 
 async def test_upgrade_creates_every_model_table(db_conn: AsyncConnection) -> None:
