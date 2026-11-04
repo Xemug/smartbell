@@ -104,6 +104,15 @@ class RemovalReason(_Name):
     MUERTE = auto()
 
 
+class DamStatus(_Name):
+    """ "Estatus vaca madre", asked when an animal is registered with its dam (§7.1)."""
+
+    VIVA = auto()
+    MUERTA_DESECHO = auto()
+    VENDIDA_OTRO_RANCHO = auto()
+    VENDIDA_RASTRO = auto()
+
+
 class ReproState(_Name):
     VAQUILLA = auto()
     RECIEN_PARIDA = auto()
