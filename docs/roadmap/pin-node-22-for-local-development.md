@@ -1,49 +1,41 @@
 ---
 id: pin-node-22-for-local-development
 title: Pin Node 22 for local development
-summary: "Add an .nvmrc and package.json engines for Node 22, matching CI, and a clear error on other versions: under Node 24 vitest's navigation tests fail locally."
+summary: The user's Mac is Apple silicon but nvm's Node 22 is an Intel build, so npm and dev.sh fail against the arm64 node_modules. Give the user steps to install an arm64 Node 22, then add an .nvmrc, package.json engines and a dev.sh check that stops with a clear message on the wrong Node or architecture. Also make dev.sh pick a free database port.
 ---
 
 # Pin Node 22 for local development
 
 ## Problem
 
-<The pain, in one or two sentences. What is hard, slow, or impossible today?
-Concrete and grounded — not "it would be nice if". Who hits this and when?>
+Every local test has hit setup trouble. On the user's MacBook (Apple silicon), the first `node` on PATH is nvm's v22.14.0, an Intel (x64) build. `/usr/local/bin/node` is arm64 v24, under which three AppShell router tests fail. `node_modules` are arm64, so `npm test` and `scripts/dev.sh` fail with "Cannot find module @rollup/rollup-darwin-x64". The user has had to run `PATH="/usr/local/bin:$PATH" arch -arm64 /bin/bash ./scripts/dev.sh`. Separately, `dev.sh`'s compose database collided with another worktree's on port 5433. The failed run left a container with no published port, which had to be deleted by hand.
 
 ## Why
 
-<Why this is worth doing now. Tie it to the product north-star (the repo's
-CLAUDE.md / README) and to what is already shipped. What does it unlock?>
+The user tests every PR in their own Terminal and is learning as they go. Setup failures cost them time on every hand-off.
+
+**Depends on:** none.
 
 ## What it touches
 
-<The surfaces, modules, and data this reaches. Name real files / components /
-tables where you can — this is the "blast radius" reviewers care about.>
+`.nvmrc`, `app/web/package.json` (`engines`), `scripts/dev.sh`, README setup section.
 
 ## Approach
 
-<The intended shape of the solution. Enough that an agent could start. Note key
-decisions, anything explicitly out of scope, and dependencies on other specs.>
+- **User steps, first in the PR:** numbered steps for a non-technical founder to install an arm64 Node 22 with nvm from an arm64 shell, make it the default, and check it with `node -p process.arch`, which should print `arm64`. Then reinstall `node_modules` in the main checkout. Never write x64 packages into any folder.
+- **`.nvmrc`:** `22`. **`engines`:** `>=22 <23`, matching CI.
+- **`dev.sh` checks before starting:**
+  - Node's major version is 22, or it stops with the exact fix.
+  - `node -p process.arch` matches `uname -m`, or it stops with the exact fix.
+- **`dev.sh` database port:** when `POSTGRES_PORT` isn't set and 5432 or the chosen port is in use, pick a free port and print it. After a failed compose start, remove the half-made container so a retry works.
 
 ## Effort
 
-<S / M / L / XL and a one-line justification. What makes it that size?>
+S.
 
 ## Acceptance
 
-<Bulleted, checkable outcomes. "Done" means these are true. Each should be
-observable — a behavior to demo or a check that passes, not a vibe. End a
-criterion with `(human)` when a person has to verify it by hand; the board's
-card shows these as the test checklist once the PR is ready for review.>
-
-- [ ] <criterion>
-- [ ] <criterion>
-
-## Verify
-
-<Optional. What to RE-CHECK before this spec is trusted again — the claims most
-likely to rot, written as prose or as commands (a `grep`, a file to open,
-`hc roadmap list --json`). `hc roadmap audit` surfaces this section and an
-AGENT runs what it says, under its own permissions; the CLI and the app never
-execute it. Delete this section if the mechanical check is enough.>
+- [ ] On the user's Mac, `node -p process.arch` prints arm64 and `node -v` prints v22 after the steps (human).
+- [ ] `scripts/dev.sh` stops with a clear message under the wrong Node major version or architecture (test with a stub node on PATH).
+- [ ] Two worktrees can run `dev.sh` at once without a port clash, and a failed start leaves nothing to clean up.
+- [ ] Tests for the new code pass in CI.
