@@ -59,4 +59,4 @@ M.
 - [x] Baja with ERROR_REGISTRO removes the row and its events; other reasons keep them with status REMOVED.
 - [x] A heifer registered with a new dam creates both animals, linked, in one transaction.
 - [x] crossbreed_level F2 without a contributing_breed → 422.
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
