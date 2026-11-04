@@ -55,6 +55,9 @@ The user tests every PR in their own Terminal and is learning as they go. Setup 
   races. Each pick happens under a machine-wide lock and records the port with dev.sh's PID in
   `$TMPDIR/smartbell-dev-ports`. Another dev.sh skips reserved ports, reservations go when dev.sh
   exits, and a dead run's reservations are reclaimed.
+- `app/api` settings still default to localhost:5432; changing that would change app behaviour, so
+  it is out of scope. When Postgres isn't on 5432, `dev.sh` prints the `export DATABASE_URL=…`
+  line to run before api commands you run yourself in that checkout.
 
 ## Effort
 

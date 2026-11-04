@@ -143,9 +143,11 @@ fi
 # A reservation whose dev.sh is gone doesn't hold its port, and release_ports drops only its own.
 rm -f "$SMARTBELL_PORT_DIR"/[0-9]*
 echo 999999 >"$SMARTBELL_PORT_DIR/$start"
+other=$((start + 10))
+echo $$ >"$SMARTBELL_PORT_DIR/$other" # a live dev.sh's (this script's) reservation
 got="$(bash -c 'source "$1"; pick_port "$2" "test" 2>/dev/null; release_ports; ls "$SMARTBELL_PORT_DIR"' _ \
-  "$root/scripts/dev-checks.sh" "$start")"
-if [[ "$got" == "$start" ]]; then
+  "$root/scripts/dev-checks.sh" "$start" | tr '\n' ' ')"
+if [[ "$got" == "$start $other " ]]; then
   pass "a dead dev.sh's reservation is reclaimed and released on exit"
 else
   fail "stale reservation: got '$got', want '$start' with nothing left reserved"

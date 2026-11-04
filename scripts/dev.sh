@@ -78,6 +78,11 @@ fi
 
 if [[ -n "${POSTGRES_PORT:-}" && -z "${DATABASE_URL:-}" ]]; then
   export DATABASE_URL="postgresql+asyncpg://smartbell:smartbell@localhost:$POSTGRES_PORT/smartbell"
+  if [[ "$POSTGRES_PORT" != 5432 ]]; then
+    # app/api falls back to localhost:5432, which may be another checkout's database.
+    echo "dev.sh: before running api commands yourself in this checkout (alembic, uvicorn), run:"
+    echo "  export DATABASE_URL=$DATABASE_URL"
+  fi
 fi
 
 if [[ -z "${SKIP_AUTH_EMULATOR:-}" ]]; then

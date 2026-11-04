@@ -45,7 +45,9 @@ if the Node on your PATH is the wrong version or architecture.
 
 `dev.sh` uses ports 8000 (api), 5173 (web), 9099 (auth emulator) and 5432 (Postgres, via docker
 compose), or the next free port for any that is taken (another checkout running, say), and prints
-each port it moved. So two checkouts can run at once. If Postgres fails to start, it removes the
+each port it moved. So two checkouts can run at once. When Postgres isn't on 5432, `dev.sh` also prints
+an `export DATABASE_URL=…` line. Run it before api commands you run yourself in that checkout
+(`alembic`, `uvicorn`): without it they use localhost:5432, which may be another checkout's database. If Postgres fails to start, it removes the
 half-made container so running it again works.
 
 Open http://localhost:5173: the placeholder page shows the API health ("ok").
