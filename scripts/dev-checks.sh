@@ -52,9 +52,10 @@ then run ./scripts/dev.sh again. Don't install packages until both lines are rig
   fi
 }
 
-# True when something on this machine listens on TCP port $1.
+# True when something on this machine listens on TCP port $1, on IPv4 or IPv6 loopback (Vite on
+# macOS listens on ::1 only).
 port_in_use() {
-  (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null
+  (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null || (exec 3<>"/dev/tcp/::1/$1") 2>/dev/null
 }
 
 # The first port from $1 upwards that nothing listens on.
@@ -63,5 +64,15 @@ first_free_port() {
   while port_in_use "$port"; do
     port=$((port + 1))
   done
+  echo "$port"
+}
+
+# The first free port from $1 upwards; says so on stderr when it isn't $1 ($2 names the server).
+pick_port() {
+  local port
+  port="$(first_free_port "$1")"
+  if [[ "$port" != "$1" ]]; then
+    echo "dev.sh: port $1 is in use (another checkout?), so $2 runs on $port." >&2
+  fi
   echo "$port"
 }

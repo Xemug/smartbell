@@ -41,9 +41,17 @@ The user tests every PR in their own Terminal and is learning as they go. Setup 
   `nvm alias default 22`.
 - Port: with `POSTGRES_PORT` unset, `dev.sh` keeps the port of this checkout's Postgres if it is
   already running, else uses 5432 or the first free port above it, and points `DATABASE_URL` at it.
-  An explicit `POSTGRES_PORT` is used as given. A native Postgres on 127.0.0.1:5432 counts as taken
+  An explicit `POSTGRES_PORT` is used as given, but if something else already holds it, `dev.sh`
+  stops before compose recreates this checkout's working container. A native Postgres on 127.0.0.1:5432 counts as taken
   (it did on the user's Mac). After a failed `compose up`, `compose rm --stop --force db` removes the
   container and keeps the data volume.
+- "Two worktrees at once" needs every port free, not just the database's: the api (8000), web (5173)
+  and auth emulator (9099) also move to the next free port when theirs is taken. `firebase.json`
+  fixes the emulator's port, so `dev.sh` starts it from a temporary copy and points the api
+  (`FIREBASE_AUTH_EMULATOR_HOST`) and web (`VITE_FIREBASE_AUTH_EMULATOR_URL`) at it.
+- Ports count as taken on 127.0.0.1 or ::1: Vite on macOS listens on ::1 only.
+- Ports are chosen when `dev.sh` starts, so two runs started within the same few seconds can still
+  pick the same port; the one that loses fails clearly, and running it again works.
 
 ## Effort
 
@@ -53,5 +61,5 @@ S.
 
 - [x] On the user's Mac, `node -p process.arch` prints arm64 and `node -v` prints v22 after the steps (human; the user replaced nvm's Node with arm64 v22.23.4 on 2026-11-03).
 - [x] `scripts/dev.sh` stops with a clear message under the wrong Node major version or architecture (test with a stub node on PATH).
-- [x] Two worktrees can run `dev.sh` at once without a database port clash, and a failed start leaves nothing to clean up. (The api, web and auth emulator ports stay fixed: a second checkout still sets `API_PORT`, `WEB_PORT` and `SKIP_AUTH_EMULATOR=1`, as before; out of scope here.)
+- [x] Two worktrees can run `dev.sh` at once without a port clash, and a failed start leaves nothing to clean up.
 - [x] Tests for the new code pass in CI.

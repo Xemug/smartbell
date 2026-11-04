@@ -43,14 +43,15 @@ if the Node on your PATH is the wrong version or architecture.
 ./scripts/dev.sh                       # Postgres, migrate, then api on :8000 and web on :5173
 ```
 
-`dev.sh` starts Postgres with docker compose on 5432, or on the next free port when 5432 is taken
-(another checkout's Postgres, say), and prints the port it picked. If Postgres fails to start, it
-removes the half-made container so running it again works.
+`dev.sh` uses ports 8000 (api), 5173 (web), 9099 (auth emulator) and 5432 (Postgres, via docker
+compose), or the next free port for any that is taken (another checkout running, say), and prints
+each port it moved. So two checkouts can run at once. If Postgres fails to start, it removes the
+half-made container so running it again works.
 
 Open http://localhost:5173: the placeholder page shows the API health ("ok").
 
 Without Docker, point `DATABASE_URL` at any Postgres and run `SKIP_DOCKER=1 ./scripts/dev.sh`.
-`API_PORT` and `WEB_PORT` move the servers off 8000 and 5173; `POSTGRES_PORT` fixes Postgres's port.
+`API_PORT`, `WEB_PORT` and `POSTGRES_PORT` fix those ports instead.
 `bash scripts/test-dev-checks.sh` tests the Node and port checks.
 
 ## Checks

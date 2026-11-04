@@ -5,9 +5,11 @@
 # Auth runs on the emulator with the demo-smartbell project, which can't reach any real Firebase
 # project. SKIP_AUTH_EMULATOR=1 leaves it to you (e.g. one already running on 9099).
 #
-#   API_PORT / WEB_PORT   override 8000 / 5173
-#   POSTGRES_PORT         put the compose Postgres on this port (DATABASE_URL follows it); unset,
-#                         it uses 5432, or the next free port when 5432 is taken
+# Ports left unset default to 8000 (api), 5173 (web), 9099 (auth emulator) and 5432 (Postgres),
+# or the next free port when that one is taken (another checkout, say), so checkouts can run at once.
+#
+#   API_PORT / WEB_PORT   put the api / web on this port
+#   POSTGRES_PORT         put the compose Postgres on this port (DATABASE_URL follows it)
 #   DATABASE_URL          use another Postgres (set SKIP_DOCKER=1 to not start the compose one)
 set -euo pipefail
 
@@ -18,8 +20,8 @@ source "$root/scripts/dev-checks.sh"
 # Node 22 for this machine's CPU, before anything starts (see .nvmrc).
 check_node || exit 1
 
-api_port="${API_PORT:-8000}"
-web_port="${WEB_PORT:-5173}"
+api_port="${API_PORT:-$(pick_port 8000 "the api")}"
+web_port="${WEB_PORT:-$(pick_port 5173 "the web app")}"
 
 if [[ -z "${SKIP_DOCKER:-}" ]]; then
   # Docker Desktop puts its CLI here and adds it to PATH only in new terminal windows.
@@ -33,10 +35,16 @@ if [[ -z "${SKIP_DOCKER:-}" ]]; then
     exit 1
   fi
   compose=(docker compose -f "$root/docker-compose.yml")
-  if [[ -z "${POSTGRES_PORT:-}" ]]; then
-    # Postgres already running from an earlier dev.sh in this checkout keeps its port.
-    running="$("${compose[@]}" port db 5432 2>/dev/null | head -n 1 || true)"
-    running="${running##*:}"
+  # The port of this checkout's Postgres if it's already running (from an earlier dev.sh).
+  running="$("${compose[@]}" port db 5432 2>/dev/null | head -n 1 || true)"
+  running="${running##*:}"
+  if [[ -n "${POSTGRES_PORT:-}" ]]; then
+    # Stop before compose recreates a working container on a port it can't have.
+    if [[ "$POSTGRES_PORT" != "$running" ]] && port_in_use "$POSTGRES_PORT"; then
+      echo "dev.sh: POSTGRES_PORT=$POSTGRES_PORT is in use. Pick another, or unset it and dev.sh picks a free one." >&2
+      exit 1
+    fi
+  else
     if [[ "$running" =~ ^[1-9][0-9]*$ ]]; then
       POSTGRES_PORT="$running"
     else
@@ -60,15 +68,34 @@ if [[ -n "${POSTGRES_PORT:-}" && -z "${DATABASE_URL:-}" ]]; then
 fi
 
 pids=()
-# The odd expansion keeps macOS's bash 3.2 from calling an empty array unbound under set -u.
-trap 'kill ${pids[@]+"${pids[@]}"} 2>/dev/null || true' EXIT INT TERM
+tmp_config_dir=""
+cleanup() {
+  # The odd expansion keeps macOS's bash 3.2 from calling an empty array unbound under set -u.
+  kill ${pids[@]+"${pids[@]}"} 2>/dev/null || true
+  if [[ -n "$tmp_config_dir" ]]; then rm -rf "$tmp_config_dir"; fi
+}
+trap cleanup EXIT INT TERM
 
 if [[ -z "${SKIP_AUTH_EMULATOR:-}" ]]; then
+  auth_port="$(pick_port 9099 "the auth emulator")"
+  firebase_config="$root/app/firebase.json"
+  if [[ "$auth_port" != 9099 ]]; then
+    # firebase.json fixes the emulator's port, so start it from a copy with the free one.
+    tmp_config_dir="$(mktemp -d)"
+    firebase_config="$tmp_config_dir/firebase.json"
+    node -e 'const c = require(process.argv[1]); c.emulators.auth.port = Number(process.argv[2]);
+      console.log(JSON.stringify(c, null, 2));' "$root/app/firebase.json" "$auth_port" >"$firebase_config"
+  fi
   # Same firebase-tools version as legacy/firebase.
   # exec, so the PID is firebase-tools itself, which shuts its emulator down on SIGTERM.
   (cd "$root/app" && exec npx --yes firebase-tools@13.35.1 emulators:start --only auth \
-    --project demo-smartbell --config firebase.json) &
+    --project demo-smartbell --config "$firebase_config") &
   pids+=($!)
+  if [[ "$auth_port" != 9099 ]]; then
+    # The api and the web app look for the emulator here instead of 127.0.0.1:9099.
+    export FIREBASE_AUTH_EMULATOR_HOST="127.0.0.1:$auth_port"
+    export VITE_FIREBASE_AUTH_EMULATOR_URL="http://127.0.0.1:$auth_port"
+  fi
 fi
 
 cd "$root/app/api"

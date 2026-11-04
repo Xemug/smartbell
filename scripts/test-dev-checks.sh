@@ -80,21 +80,48 @@ fi
 if ! python3 -c pass >/dev/null 2>&1; then
   echo "skip first_free_port (no python3)"
 else
-port=$(first_free_port 47000)
-python3 -c 'import socket, sys, time
-s = socket.socket(); s.bind(("127.0.0.1", int(sys.argv[1]))); s.listen(); time.sleep(60)' "$port" &
-listener=$!
-for _ in $(seq 50); do port_in_use "$port" && break || sleep 0.1; done
-if ! port_in_use "$port"; then
-  fail "port_in_use doesn't see the listener on $port"
-else
-  next=$(first_free_port "$port")
-  if [[ "$next" -gt "$port" ]] && ! port_in_use "$next"; then
-    pass "first_free_port skips a taken port ($port -> $next)"
+  # listen <host> <port>: a listener in the background, its PID in $listener.
+  listen() {
+    python3 -c 'import socket, sys, time
+host, port = sys.argv[1], int(sys.argv[2])
+s = socket.socket(socket.AF_INET6 if ":" in host else socket.AF_INET); s.bind((host, port))
+s.listen(); time.sleep(60)' "$1" "$2" &
+    listener=$!
+    for _ in $(seq 50); do port_in_use "$2" && break || sleep 0.1; done
+  }
+  stop_listener() {
+    kill "$listener" 2>/dev/null || true
+    wait "$listener" 2>/dev/null || true
+    listener=""
+  }
+
+  port=$(first_free_port 47000)
+  listen 127.0.0.1 "$port"
+  if ! port_in_use "$port"; then
+    fail "port_in_use doesn't see the IPv4 listener on $port"
   else
-    fail "first_free_port $port returned $next"
+    next=$(first_free_port "$port")
+    if [[ "$next" -gt "$port" ]] && ! port_in_use "$next"; then
+      pass "first_free_port skips a taken port ($port -> $next)"
+    else
+      fail "first_free_port $port returned $next"
+    fi
   fi
-fi
+  stop_listener
+
+  # Like Vite on macOS: listening on ::1 only.
+  if python3 -c 'import socket; socket.socket(socket.AF_INET6).bind(("::1", 0))' 2>/dev/null; then
+    port=$(first_free_port 47100)
+    listen ::1 "$port"
+    if port_in_use "$port"; then
+      pass "port_in_use sees an IPv6-only listener"
+    else
+      fail "port_in_use doesn't see the ::1 listener on $port"
+    fi
+    stop_listener
+  else
+    echo "skip IPv6 listener (no ::1)"
+  fi
 fi
 
 if [[ "$failures" -gt 0 ]]; then
