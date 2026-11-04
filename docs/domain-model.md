@@ -232,9 +232,9 @@ Source: the SINIIGA technical manual (rev. 4.0, 2016) §XI.1. This overrides the
 - **Other forms of one number:** the live app stores `484-00-EE-NNNN-NNNN` (`484` is the barcode and RFID country code). Import converts it to `MX-00`.
 - **Unique nationally, not per ranch:** the manual says each animal has a unique, permanent number across the country. A duplicate in any ranch is refused, and the refusal reveals nothing about the other ranch.
 - **The number stays with the animal for life,** including after a sale (user, 2026-10-31):
-  - **Sold to another ranch (VENDIDA_OTRO_RANCHO):** the buyer registers the same number. One ACTIVE animal holds it at a time.
+  - **Sold to another ranch (removal reason VENTA_OTRO_RANCHO):** the buyer registers the same number. One ACTIVE animal holds it at a time.
   - **Seller hasn't recorded the sale yet:** the number is refused, and the buyer can send a transfer request. See `siniiga-transfer`.
-  - **Dead or sold for slaughter (MUERTA_DESECHO, VENDIDA_RASTRO):** the number is retired and refused forever.
+  - **Dead or sold for slaughter (removal reasons MUERTE, VENTA_RASTRO):** the number is retired and refused forever.
   - **ERROR_REGISTRO:** the row is deleted, so the number was never really used and is free.
   - **Privacy:** nothing moves between ranches except the number. The seller's history stays with the seller. In a transfer request, the seller sees the buyer's ranch name, sale date and note, and the buyer sees nothing about the seller.
 - **Optional, but flagged:** an animal may have no SINIIGA. Missing numbers are shown to the user, and onboarding keeps the live app's yes-or-no question (`Ranches.siniigaNumbers`). See `siniiga-compliance`.

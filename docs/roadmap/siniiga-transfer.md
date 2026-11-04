@@ -30,7 +30,7 @@ When a number is refused because an ACTIVE animal holds it, the form offers "Com
 
 The holding ranch's owner gets a task showing the buyer's ranch name, the sale date, the note and their own animal. The buyer learns nothing about the seller, only whether the number was released.
 
-- **Confirm:** records REMOVAL with VENDIDA_OTRO_RANCHO on the seller's animal, dated with the sale date, which the seller can correct, using the normal event path. The number goes on the buyer's animal.
+- **Confirm:** records REMOVAL with VENTA_OTRO_RANCHO on the seller's animal, dated with the sale date, which the seller can correct, using the normal event path. The number goes on the buyer's animal.
 - **Decline:** closes the request and tells the buyer to contact support.
 - **No answer in 14 days:** the daily job marks the request ESCALATED, notifies support and tells the buyer. This matters because the buyer needs correct records for the authorities.
 
@@ -43,7 +43,7 @@ S.
 ## Acceptance
 
 - [ ] A buyer's request saves the animal without the number and creates one task for the holder's owner.
-- [ ] Confirming removes the seller's animal as VENDIDA_OTRO_RANCHO and gives the buyer the number, in one transaction.
+- [ ] Confirming removes the seller's animal as VENTA_OTRO_RANCHO and gives the buyer the number, in one transaction.
 - [ ] Declining changes neither animal, and the buyer sees the support message.
 - [ ] The seller sees only the buyer's ranch name, sale date and note; the buyer sees nothing about the seller at any point (test).
 - [ ] The sale date is required, and it dates the seller's removal record.
