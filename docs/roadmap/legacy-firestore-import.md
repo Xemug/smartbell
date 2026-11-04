@@ -31,6 +31,8 @@ SINIIGA: convert `484-00-…` to `MX-00-…` (domain-model §7.7). Values that d
 
 Roles: map each `workesList.rol` value, in English or Spanish, to a role in domain-model §7.8. A value that doesn't map imports as Nutriólogo, the role with the least access, and is listed in the report.
 
+Report how many users without an active Pro own more than one ranch (see `plans-billing`).
+
 ## Effort
 
 M.

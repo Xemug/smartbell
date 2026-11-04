@@ -29,7 +29,13 @@ Per reconciliation-v4.md §4.5. If the mobile client stays in the stores, billin
 
 **Upsell doors (user decision, 2026-11-03):** the avatar-menu items Mi perfil, Mis ranchos, Mensajes recibidos and Administrar usuarios become upsell doors, not fake doors that count interest. They follow the live FlutterFlow pattern, "Feature under development" with a "See Plans" button, and open the plans screen. Until this card lands they keep their placeholder pages.
 
-**Open:** Mi perfil and Mis ranchos (profile, ranch switch and create, invites) are free in the live app today. Paywalling them would take features away from free users, which the parity check on `mobile-store-release` forbids unless the user approves. The planner recommends paywalling only Administrar usuarios (extra users) and Mensajes recibidos. Waiting for the user's answer.
+**Which items are paid (user decision, 2026-11-03):**
+- **Mi perfil:** free for everyone.
+- **Mis ranchos:** free with one owned ranch. Creating a second ranch shows the upsell (See Plans). This matches the live app, which already gates adding a ranch behind premium (`ranchlist`). Ranches a user only belongs to as a member don't count.
+- **Administrar usuarios:** upsell. This matches the live app, where inviting users is premium.
+- **Mensajes recibidos:** upsell.
+
+**Open, waiting for the user:** a free legacy user may already own more than one ranch, from before the gate or after premium lapsed. The planner recommends they keep every ranch with full access and are only blocked from creating another. `legacy-firestore-import` reports how many such users exist.
 
 ## Effort
 
