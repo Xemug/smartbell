@@ -6,15 +6,18 @@
 # project. SKIP_AUTH_EMULATOR=1 leaves it to you (e.g. one already running on 9099).
 #
 #   API_PORT / WEB_PORT   override 8000 / 5173
-#   POSTGRES_PORT         move the compose Postgres off 5432 (DATABASE_URL follows it)
+#   POSTGRES_PORT         put the compose Postgres on this port (DATABASE_URL follows it); unset,
+#                         it uses 5432, or the next free port when 5432 is taken
 #   DATABASE_URL          use another Postgres (set SKIP_DOCKER=1 to not start the compose one)
 set -euo pipefail
 
-if [[ -n "${POSTGRES_PORT:-}" && -z "${DATABASE_URL:-}" ]]; then
-  export DATABASE_URL="postgresql+asyncpg://smartbell:smartbell@localhost:$POSTGRES_PORT/smartbell"
-fi
-
 root="$(cd "$(dirname "$0")/.." && pwd)"
+# shellcheck source=dev-checks.sh
+source "$root/scripts/dev-checks.sh"
+
+# Node 22 for this machine's CPU, before anything starts (see .nvmrc).
+check_node || exit 1
+
 api_port="${API_PORT:-8000}"
 web_port="${WEB_PORT:-5173}"
 
@@ -29,7 +32,30 @@ if [[ -z "${SKIP_DOCKER:-}" ]]; then
     echo "dev.sh: Docker Desktop isn't running. Open it, wait for the whale icon to settle, retry." >&2
     exit 1
   fi
-  docker compose -f "$root/docker-compose.yml" up -d --wait db
+  compose=(docker compose -f "$root/docker-compose.yml")
+  if [[ -z "${POSTGRES_PORT:-}" ]]; then
+    # Postgres already running from an earlier dev.sh in this checkout keeps its port.
+    running="$("${compose[@]}" port db 5432 2>/dev/null | head -n 1 || true)"
+    if [[ -n "$running" ]]; then
+      POSTGRES_PORT="${running##*:}"
+    else
+      POSTGRES_PORT="$(first_free_port 5432)"
+      if [[ "$POSTGRES_PORT" != 5432 ]]; then
+        echo "dev.sh: port 5432 is in use (another checkout's Postgres?), so this one runs on $POSTGRES_PORT."
+      fi
+    fi
+    export POSTGRES_PORT
+  fi
+  if ! "${compose[@]}" up -d --wait db; then
+    # Remove the half-made container so the next run starts clean (the data volume stays).
+    "${compose[@]}" rm --stop --force db >/dev/null 2>&1 || true
+    echo "dev.sh: Postgres didn't start on port $POSTGRES_PORT (see above). Its container is removed; run dev.sh again." >&2
+    exit 1
+  fi
+fi
+
+if [[ -n "${POSTGRES_PORT:-}" && -z "${DATABASE_URL:-}" ]]; then
+  export DATABASE_URL="postgresql+asyncpg://smartbell:smartbell@localhost:$POSTGRES_PORT/smartbell"
 fi
 
 pids=()
