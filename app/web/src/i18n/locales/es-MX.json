@@ -27,6 +27,9 @@
     "messages": "Mensajes recibidos",
     "users": "Administrar usuarios"
   },
+  "support": {
+    "paymentPrefill": "Me interesa contratar la membresía, quisiera conocer si tienen otros métodos de pago"
+  },
   "fakeDoor": {
     "title": "Funcionalidad en construcción",
     "body": "Me interesa conocer más detalles",

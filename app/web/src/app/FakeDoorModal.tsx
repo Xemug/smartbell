@@ -5,7 +5,7 @@ import { cx, focusRing } from '../ui/cx';
 import { iconMessage } from '../ui/icons/glyphs';
 import { Icon } from '../ui/icons/Icon';
 import type { NavId } from './navigation';
-import { whatsappUrl } from './whatsapp';
+import { useSupportLinks } from './support';
 
 interface FakeDoorModalProps {
   /** The tab that was tapped; null keeps the modal closed. */
@@ -15,7 +15,7 @@ interface FakeDoorModalProps {
 
 export function FakeDoorModal({ feature, onClose }: FakeDoorModalProps) {
   const { t } = useTranslation();
-  const message = feature ? t('fakeDoor.prefill', { nombre: t(`nav.${feature}`) }) : '';
+  const links = useSupportLinks();
   return (
     <Modal
       open={feature !== null}
@@ -27,7 +27,7 @@ export function FakeDoorModal({ feature, onClose }: FakeDoorModalProps) {
     >
       {/* Dark text: white on the kit's green, as drawn, fails contrast. */}
       <a
-        href={whatsappUrl(message)}
+        href={feature ? links.feature(t(`nav.${feature}`)) : undefined}
         target="_blank"
         rel="noopener noreferrer"
         className={cx(

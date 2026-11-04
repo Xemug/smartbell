@@ -27,6 +27,9 @@
     "messages": "Received messages",
     "users": "Manage users"
   },
+  "support": {
+    "paymentPrefill": "I want to buy the membership and would like to know if there are other payment methods"
+  },
   "fakeDoor": {
     "title": "Feature under construction",
     "body": "I'd like to know more",
