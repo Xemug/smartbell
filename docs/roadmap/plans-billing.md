@@ -27,6 +27,10 @@ Subscription models, Stripe (or local MX provider) integration, `features/config
 
 Per reconciliation-v4.md §4.5. If the mobile client stays in the stores, billing must use store subscriptions (RevenueCat is the usual bridge); web can use Stripe or a Mexican provider. The OTO screen (onboarding card) links here.
 
+**Upsell doors (user decision, 2026-11-03):** the avatar-menu items Mi perfil, Mis ranchos, Mensajes recibidos and Administrar usuarios become upsell doors, not fake doors that count interest. They follow the live FlutterFlow pattern, "Feature under development" with a "See Plans" button, and open the plans screen. Until this card lands they keep their placeholder pages.
+
+**Open:** Mi perfil and Mis ranchos (profile, ranch switch and create, invites) are free in the live app today. Paywalling them would take features away from free users, which the parity check on `mobile-store-release` forbids unless the user approves. The planner recommends paywalling only Administrar usuarios (extra users) and Mensajes recibidos. Waiting for the user's answer.
+
 ## Effort
 
 XL.
