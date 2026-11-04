@@ -58,6 +58,62 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/ranches': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Ranches */
+    get: operations['listRanches'];
+    put?: never;
+    /**
+     * Create Ranch
+     * @description Agregar Rancho: the caller becomes its Dueño.
+     */
+    post: operations['createRanch'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/ranch/members': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Members */
+    get: operations['listMembers'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/ranch/members/{user_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Remove Member */
+    delete: operations['removeMember'];
+    options?: never;
+    head?: never;
+    /** Update Member */
+    patch: operations['updateMember'];
+    trace?: never;
+  };
   '/api/support/config': {
     parameters: {
       query?: never;
@@ -182,6 +238,66 @@ export interface components {
       /** Status */
       status: string;
     };
+    /** MemberOut */
+    MemberOut: {
+      /**
+       * User Id
+       * Format: uuid
+       */
+      user_id: string;
+      /** First Name */
+      first_name: string;
+      /** Last Name */
+      last_name: string | null;
+      /** Email */
+      email: string;
+      /** Photo Url */
+      photo_url: string | null;
+      role: components['schemas']['Role'];
+      /** Permissions */
+      permissions: components['schemas']['Permission'][];
+      /** Is Owner */
+      is_owner: boolean;
+    };
+    /** MemberUpdate */
+    MemberUpdate: {
+      /** Role */
+      role?: ('ADMINISTRADOR' | 'MEDICO' | 'NUTRIOLOGO' | 'TECNICO_CAMPO') | null;
+      /** Permissions */
+      permissions?: components['schemas']['Permission'][] | null;
+    };
+    /**
+     * Permission
+     * @description One code per row of the §7.8 table, in its order. The value is the name.
+     * @enum {string}
+     */
+    Permission:
+      | 'ANIMALS_CREATE'
+      | 'ANIMALS_VIEW'
+      | 'ANIMALS_EDIT'
+      | 'ANIMALS_DELETE'
+      | 'GROUPS_CREATE'
+      | 'GROUPS_VIEW_EDIT'
+      | 'GROUPS_DELETE'
+      | 'USERS_ADD'
+      | 'USERS_VIEW'
+      | 'USERS_EDIT'
+      | 'USERS_DELETE'
+      | 'DEVICES_ADD_VIEW'
+      | 'DEVICES_ASSIGN'
+      | 'DEVICES_DELETE'
+      | 'EVENTS_RECORD'
+      | 'REPORTS_VIEW'
+      | 'REPORTS_EXPORT'
+      | 'SINIIGA'
+      | 'FINANCES'
+      | 'DECLARATION_SEND'
+      | 'BILLING';
+    /** RanchCreate */
+    RanchCreate: {
+      /** Name */
+      name: string;
+    };
     /** RanchOut */
     RanchOut: {
       /**
@@ -192,6 +308,8 @@ export interface components {
       /** Name */
       name: string;
       role: components['schemas']['Role'];
+      /** Permissions */
+      permissions: components['schemas']['Permission'][];
     };
     /**
      * Role
@@ -351,6 +469,158 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['AccountOut'];
+        };
+      };
+    };
+  };
+  listRanches: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RanchOut'][];
+        };
+      };
+    };
+  };
+  createRanch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RanchCreate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RanchOut'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  listMembers: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MemberOut'][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  removeMember: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path: {
+        user_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  updateMember: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path: {
+        user_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MemberUpdate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MemberOut'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
     };

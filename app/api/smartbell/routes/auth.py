@@ -6,8 +6,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from smartbell.db import get_session
-from smartbell.enums import Role
 from smartbell.models import User
+from smartbell.routes.ranches import RanchOut, my_ranches
 from smartbell.security import TokenClaims, get_current_user, get_token_claims
 from smartbell.services import accounts
 
@@ -37,12 +37,6 @@ class UserOut(BaseModel):
     photo_url: str | None
 
 
-class RanchOut(BaseModel):
-    id: uuid.UUID
-    name: str
-    role: Role
-
-
 class AccountOut(BaseModel):
     user: UserOut
     ranches: list[RanchOut]
@@ -53,11 +47,7 @@ class SessionOut(AccountOut):
 
 
 async def _account(session: AsyncSession, user: User) -> AccountOut:
-    ranches = await accounts.list_ranches(session, user)
-    return AccountOut(
-        user=UserOut.model_validate(user),
-        ranches=[RanchOut(id=r.id, name=r.name, role=role) for r, role in ranches],
-    )
+    return AccountOut(user=UserOut.model_validate(user), ranches=await my_ranches(session, user))
 
 
 @router.post("/session", operation_id="openSession")

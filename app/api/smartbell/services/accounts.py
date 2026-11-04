@@ -8,9 +8,9 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from smartbell.enums import Role
-from smartbell.models import Membership, Ranch, RanchSettings, User
+from smartbell.models import User
 from smartbell.security import TokenClaims
+from smartbell.services import ranches
 
 FIRST_RANCH_NAME = "Mi rancho"  # domain-model §7: auto-created at sign-up, editable later.
 MAX_PHOTO_URL = 2048
@@ -55,17 +55,9 @@ async def _link_or_create(
         email=email,
         photo_url=picture,
     )
-    ranch = Ranch(id=uuid.uuid4(), name=FIRST_RANCH_NAME, owner_user_id=user.id)
     session.add(user)
     await session.flush()
-    session.add(ranch)
-    await session.flush()
-    session.add_all(
-        [
-            RanchSettings(ranch_id=ranch.id),
-            Membership(user_id=user.id, ranch_id=ranch.id, role=Role.DUENO),
-        ]
-    )
+    await ranches.create_ranch(session, user, FIRST_RANCH_NAME)
     return user, True
 
 
@@ -92,13 +84,3 @@ async def open_session(
             raise AccountConflict("email_in_use") from None
         return user, False
     return user, created
-
-
-async def list_ranches(session: AsyncSession, user: User) -> list[tuple[Ranch, Role]]:
-    rows = await session.execute(
-        select(Ranch, Membership.role)
-        .join(Membership, Membership.ranch_id == Ranch.id)
-        .where(Membership.user_id == user.id)
-        .order_by(Ranch.created_at, Ranch.id)
-    )
-    return [(ranch, role) for ranch, role in rows.all()]
