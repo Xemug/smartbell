@@ -40,7 +40,8 @@ Audit: the dependencies (`repro-engine`, `history-writer`, `ranch-tenancy-permis
 - **Age rules:** "heifer ≤ 24 months on edit" means a VAQUILLA's birth date can only be changed to one that keeps her 24 months old or younger; a cow's birth date must stay 660 days before her last calving. The > 30 months advice is `projection.warnings: ["NOT_FERTILE"]`. An AUTO-stage female over 27 months is registered as a cow with one lactation (engine rule, §7.1).
 - **Dam status** applies whenever a dam is given (by id or inline). A non-VIVA status needs ANIMALS_DELETE too, since it writes a REMOVAL.
 - **Group filter:** a group id, or a preset name. No GENERAL group is seeded yet (that is `groups`), so `group=GENERAL` also matches animals with no group.
-- **Removed animals** are read-only (409 `animal_removed`) except for an ERROR_REGISTRO deletion. The default list shows ACTIVE animals; `removed_reason` lists the Bajas.
+- **Removed animals** are read-only (409 `animal_removed`), and ERROR_REGISTRO can't delete them either: that would free a SINIIGA retired by death or slaughter. ERROR_REGISTRO also refuses (409 `animal_in_use`) an animal named in another animal's HEAT or CALVING events. The default list shows ACTIVE animals; `removed_reason` lists the Bajas.
+- **Pedigree:** a parent must be born before its offspring (which rules out cycles), and a new birth date can't come after the animal's recorded repro dates or events.
 - **"Today"** is the America/Mexico_City date until ranches store a timezone.
 
 ## Effort
