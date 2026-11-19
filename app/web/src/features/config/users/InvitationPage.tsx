@@ -14,6 +14,15 @@ import { Spinner } from '../../../ui/Spinner';
 import { acceptInvitation, errorCode, previewInvitation } from './api';
 import { forgetInvitation, rememberInvitation } from './invitationLink';
 
+const terminalErrors = new Set([
+  'email_mismatch',
+  'invitation_used',
+  'invitation_expired',
+  'invitation_revoked',
+  'invitation_not_found',
+  'plan_required',
+]);
+
 const linkButton = (variant: 'fill' | 'outline') =>
   cx(buttonClass(variant), 'h-control-lg w-full gap-2 px-5 type-label-lg');
 
@@ -30,6 +39,10 @@ export function InvitationPage() {
   });
   const accept = useMutation({
     mutationFn: () => acceptInvitation(token),
+    // These won't change on a retry, so the sign-in must stop sending them back here.
+    onError: (error) => {
+      if (terminalErrors.has(errorCode(error))) forgetInvitation();
+    },
     onSuccess: (ranchId) => {
       if (state.status === 'signedIn') {
         try {

@@ -2,7 +2,7 @@
 
 import datetime as dt
 import uuid
-from typing import Annotated
+from typing import Annotated, Any
 
 import pytest
 from fastapi import APIRouter, Depends, FastAPI, status
@@ -476,3 +476,91 @@ async def test_role_presets_follow_the_matrix(tenant_api: AsyncClient) -> None:
     assert {row["role"]: row["permissions"] for row in response.json()} == {
         role.value: preset(role) for role in Role
     }
+
+
+# --- An invite is only as good as its sender now -----------------------------------------------
+
+
+async def test_a_removed_inviters_invite_no_longer_works(
+    ranch_pair: RanchPair, tenant_api: AsyncClient, tenant_db: AsyncSession
+) -> None:
+    await give_pro(tenant_db, ranch_pair.ranch_a)
+    admin = await sign_up(tenant_api, "admin")
+    await add_member(tenant_db, admin, ranch_pair.ranch_a, Role.ADMINISTRADOR)
+    created = await invite(tenant_api, Account(admin.uid, admin.user_id, ranch_pair.ranch_a))
+    await tenant_api.delete(
+        f"/api/ranch/members/{admin.user_id}", headers=ranch_pair.owner.headers(ranch_pair.ranch_a)
+    )
+    await sign_up(tenant_api, "vet")
+
+    response = await tenant_api.post(
+        f"/api/invitations/{created['token']}/accept", headers=auth("vet")
+    )
+
+    assert (response.status_code, response.json()["detail"]) == (410, "invitation_revoked")
+
+
+async def test_a_trimmed_inviters_invite_no_longer_works(
+    ranch_pair: RanchPair, tenant_api: AsyncClient, tenant_db: AsyncSession
+) -> None:
+    await give_pro(tenant_db, ranch_pair.ranch_a)
+    admin = await sign_up(tenant_api, "admin")
+    await add_member(tenant_db, admin, ranch_pair.ranch_a, Role.ADMINISTRADOR)
+    created = await invite(tenant_api, Account(admin.uid, admin.user_id, ranch_pair.ranch_a))
+    trimmed = [c for c in preset(Role.ADMINISTRADOR) if c != Permission.ANIMALS_DELETE.value]
+    await tenant_api.patch(
+        f"/api/ranch/members/{admin.user_id}",
+        headers=ranch_pair.owner.headers(ranch_pair.ranch_a),
+        json={"permissions": trimmed},
+    )
+    await sign_up(tenant_api, "vet")
+
+    response = await tenant_api.post(
+        f"/api/invitations/{created['token']}/accept", headers=auth("vet")
+    )
+
+    assert (response.status_code, response.json()["detail"]) == (410, "invitation_revoked")
+
+
+async def test_an_invite_needs_pro_still_when_accepted(
+    tenant_api: AsyncClient, tenant_db: AsyncSession
+) -> None:
+    owner = await sign_up(tenant_api, "owner")
+    await give_pro(tenant_db, owner.ranch_id)
+    created = await invite(tenant_api, owner)
+    ranch = await tenant_db.get(Ranch, owner.ranch_id)
+    assert ranch is not None
+    ranch.plan_id = None
+    await tenant_db.commit()
+    await sign_up(tenant_api, "vet")
+
+    response = await tenant_api.post(
+        f"/api/invitations/{created['token']}/accept", headers=auth("vet")
+    )
+
+    assert (response.status_code, response.json()["detail"]) == (402, "plan_required")
+
+
+async def test_losing_an_accept_race_is_409_not_500(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The other tab made the membership between this one's read and its insert."""
+    owner = await sign_up(tenant_api, "owner")
+    await give_pro(tenant_db, owner.ranch_id)
+    created = await invite(tenant_api, owner)
+    vet = await sign_up(tenant_api, "vet")
+    await add_member(tenant_db, vet, owner.ranch_id, Role.MEDICO)  # The winning tab.
+    original_get = AsyncSession.get
+
+    async def stale_get(self: AsyncSession, entity: Any, ident: Any, **kw: Any) -> Any:
+        if entity is Membership and ident == (vet.user_id, owner.ranch_id):
+            return None  # What this tab read before the other one committed.
+        return await original_get(self, entity, ident, **kw)
+
+    monkeypatch.setattr(AsyncSession, "get", stale_get)
+
+    response = await tenant_api.post(
+        f"/api/invitations/{created['token']}/accept", headers=auth("vet")
+    )
+
+    assert (response.status_code, response.json()["detail"]) == (409, "invitation_used")

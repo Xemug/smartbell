@@ -53,6 +53,20 @@ function presetOf(presets: RolePreset[] | undefined, role: Role): Set<Permission
   return new Set(presets?.find((p) => p.role === role)?.permissions ?? []);
 }
 
+function LoadError({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-4 p-4">
+      <BackLink />
+      <Banner tone="error" title={t('users.loadError')}>
+        <Button size="sm" variant="outline" onClick={onRetry}>
+          {t('users.retry')}
+        </Button>
+      </Banner>
+    </div>
+  );
+}
+
 function BackLink() {
   const { t } = useTranslation();
   return (
@@ -86,6 +100,8 @@ function useRoleAndCodes(initialRole: MemberRole, initialCodes: Permission[] | n
   );
   return {
     ready: presets.isSuccess,
+    failed: presets.isError,
+    retry: () => void presets.refetch(),
     role,
     // A new role starts again from its preset, as on the API.
     changeRole: (next: MemberRole) => {
@@ -176,6 +192,8 @@ export function NewUserPage() {
   });
 
   if (!can('USERS_ADD')) return <Navigate403 />;
+  if (gate.failed) return <LoadError onRetry={gate.retry} />;
+  if (picker.failed) return <LoadError onRetry={picker.retry} />;
   if (gate.hasPro === undefined || !picker.ready)
     return (
       <div className="flex justify-center p-8">
@@ -309,6 +327,7 @@ function EditForm({ member }: { member: Member }) {
   const [error, setError] = useState<string | null>(null);
   const name = fullName(member);
 
+  if (picker.failed) return <LoadError onRetry={picker.retry} />;
   if (!picker.ready)
     return (
       <div className="flex justify-center p-8">
@@ -383,6 +402,7 @@ export function EditUserPage() {
   const { userId } = useParams();
   const members = useMembers();
   if (!can('USERS_EDIT')) return <Navigate403 />;
+  if (members.isError) return <LoadError onRetry={() => void members.refetch()} />;
   if (members.isPending)
     return (
       <div className="flex justify-center p-8">

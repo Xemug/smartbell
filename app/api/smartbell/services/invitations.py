@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from smartbell.enums import HistoryKey, Role
 from smartbell.models import Invitation, Membership, Ranch, User
 from smartbell.schemas.history import HistoryRefs
-from smartbell.security.permissions import Permission
+from smartbell.security.permissions import Permission, effective
 from smartbell.security.ranch import RanchContext
 from smartbell.services import history, plans
 from smartbell.services.ranches import MembershipRefused, check_grant
@@ -173,6 +173,25 @@ async def preview(session: AsyncSession, token: str) -> InvitationPreview:
     )
 
 
+async def _check_still_grantable(session: AsyncSession, invitation: Invitation) -> None:
+    """The invite is only as good as its sender is now: still a member who may add users and
+    grant every invited code, in a ranch that still has Pro. Otherwise a removed or trimmed
+    member's invites would outlive them."""
+    if not await plans.has_pro(session, invitation.ranch_id):
+        raise MembershipRefused("plan_required", 402)
+    sender = (
+        await session.get(Membership, (invitation.invited_by_user_id, invitation.ranch_id))
+        if invitation.invited_by_user_id
+        else None
+    )
+    if sender is None:
+        raise MembershipRefused("invitation_revoked", 410)
+    held = effective(sender.role, sender.permissions)
+    codes = frozenset(Permission(code) for code in invitation.permissions)
+    if Permission.USERS_ADD not in held or not codes <= held:
+        raise MembershipRefused("invitation_revoked", 410)
+
+
 async def accept(session: AsyncSession, user: User, token: str) -> uuid.UUID:
     """Makes `user` a member with the invited role and codes; returns the ranch id.
 
@@ -187,24 +206,26 @@ async def accept(session: AsyncSession, user: User, token: str) -> uuid.UUID:
     if user.email.lower() != invitation.email:
         raise MembershipRefused("email_mismatch", 403)
     ranch_id = invitation.ranch_id
+    await _check_still_grantable(session, invitation)
     invitation.accepted_at = _now()
-    if await session.get(Membership, (user.id, ranch_id)) is None:
-        session.add(
-            Membership(
-                user_id=user.id,
-                ranch_id=ranch_id,
-                role=invitation.role,
-                permissions=list(invitation.permissions),
-            )
-        )
-        await history.record(
-            session,
-            ranch_id,
-            invitation.invited_by_user_id,
-            HistoryKey.USERS_ADDED,
-            HistoryRefs(user_ids=[user.id]),
-        )
     try:
+        if await session.get(Membership, (user.id, ranch_id)) is None:
+            session.add(
+                Membership(
+                    user_id=user.id,
+                    ranch_id=ranch_id,
+                    role=invitation.role,
+                    permissions=list(invitation.permissions),
+                )
+            )
+            # record() flushes, so a lost race surfaces here, not only at commit.
+            await history.record(
+                session,
+                ranch_id,
+                invitation.invited_by_user_id,
+                HistoryKey.USERS_ADDED,
+                HistoryRefs(user_ids=[user.id]),
+            )
         await session.commit()
     except IntegrityError:
         # Another tab accepted the same link first; its transaction made the membership.

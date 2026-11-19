@@ -375,6 +375,26 @@ describe('NewUserPage', () => {
   });
 });
 
+describe('load failures', () => {
+  it('offers a retry when the plan fails to load, instead of spinning', async () => {
+    overrides['GET /api/ranch/plan'] = () => Response.json({ detail: 'boom' }, { status: 500 });
+    renderAt('/config/usuarios/nuevo');
+
+    expect(await screen.findByText('No pudimos cargar los usuarios.')).toBeInTheDocument();
+    delete overrides['GET /api/ranch/plan'];
+    await userEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+    expect(await screen.findByRole('button', { name: 'Crear Usuario' })).toBeInTheDocument();
+  });
+
+  it('says the list failed, not that the user is gone, when members fail on edit', async () => {
+    overrides['GET /api/ranch/members'] = () => Response.json({ detail: 'boom' }, { status: 500 });
+    renderAt('/config/usuarios/u-vet');
+
+    expect(await screen.findByText('No pudimos cargar los usuarios.')).toBeInTheDocument();
+    expect(screen.queryByText('Este usuario ya no está en tu rancho.')).not.toBeInTheDocument();
+  });
+});
+
 describe('EditUserPage', () => {
   it('saves the role and the toggled codes', async () => {
     renderAt('/config/usuarios/u-vet');
@@ -418,6 +438,7 @@ describe('InvitationPage', () => {
   it('says whose invite it is when the signed-in email differs', async () => {
     overrides['POST /api/invitations/tok-123/accept'] = () =>
       Response.json({ detail: 'email_mismatch' }, { status: 403 });
+    rememberInvitation('tok-123');
     renderAt('/invitacion/tok-123');
 
     await userEvent.click(await screen.findByRole('button', { name: 'Aceptar invitación' }));
@@ -427,6 +448,7 @@ describe('InvitationPage', () => {
         'Esta invitación es para ana@example.com. Entra con ese correo para aceptarla.',
       ),
     ).toBeInTheDocument();
+    expect(pendingInvitation()).toBeNull();
   });
 
   it('sends a just-signed-in invitee back to the invite', async () => {

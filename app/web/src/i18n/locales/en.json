@@ -335,7 +335,9 @@
         "invitation_expired": "This invitation has expired. Ask for a new one.",
         "invitation_used": "This invitation was already used.",
         "email_mismatch": "This invitation is for {{email}}. Sign in with that email to accept it.",
-        "generic": "We couldn't open the invitation. Try again."
+        "generic": "We couldn't open the invitation. Try again.",
+        "invitation_revoked": "This invitation is no longer valid. Ask for a new one.",
+        "plan_required": "This ranch no longer has the Pro plan. Ask the owner to renew it."
       }
     }
   }

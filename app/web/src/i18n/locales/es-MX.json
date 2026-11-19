@@ -335,7 +335,9 @@
         "invitation_expired": "Esta invitación ya venció. Pide una nueva.",
         "invitation_used": "Esta invitación ya se usó.",
         "email_mismatch": "Esta invitación es para {{email}}. Entra con ese correo para aceptarla.",
-        "generic": "No pudimos abrir la invitación. Intenta de nuevo."
+        "generic": "No pudimos abrir la invitación. Intenta de nuevo.",
+        "invitation_revoked": "Esta invitación ya no es válida. Pide una nueva.",
+        "plan_required": "Este rancho ya no tiene el plan Pro. Pide al dueño que lo renueve."
       }
     }
   }

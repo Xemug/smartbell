@@ -149,6 +149,13 @@ export function UsersPage() {
       </header>
 
       {can('USERS_ADD') && gate.hasPro === false && <UpsellState compact />}
+      {can('USERS_ADD') && gate.failed && (
+        <Banner tone="error" title={t('users.loadError')}>
+          <Button size="sm" variant="outline" onClick={gate.retry}>
+            {t('users.retry')}
+          </Button>
+        </Banner>
+      )}
 
       {error && (
         <Banner tone="error" onClose={() => setError(null)}>

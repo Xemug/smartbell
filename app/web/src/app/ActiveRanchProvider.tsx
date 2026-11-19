@@ -49,13 +49,11 @@ export function ActiveRanchProvider({ children }: { children: ReactNode }) {
   // before this component's own, and must already carry the right ranch.
   const currentId = account ? activeRanch.id || null : null;
   setActiveRanchId(currentId);
+  // StrictMode replays effects (setup, cleanup, setup), and the unmount cleanup below then clears
+  // the ranch: set it again on setup. No cleanup here, so a ranch change never leaves a gap.
+  useEffect(() => setActiveRanchId(currentId), [currentId]);
   // Signing out unmounts the shell: the next account's first calls must not carry this ranch.
-  // The setup sets it again because StrictMode replays effects (setup, cleanup, setup): without
-  // it, every call after mount until the next render went out with no ranch at all.
-  useEffect(() => {
-    setActiveRanchId(currentId);
-    return () => setActiveRanchId(null);
-  }, [currentId]);
+  useEffect(() => () => setActiveRanchId(null), []);
 
   const setActiveRanch = useCallback(
     (id: string) => {
