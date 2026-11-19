@@ -59,6 +59,12 @@ jobs:
       - run: npm run test
       - run: npm run build
 
+  scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/test-dev-checks.sh
+
   legacy-firebase:
     runs-on: ubuntu-latest
     defaults:
