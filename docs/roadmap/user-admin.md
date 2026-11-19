@@ -57,4 +57,4 @@ M.
 - [x] Editing permissions takes effect on the next request.
 - [x] Deleting a user keeps their history entries.
 - [ ] Matches M 2573-152259 and W 871-28 (human).
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI (api and web jobs; `scripts` fails on main since #16, separate card).
