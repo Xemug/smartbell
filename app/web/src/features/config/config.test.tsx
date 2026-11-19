@@ -464,5 +464,10 @@ describe('Datos Rancho', () => {
     expect(await screen.findByText('Rancho: La Trajinera')).toBeInTheDocument();
     expect(fakeApi.first('POST', '/api/ranches').body).toEqual({ name: 'La Trajinera' });
     expect(screen.getByText(/se registró con Éxito/)).toBeInTheDocument();
+    // Every ranch-scoped call after the switch names the new ranch.
+    const after = fakeApi.calls.slice(fakeApi.calls.findIndex((c) => c.path === '/api/ranches'));
+    const ranchCalls = after.filter((c) => c.path === '/api/ranch');
+    expect(ranchCalls.length).toBeGreaterThan(0);
+    expect(ranchCalls.every((c) => c.ranchHeader === 'r2')).toBe(true);
   });
 });

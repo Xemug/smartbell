@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { StrictMode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { api } from '../api/client';
@@ -188,6 +189,28 @@ describe('ActiveRanchProvider', () => {
     await api.GET('/api/ranches');
 
     expect(calls).toEqual([{ path: '/api/ranches', ranch: null }]);
+  });
+
+  it('keeps sending the ranch after StrictMode remounts its effects (dev)', async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <StrictMode>
+        <QueryClientProvider client={queryClient}>
+          <AuthContext.Provider value={authFor()}>
+            <ActiveRanchProvider>
+              <Probe />
+            </ActiveRanchProvider>
+          </AuthContext.Provider>
+        </QueryClientProvider>
+      </StrictMode>,
+    );
+    await screen.findByText('loaded');
+    calls = [];
+
+    // A later call, such as a form's save, must still carry it.
+    await api.PATCH('/api/ranch', { body: { name: 'B' } });
+
+    expect(calls).toEqual([{ path: '/api/ranch', ranch: 'ranch-a' }]);
   });
 
   it('answers can() from the active ranch permissions', async () => {
