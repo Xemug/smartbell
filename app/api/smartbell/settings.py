@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     # Matched against a token's *verified* email, so an unconfirmed sign-up can't claim one.
     # Comma-separated in the environment: ADMIN_EMAILS=ana@smartbell.mx,luis@smartbell.mx
     admin_emails: Annotated[list[str], NoDecode] = []
+    # Where uploaded profile photos are kept. Local disk for now; an S3-compatible store is a
+    # follow-up for deployment (profile-ranch-config).
+    media_dir: str = "media"
 
     @field_validator("admin_emails", mode="before")
     @classmethod

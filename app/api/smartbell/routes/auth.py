@@ -10,6 +10,7 @@ from smartbell.models import User
 from smartbell.routes.ranches import RanchOut, my_ranches
 from smartbell.security import TokenClaims, get_current_user, get_token_claims
 from smartbell.services import accounts
+from smartbell.services.plans import RanchCreation, ranch_creation
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -40,6 +41,8 @@ class UserOut(BaseModel):
 class AccountOut(BaseModel):
     user: UserOut
     ranches: list[RanchOut]
+    # Whether "Agregar Rancho" creates one or shows the Pro upsell (plans-billing).
+    ranch_creation: RanchCreation
 
 
 class SessionOut(AccountOut):
@@ -47,7 +50,11 @@ class SessionOut(AccountOut):
 
 
 async def _account(session: AsyncSession, user: User) -> AccountOut:
-    return AccountOut(user=UserOut.model_validate(user), ranches=await my_ranches(session, user))
+    return AccountOut(
+        user=UserOut.model_validate(user),
+        ranches=await my_ranches(session, user),
+        ranch_creation=await ranch_creation(session, user),
+    )
 
 
 @router.post("/session", operation_id="openSession")

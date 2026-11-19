@@ -27,7 +27,7 @@ from smartbell import models  # noqa: F401 - registers every table on Base.metad
 from smartbell.db import Base, get_session, make_sessionmaker
 from smartbell.enums import Role
 from smartbell.main import create_app
-from smartbell.models import Membership
+from smartbell.models import Membership, Ranch
 from smartbell.security import TokenClaims, get_token_claims
 from smartbell.security.permissions import preset
 from smartbell.settings import Settings
@@ -182,6 +182,14 @@ async def add_member(db: AsyncSession, account: Account, ranch_id: uuid.UUID, ro
     await db.commit()
 
 
+async def give_pro(db: AsyncSession, account: Account) -> None:
+    """Marks the account's own ranch with the RevenueCat Pro entitlement (see services.plans)."""
+    ranch = await db.get(Ranch, account.ranch_id)
+    assert ranch is not None
+    ranch.plan_id = "pro"
+    await db.commit()
+
+
 @dataclass(frozen=True)
 class RanchPair:
     """One owner with two ranches, A and B, each with a second member.
@@ -200,6 +208,7 @@ class RanchPair:
 @pytest.fixture
 async def ranch_pair(tenant_api: AsyncClient, tenant_db: AsyncSession) -> RanchPair:
     owner = await sign_up(tenant_api, "owner")
+    await give_pro(tenant_db, owner)  # A second owned ranch is a Pro feature.
     created = await tenant_api.post(
         "/api/ranches", headers=owner.headers(), json={"name": "Rancho B"}
     )
