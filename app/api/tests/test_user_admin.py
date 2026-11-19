@@ -465,3 +465,14 @@ async def test_members_list_carries_last_activity(
 
     assert all("last_active_at" in row for row in response.json())
     assert all(row["last_active_at"] is not None for row in response.json())
+
+
+async def test_role_presets_follow_the_matrix(tenant_api: AsyncClient) -> None:
+    await sign_up(tenant_api, "owner")
+
+    response = await tenant_api.get("/api/role-presets", headers=auth("owner"))
+
+    assert response.status_code == 200
+    assert {row["role"]: row["permissions"] for row in response.json()} == {
+        role.value: preset(role) for role in Role
+    }

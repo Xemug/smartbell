@@ -17,7 +17,7 @@ from smartbell.enums import Role
 from smartbell.models import Invitation, User
 from smartbell.routes.ranches import MemberRole
 from smartbell.security import get_current_user
-from smartbell.security.permissions import Permission
+from smartbell.security.permissions import Permission, preset
 from smartbell.security.ranch import RanchContext, get_ranch_context, require
 from smartbell.services import invitations, plans
 from smartbell.services.ranches import MembershipRefused
@@ -83,6 +83,20 @@ def _out(invitation: Invitation) -> InvitationOut:
 
 def _refused(error: MembershipRefused) -> HTTPException:
     return HTTPException(error.status, detail=error.code)
+
+
+class RolePresetOut(BaseModel):
+    role: Role
+    permissions: list[Permission]  # The preset, which is also the most the role can be given.
+
+
+@router.get("/role-presets", operation_id="listRolePresets")
+async def role_presets(_: Annotated[User, Depends(get_current_user)]) -> list[RolePresetOut]:
+    """§7.8, for the permission tabs: which toggles a role starts with and which it may have."""
+    return [
+        RolePresetOut(role=role, permissions=[Permission(code) for code in preset(role)])
+        for role in Role
+    ]
 
 
 @router.get("/ranch/plan", operation_id="getRanchPlan")

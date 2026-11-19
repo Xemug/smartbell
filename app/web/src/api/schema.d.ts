@@ -114,6 +114,112 @@ export interface paths {
     patch: operations['updateMember'];
     trace?: never;
   };
+  '/api/role-presets': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Role Presets
+     * @description §7.8, for the permission tabs: which toggles a role starts with and which it may have.
+     */
+    get: operations['listRolePresets'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/ranch/plan': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Plan */
+    get: operations['getRanchPlan'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/ranch/invitations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Invitations */
+    get: operations['listInvitations'];
+    put?: never;
+    /** Create Invitation */
+    post: operations['createInvitation'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/ranch/invitations/{invitation_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Revoke Invitation */
+    delete: operations['revokeInvitation'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/invitations/{token}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Preview Invitation */
+    get: operations['previewInvitation'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/invitations/{token}/accept': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Accept Invitation */
+    post: operations['acceptInvitation'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/support/config': {
     parameters: {
       query?: never;
@@ -255,6 +361,14 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** AcceptedOut */
+    AcceptedOut: {
+      /**
+       * Ranch Id
+       * Format: uuid
+       */
+      ranch_id: string;
+    };
     /** AccountOut */
     AccountOut: {
       user: components['schemas']['UserOut'];
@@ -672,6 +786,92 @@ export interface components {
       /** Status */
       status: string;
     };
+    /** InvitationCreate */
+    InvitationCreate: {
+      /** Email */
+      email: string;
+      /** First Name */
+      first_name: string;
+      /** Last Name */
+      last_name?: string | null;
+      /** Phone */
+      phone?: string | null;
+      /**
+       * Role
+       * @enum {string}
+       */
+      role: 'ADMINISTRADOR' | 'MEDICO' | 'NUTRIOLOGO' | 'TECNICO_CAMPO';
+      /** Permissions */
+      permissions: components['schemas']['Permission'][];
+    };
+    /** InvitationCreated */
+    InvitationCreated: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Email */
+      email: string;
+      /** First Name */
+      first_name: string;
+      /** Last Name */
+      last_name: string | null;
+      role: components['schemas']['Role'];
+      /** Permissions */
+      permissions: components['schemas']['Permission'][];
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Expires At
+       * Format: date-time
+       */
+      expires_at: string;
+      /** Token */
+      token: string;
+    };
+    /** InvitationOut */
+    InvitationOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Email */
+      email: string;
+      /** First Name */
+      first_name: string;
+      /** Last Name */
+      last_name: string | null;
+      role: components['schemas']['Role'];
+      /** Permissions */
+      permissions: components['schemas']['Permission'][];
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Expires At
+       * Format: date-time
+       */
+      expires_at: string;
+    };
+    /** InvitationPreviewOut */
+    InvitationPreviewOut: {
+      /** Ranch Name */
+      ranch_name: string;
+      /** Invited By */
+      invited_by: string | null;
+      /** Email */
+      email: string;
+      role: components['schemas']['Role'];
+      /** Status */
+      status: string;
+    };
     /**
      * LactationState
      * @enum {string}
@@ -692,6 +892,8 @@ export interface components {
       email: string;
       /** Photo Url */
       photo_url: string | null;
+      /** Last Active At */
+      last_active_at: string | null;
       role: components['schemas']['Role'];
       /** Permissions */
       permissions: components['schemas']['Permission'][];
@@ -758,6 +960,11 @@ export interface components {
       | 'FINANCES'
       | 'DECLARATION_SEND'
       | 'BILLING';
+    /** PlanOut */
+    PlanOut: {
+      /** Has Pro */
+      has_pro: boolean;
+    };
     /**
      * ProjectionOut
      * @description The engine's view of the animal today: what the list columns don't hold.
@@ -813,6 +1020,12 @@ export interface components {
      * @enum {string}
      */
     Role: 'DUENO' | 'ADMINISTRADOR' | 'MEDICO' | 'NUTRIOLOGO' | 'TECNICO_CAMPO';
+    /** RolePresetOut */
+    RolePresetOut: {
+      role: components['schemas']['Role'];
+      /** Permissions */
+      permissions: components['schemas']['Permission'][];
+    };
     /** SessionOut */
     SessionOut: {
       user: components['schemas']['UserOut'];
@@ -1127,6 +1340,216 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['MemberOut'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  listRolePresets: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RolePresetOut'][];
+        };
+      };
+    };
+  };
+  getRanchPlan: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlanOut'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  listInvitations: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InvitationOut'][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  createInvitation: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['InvitationCreate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InvitationCreated'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  revokeInvitation: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path: {
+        invitation_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  previewInvitation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        token: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InvitationPreviewOut'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  acceptInvitation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        token: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AcceptedOut'];
         };
       };
       /** @description Validation Error */
