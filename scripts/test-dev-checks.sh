@@ -135,8 +135,8 @@ for round in $(seq 20); do
       "$tmp/race/lock" "$tmp/race/won.$i" &
   done
   wait
-  winners="$(cat "$tmp/race/"won.* 2>/dev/null | wc -l | tr -d ' ')"
-  if [[ "$winners" != 1 || "$(cat "$tmp/race/lock")" != "$(cat "$tmp/race/"won.*)" ]]; then
+  winners="$({ cat "$tmp/race/"won.* 2>/dev/null || true; } | wc -l | tr -d ' ')"
+  if [[ "$winners" != 1 || "$(cat "$tmp/race/lock" 2>/dev/null)" != "$(cat "$tmp/race/"won.* 2>/dev/null || true)" ]]; then
     race_failures="$race_failures round $round: $winners winners;"
   fi
 done
@@ -160,6 +160,26 @@ if [[ "$(echo "$picked" | wc -l | tr -d ' ')" == 6 && "$(echo "$picked" | sort -
   pass "concurrent picks get different ports ($(echo $picked))"
 else
   fail "concurrent picks collided: $(echo $picked)"
+fi
+
+# A .lock directory left by an older dev.sh doesn't block picking, and an unwritable lock path
+# fails with a message instead of hanging.
+mkdir -p "$SMARTBELL_PORT_DIR/.lock"
+got="$(bash -c 'source "$1"; pick_port "$2" "test" 2>/dev/null' _ "$root/scripts/dev-checks.sh" 47400)"
+if [[ -n "$got" ]]; then
+  pass "an old .lock directory doesn't block picking"
+else
+  fail "pick_port with an old .lock directory returned nothing"
+fi
+rm -f "$SMARTBELL_PORT_DIR"/[0-9]*
+mkdir -p "$tmp/blocked/.pick-lock"
+status=0
+out="$(SMARTBELL_PORT_DIR="$tmp/blocked" bash -c 'source "$1"; with_port_lock true' _ "$root/scripts/dev-checks.sh" 2>&1)" ||
+  status=$?
+if [[ "$status" == 1 && "$out" == *"can't create the port lock"* ]]; then
+  pass "an uncreatable lock fails with a message"
+else
+  fail "uncreatable lock: exit $status. Output: $out"
 fi
 
 # A reservation whose dev.sh is gone doesn't hold its port, and release_ports drops only its own.
