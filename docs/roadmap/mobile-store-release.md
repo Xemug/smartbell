@@ -14,7 +14,7 @@ The app is live in both stores with a RevenueCat paywall; the rebuild must repla
 
 Keeps the listings, installs and subscribers.
 
-**Depends on:** `auth`, `tasks-home`, `milk-screens`, `groups`, `profile-ranch-config`, `user-admin`, `legacy-firestore-import`, `report-export`.
+**Depends on:** `auth`, `tasks-home`, `milk-screens`, `groups`, `profile-ranch-config`, `user-admin`, `legacy-firestore-import`, `report-export`, `sync-the-pro-entitlement-from-revenuecat-into-the-new`.
 
 This build replaces the live app under the same bundle id, so it must not take away anything live users have today. The founder raised this on 2026-11-03. See the parity check below.
 
