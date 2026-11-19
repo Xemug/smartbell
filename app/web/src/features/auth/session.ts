@@ -7,6 +7,13 @@ export type SessionProfile = components['schemas']['SessionRequest'];
 export type SessionResult =
   { ok: true; account: Account; created: boolean } | { ok: false; code: string };
 
+/** The signed-in account, re-read after an edit. Throws when the API can't answer. */
+export async function fetchAccount(): Promise<Account> {
+  const { data } = await api.GET('/api/auth/me');
+  if (!data) throw new Error('account failed');
+  return data;
+}
+
 /** Ties the Firebase user to our account, creating it and "Mi rancho" the first time. */
 export async function openSession(token: string, profile?: SessionProfile): Promise<SessionResult> {
   try {

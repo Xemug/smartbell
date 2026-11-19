@@ -43,3 +43,9 @@ api.use({
     return request;
   },
 });
+
+/** Our own media paths are relative to the API; Google or Apple pictures are already absolute. */
+export function mediaUrl(path: string | null | undefined): string | null {
+  if (!path) return null;
+  return path.startsWith('/') ? new URL(path, baseUrl).toString() : path;
+}

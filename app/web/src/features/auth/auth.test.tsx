@@ -45,6 +45,8 @@ class FakeBackend implements AuthBackend {
     throw new AuthError('auth/user-not-found');
   });
   signOut = vi.fn(async () => this.set(null));
+  hasPassword = () => true;
+  changePassword = vi.fn(async () => {});
 }
 
 interface ApiCall {

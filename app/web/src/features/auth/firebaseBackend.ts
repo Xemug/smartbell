@@ -3,14 +3,17 @@ import {
   browserLocalPersistence,
   connectAuthEmulator,
   createUserWithEmailAndPassword,
+  EmailAuthProvider,
   GoogleAuthProvider,
   initializeAuth,
   OAuthProvider,
   onAuthStateChanged,
+  reauthenticateWithCredential,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
+  updatePassword,
   updateProfile,
   browserPopupRedirectResolver,
 } from 'firebase/auth';
@@ -69,6 +72,15 @@ export function createFirebaseBackend(): AuthBackend {
         await signInWithPopup(auth, providerFor(provider));
       }),
     sendPasswordReset: (email) => mapErrors(() => sendPasswordResetEmail(auth, email)),
+    hasPassword: () =>
+      auth.currentUser?.providerData.some((p) => p.providerId === 'password') ?? false,
+    changePassword: (current, next) =>
+      mapErrors(async () => {
+        const user = auth.currentUser;
+        if (!user?.email) throw new AuthError('auth/requires-recent-login');
+        await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, current));
+        await updatePassword(user, next);
+      }),
     signOut: () => mapErrors(() => signOut(auth)),
   };
 }

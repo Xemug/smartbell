@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { setTokenGetter } from '../../api/client';
 import { AuthError, type AuthBackend } from './backend';
 import { createFirebaseBackend } from './firebaseBackend';
-import { openSession, type SessionProfile } from './session';
+import { fetchAccount, openSession, type SessionProfile } from './session';
 import { AuthContext, type AuthApi, type AuthState, type SignUpData } from './useAuth';
 
 // The API's refusals: the account can't be opened, so the Firebase sign-in is undone.
@@ -96,6 +96,21 @@ export function AuthProvider({
       },
       signOut: () => auth.signOut(),
       retry: () => void sync(),
+      refreshAccount: async () => {
+        const run = generation.current;
+        const account = await fetchAccount();
+        // Signed out (or in as someone else) meanwhile: this answer is stale.
+        if (run !== generation.current) return;
+        setState((current) => (current.status === 'signedIn' ? { ...current, account } : current));
+      },
+      setUser: (user) =>
+        setState((current) =>
+          current.status === 'signedIn' && current.account.user.id === user.id
+            ? { ...current, account: { ...current.account, user } }
+            : current,
+        ),
+      canChangePassword: () => auth.hasPassword(),
+      changePassword: (current, next) => auth.changePassword(current, next),
     }),
     [auth, state, sync],
   );

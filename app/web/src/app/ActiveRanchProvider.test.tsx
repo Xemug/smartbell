@@ -9,12 +9,24 @@ import { ActiveRanchProvider } from './ActiveRanchProvider';
 import { RanchSwitcher } from './RanchSwitcher';
 import { activeRanchKey, useActiveRanch } from './useActiveRanch';
 
-const ranchA = { id: 'ranch-a', name: 'Rancho A', role: 'DUENO' as const, permissions: [] };
+const place = { address: null, latitude: null, longitude: null };
+const ranchA = {
+  id: 'ranch-a',
+  name: 'Rancho A',
+  role: 'DUENO' as const,
+  permissions: [],
+  is_owner: true,
+  can_edit: true,
+  ...place,
+};
 const ranchB = {
   id: 'ranch-b',
   name: 'Rancho B',
   role: 'TECNICO_CAMPO' as const,
   permissions: ['ANIMALS_VIEW' as const],
+  is_owner: false,
+  can_edit: false,
+  ...place,
 };
 
 function authFor(ranches = [ranchA, ranchB]): AuthApi {
@@ -28,13 +40,21 @@ function authFor(ranches = [ranchA, ranchB]): AuthApi {
   };
   const noop = vi.fn(async () => {});
   return {
-    state: { status: 'signedIn', account: { user, ranches }, created: false },
+    state: {
+      status: 'signedIn',
+      account: { user, ranches, ranch_creation: 'upsell' },
+      created: false,
+    },
     signIn: noop,
     signUp: noop,
     signInWith: noop,
     resetPassword: noop,
     signOut: noop,
     retry: vi.fn(),
+    refreshAccount: noop,
+    setUser: vi.fn(),
+    canChangePassword: () => true,
+    changePassword: noop,
   };
 }
 
