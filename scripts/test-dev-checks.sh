@@ -124,6 +124,28 @@ s.listen(); time.sleep(60)' "$1" "$2" &
   fi
 fi
 
+# Exactly one of many processes racing for a free lock gets it (a `mkdir` lock let two in on
+# Ubuntu 26.04), and the winner's PID is in the file.
+mkdir -p "$tmp/race"
+race_failures=""
+for round in $(seq 20); do
+  rm -f "$tmp/race/"*
+  for i in $(seq 12); do
+    bash -c 'source "$1"; try_lock "$2" && echo $$ >"$3"' _ "$root/scripts/dev-checks.sh" \
+      "$tmp/race/lock" "$tmp/race/won.$i" &
+  done
+  wait
+  winners="$(cat "$tmp/race/"won.* 2>/dev/null | wc -l | tr -d ' ')"
+  if [[ "$winners" != 1 || "$(cat "$tmp/race/lock")" != "$(cat "$tmp/race/"won.*)" ]]; then
+    race_failures="$race_failures round $round: $winners winners;"
+  fi
+done
+if [[ -z "$race_failures" ]]; then
+  pass "exactly one of 12 racing processes takes the lock (20 rounds)"
+else
+  fail "lock isn't exclusive:$race_failures"
+fi
+
 # Six dev.sh-like processes picking at the same moment get six different ports, before any binds.
 export SMARTBELL_PORT_DIR="$tmp/ports"
 start=$(first_free_port 47300)

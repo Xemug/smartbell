@@ -72,24 +72,31 @@ first_free_port() {
 # moment skips it. Shared by every checkout of this machine's user.
 port_dir="${SMARTBELL_PORT_DIR:-${TMPDIR:-/tmp}/smartbell-dev-ports}"
 
+# Takes the lock file $1 for this dev.sh: true only if it didn't exist. bash's noclobber opens
+# with O_CREAT|O_EXCL, so of two callers racing exactly one wins, and the file holds the owner's
+# PID from the moment it exists. Don't use `mkdir` as the lock: the Rust coreutils that Ubuntu
+# 26.04 ships let two racing `mkdir`s both succeed, and CI saw two pickers get the same port.
+try_lock() {
+  (set -o noclobber && echo $$ >"$1") 2>/dev/null
+}
+
 # Runs "$@" while holding a machine-wide lock, so two dev.sh can't pick the same port.
 with_port_lock() {
   local lock="$port_dir/.lock" owner waited=0 status=0
   mkdir -p "$port_dir"
-  until mkdir "$lock" 2>/dev/null; do
-    owner="$(cat "$lock/pid" 2>/dev/null || true)"
+  until try_lock "$lock"; do
+    owner="$(cat "$lock" 2>/dev/null || true)"
     # A lock whose dev.sh is gone, or one held for over 10 s, is stale.
     if { [[ -n "$owner" ]] && ! kill -0 "$owner" 2>/dev/null; } || [[ "$waited" -ge 100 ]]; then
-      rm -rf "$lock"
+      rm -f "$lock"
       waited=0
       continue
     fi
     sleep 0.1
     waited=$((waited + 1))
   done
-  echo $$ >"$lock/pid"
   "$@" || status=$?
-  rm -rf "$lock"
+  rm -f "$lock"
   return "$status"
 }
 
