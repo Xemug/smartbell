@@ -94,13 +94,14 @@ class Animal(Base):
     __tablename__ = "animals"
     __table_args__ = (
         Index("uq_animals_ranch_id_control_id", "ranch_id", "control_id", unique=True),
+        # SINIIGA is national (§7.7): one ACTIVE holder in any ranch. A retired number (death,
+        # slaughter) is refused by the service, since its holder is no longer ACTIVE.
         Index(
-            "uq_animals_ranch_id_siniiga",
-            "ranch_id",
+            "uq_animals_siniiga_active",
             "siniiga",
             unique=True,
-            postgresql_where=text("siniiga IS NOT NULL"),
-            sqlite_where=text("siniiga IS NOT NULL"),
+            postgresql_where=text("siniiga IS NOT NULL AND status = 'ACTIVE'"),
+            sqlite_where=text("siniiga IS NOT NULL AND status = 'ACTIVE'"),
         ),
         Index(
             "uq_animals_ranch_id_bull_name",

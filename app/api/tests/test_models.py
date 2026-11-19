@@ -115,20 +115,27 @@ async def test_control_id_unique_per_ranch(session: AsyncSession, cow: Cow, owne
     await assert_refused(session, cow())
 
 
-async def test_siniiga_unique_per_ranch_where_set(
+async def test_siniiga_unique_nationally_among_active_animals(
     session: AsyncSession, cow: Cow, owner: User
 ) -> None:
     other = Ranch(name="Otro", owner_user_id=owner.id)
     await add(session, other)
+    number = "MX-00-14-0000-1234"
     await add(
         session,
         cow("00001"),
         cow("00002"),  # Two animals without SINIIGA are fine.
-        cow("00003", siniiga="MX-00-00-0000-1234"),
-        cow("00004", siniiga="MX-00-00-0000-1234", ranch_id=other.id),
+        cow("00003", siniiga=number),
+        # A former holder, sold away, doesn't block the buyer's ACTIVE animal.
+        cow(
+            "00004",
+            siniiga=number,
+            status=AnimalStatus.REMOVED,
+            removed_reason=RemovalReason.VENTA_OTRO_RANCHO,
+        ),
     )
 
-    await assert_refused(session, cow("00005", siniiga="MX-00-00-0000-1234"))
+    await assert_refused(session, cow("00005", siniiga=number, ranch_id=other.id))
 
 
 async def test_bull_name_unique_per_ranch(session: AsyncSession, cow: Cow) -> None:

@@ -191,6 +191,66 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/animals': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Animals */
+    get: operations['listAnimals'];
+    put?: never;
+    /**
+     * Create Animal
+     * @description Alta. A nested `dam` or `sire` is created first, in the same transaction.
+     */
+    post: operations['createAnimal'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/animals/{animal_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Animal */
+    get: operations['getAnimal'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Update Animal */
+    patch: operations['updateAnimal'];
+    trace?: never;
+  };
+  '/api/animals/{animal_id}/removal': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Remove Animal
+     * @description Baja. ERROR_REGISTRO deletes the animal and its events (204); any other reason keeps
+     *     them and marks the animal REMOVED (200).
+     */
+    post: operations['removeAnimal'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -201,6 +261,375 @@ export interface components {
       /** Ranches */
       ranches: components['schemas']['RanchOut'][];
     };
+    /**
+     * AnimalCreate
+     * @description "Nombre o Número interno" and the birth date are the only required fields (§7.1).
+     */
+    AnimalCreate: {
+      /** Control Id */
+      control_id: string;
+      /**
+       * Birth Date
+       * Format: date
+       */
+      birth_date: string;
+      /** Name */
+      name?: string | null;
+      /** Siniiga */
+      siniiga?: string | null;
+      /** @default HOLSTEIN */
+      breed: components['schemas']['Breed'];
+      /** @default FB */
+      crossbreed_level: components['schemas']['CrossbreedLevel'];
+      contributing_breed?: components['schemas']['Breed'] | null;
+      /** @default AUTO */
+      development_stage: components['schemas']['DevelopmentStage'];
+      /** Group Id */
+      group_id?: string | null;
+      /** @default HEMBRA */
+      sex: components['schemas']['Sex'];
+      /** Photo Url */
+      photo_url?: string | null;
+      /** Birth Length Cm */
+      birth_length_cm?: number | string | null;
+      /** Weight Birth Kg */
+      weight_birth_kg?: number | string | null;
+      /** Weight Weaning Kg */
+      weight_weaning_kg?: number | string | null;
+      /** Weight One Year Kg */
+      weight_one_year_kg?: number | string | null;
+      repro_stage?: components['schemas']['ReproState'] | null;
+      /** Repro Stage Date */
+      repro_stage_date?: string | null;
+      /** Lactation Number */
+      lactation_number?: number | null;
+      /** Last Calving Date */
+      last_calving_date?: string | null;
+      /** Last Service Date */
+      last_service_date?: string | null;
+      /** Dam Id */
+      dam_id?: string | null;
+      dam?: components['schemas']['ParentCreate'] | null;
+      /** Sire Id */
+      sire_id?: string | null;
+      sire?: components['schemas']['ParentCreate'] | null;
+      dam_status?: components['schemas']['DamStatus'] | null;
+    };
+    /**
+     * AnimalCreated
+     * @description The new animal, plus every animal the request created (inline parents first).
+     */
+    AnimalCreated: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      sex: components['schemas']['Sex'];
+      kind: components['schemas']['AnimalKind'];
+      /** Control Id */
+      control_id: string;
+      /** Name */
+      name: string | null;
+      /** Siniiga */
+      siniiga: string | null;
+      /**
+       * Birth Date
+       * Format: date
+       */
+      birth_date: string;
+      breed: components['schemas']['Breed'];
+      crossbreed_level: components['schemas']['CrossbreedLevel'];
+      contributing_breed: components['schemas']['Breed'] | null;
+      development_stage: components['schemas']['DevelopmentStage'];
+      /** Photo Url */
+      photo_url: string | null;
+      /** Group Id */
+      group_id: string | null;
+      status: components['schemas']['AnimalStatus'];
+      removed_reason: components['schemas']['RemovalReason'] | null;
+      /** Removed At */
+      removed_at: string | null;
+      /** Dam Id */
+      dam_id: string | null;
+      /** Sire Id */
+      sire_id: string | null;
+      /** Birth Length Cm */
+      birth_length_cm: number | null;
+      /** Weight Birth Kg */
+      weight_birth_kg: number | null;
+      /** Weight Weaning Kg */
+      weight_weaning_kg: number | null;
+      /** Weight One Year Kg */
+      weight_one_year_kg: number | null;
+      repro_state: components['schemas']['ReproState'] | null;
+      lactation_state: components['schemas']['LactationState'] | null;
+      /** Lactation Number */
+      lactation_number: number | null;
+      /** Last Calving Date */
+      last_calving_date: string | null;
+      /** Last Heat Date */
+      last_heat_date: string | null;
+      /** Last Service Date */
+      last_service_date: string | null;
+      /** Service Number In Lactation */
+      service_number_in_lactation: number | null;
+      /** Pregnancy Confirmed Date */
+      pregnancy_confirmed_date: string | null;
+      /** Expected Calving Date */
+      expected_calving_date: string | null;
+      /** Is Sick */
+      is_sick: boolean;
+      /** Sick Since */
+      sick_since: string | null;
+      /** Milk Withdrawal Until */
+      milk_withdrawal_until: string | null;
+      projection: components['schemas']['ProjectionOut'];
+      /** Created Ids */
+      created_ids: string[];
+    };
+    /** AnimalDetail */
+    AnimalDetail: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      sex: components['schemas']['Sex'];
+      kind: components['schemas']['AnimalKind'];
+      /** Control Id */
+      control_id: string;
+      /** Name */
+      name: string | null;
+      /** Siniiga */
+      siniiga: string | null;
+      /**
+       * Birth Date
+       * Format: date
+       */
+      birth_date: string;
+      breed: components['schemas']['Breed'];
+      crossbreed_level: components['schemas']['CrossbreedLevel'];
+      contributing_breed: components['schemas']['Breed'] | null;
+      development_stage: components['schemas']['DevelopmentStage'];
+      /** Photo Url */
+      photo_url: string | null;
+      /** Group Id */
+      group_id: string | null;
+      status: components['schemas']['AnimalStatus'];
+      removed_reason: components['schemas']['RemovalReason'] | null;
+      /** Removed At */
+      removed_at: string | null;
+      /** Dam Id */
+      dam_id: string | null;
+      /** Sire Id */
+      sire_id: string | null;
+      /** Birth Length Cm */
+      birth_length_cm: number | null;
+      /** Weight Birth Kg */
+      weight_birth_kg: number | null;
+      /** Weight Weaning Kg */
+      weight_weaning_kg: number | null;
+      /** Weight One Year Kg */
+      weight_one_year_kg: number | null;
+      repro_state: components['schemas']['ReproState'] | null;
+      lactation_state: components['schemas']['LactationState'] | null;
+      /** Lactation Number */
+      lactation_number: number | null;
+      /** Last Calving Date */
+      last_calving_date: string | null;
+      /** Last Heat Date */
+      last_heat_date: string | null;
+      /** Last Service Date */
+      last_service_date: string | null;
+      /** Service Number In Lactation */
+      service_number_in_lactation: number | null;
+      /** Pregnancy Confirmed Date */
+      pregnancy_confirmed_date: string | null;
+      /** Expected Calving Date */
+      expected_calving_date: string | null;
+      /** Is Sick */
+      is_sick: boolean;
+      /** Sick Since */
+      sick_since: string | null;
+      /** Milk Withdrawal Until */
+      milk_withdrawal_until: string | null;
+      projection: components['schemas']['ProjectionOut'];
+    };
+    /**
+     * AnimalKind
+     * @enum {string}
+     */
+    AnimalKind: 'VACA' | 'VAQUILLA' | 'TORO' | 'BECERRO' | 'NOVILLO';
+    /** AnimalOut */
+    AnimalOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      sex: components['schemas']['Sex'];
+      kind: components['schemas']['AnimalKind'];
+      /** Control Id */
+      control_id: string;
+      /** Name */
+      name: string | null;
+      /** Siniiga */
+      siniiga: string | null;
+      /**
+       * Birth Date
+       * Format: date
+       */
+      birth_date: string;
+      breed: components['schemas']['Breed'];
+      crossbreed_level: components['schemas']['CrossbreedLevel'];
+      contributing_breed: components['schemas']['Breed'] | null;
+      development_stage: components['schemas']['DevelopmentStage'];
+      /** Photo Url */
+      photo_url: string | null;
+      /** Group Id */
+      group_id: string | null;
+      status: components['schemas']['AnimalStatus'];
+      removed_reason: components['schemas']['RemovalReason'] | null;
+      /** Removed At */
+      removed_at: string | null;
+      /** Dam Id */
+      dam_id: string | null;
+      /** Sire Id */
+      sire_id: string | null;
+      /** Birth Length Cm */
+      birth_length_cm: number | null;
+      /** Weight Birth Kg */
+      weight_birth_kg: number | null;
+      /** Weight Weaning Kg */
+      weight_weaning_kg: number | null;
+      /** Weight One Year Kg */
+      weight_one_year_kg: number | null;
+      repro_state: components['schemas']['ReproState'] | null;
+      lactation_state: components['schemas']['LactationState'] | null;
+      /** Lactation Number */
+      lactation_number: number | null;
+      /** Last Calving Date */
+      last_calving_date: string | null;
+      /** Last Heat Date */
+      last_heat_date: string | null;
+      /** Last Service Date */
+      last_service_date: string | null;
+      /** Service Number In Lactation */
+      service_number_in_lactation: number | null;
+      /** Pregnancy Confirmed Date */
+      pregnancy_confirmed_date: string | null;
+      /** Expected Calving Date */
+      expected_calving_date: string | null;
+      /** Is Sick */
+      is_sick: boolean;
+      /** Sick Since */
+      sick_since: string | null;
+      /** Milk Withdrawal Until */
+      milk_withdrawal_until: string | null;
+    };
+    /** AnimalPage */
+    AnimalPage: {
+      /** Items */
+      items: components['schemas']['AnimalOut'][];
+      /** Total */
+      total: number;
+      /** Page */
+      page: number;
+      /** Page Size */
+      page_size: number;
+    };
+    /**
+     * AnimalRemoval
+     * @description Baja. ERROR_REGISTRO deletes the animal and its events; the other reasons keep them.
+     */
+    AnimalRemoval: {
+      reason: components['schemas']['RemovalReason'];
+      /** Removed On */
+      removed_on?: string | null;
+    };
+    /**
+     * AnimalStatus
+     * @enum {string}
+     */
+    AnimalStatus: 'ACTIVE' | 'REMOVED';
+    /**
+     * AnimalUpdate
+     * @description Fields left out are kept. Sex and the onboarding repro inputs can't be edited: the events
+     *     are the record from then on.
+     */
+    AnimalUpdate: {
+      /** Control Id */
+      control_id?: string | null;
+      /** Birth Date */
+      birth_date?: string | null;
+      /** Name */
+      name?: string | null;
+      /** Siniiga */
+      siniiga?: string | null;
+      breed?: components['schemas']['Breed'] | null;
+      crossbreed_level?: components['schemas']['CrossbreedLevel'] | null;
+      contributing_breed?: components['schemas']['Breed'] | null;
+      development_stage?: components['schemas']['DevelopmentStage'] | null;
+      /** Group Id */
+      group_id?: string | null;
+      /** Photo Url */
+      photo_url?: string | null;
+      /** Birth Length Cm */
+      birth_length_cm?: number | string | null;
+      /** Weight Birth Kg */
+      weight_birth_kg?: number | string | null;
+      /** Weight Weaning Kg */
+      weight_weaning_kg?: number | string | null;
+      /** Weight One Year Kg */
+      weight_one_year_kg?: number | string | null;
+      /** Dam Id */
+      dam_id?: string | null;
+      /** Sire Id */
+      sire_id?: string | null;
+    };
+    /**
+     * Breed
+     * @enum {string}
+     */
+    Breed:
+      | 'HOLSTEIN'
+      | 'JERSEY'
+      | 'SIMMENTAL'
+      | 'PARDO_SUIZO'
+      | 'GUERNSEY'
+      | 'AYRSHIRE'
+      | 'SHORTHORN'
+      | 'NORMANDO'
+      | 'OTRA';
+    /**
+     * CrossbreedLevel
+     * @enum {string}
+     */
+    CrossbreedLevel: 'FB' | 'F4' | 'F3' | 'F2' | 'F1';
+    /**
+     * DamStatus
+     * @description "Estatus vaca madre", asked when an animal is registered with its dam (§7.1).
+     * @enum {string}
+     */
+    DamStatus: 'VIVA' | 'MUERTA_DESECHO' | 'VENDIDA_OTRO_RANCHO' | 'VENDIDA_RASTRO';
+    /**
+     * DevelopmentStage
+     * @enum {string}
+     */
+    DevelopmentStage:
+      | 'AUTO'
+      | 'TERNERA'
+      | 'DESTETADA'
+      | 'NOVILLA'
+      | 'CARGADA'
+      | 'VACA_ADULTA'
+      | 'VACA_ADULTA_VACIA'
+      | 'A_VERIFICAR'
+      | 'BECERRO'
+      | 'DESTETADO'
+      | 'NOVILLO'
+      | 'TORO';
     /** FakeDoorCount */
     FakeDoorCount: {
       feature: components['schemas']['FakeDoorFeature'];
@@ -228,6 +657,11 @@ export interface components {
     FakeDoorTapIn: {
       feature: components['schemas']['FakeDoorFeature'];
     };
+    /**
+     * GroupPreset
+     * @enum {string}
+     */
+    GroupPreset: 'GENERAL' | 'ALTA_PRODUCCION' | 'SECAS_RETO' | 'RECIEN_PARIDAS' | 'ENFERMAS';
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
@@ -238,6 +672,11 @@ export interface components {
       /** Status */
       status: string;
     };
+    /**
+     * LactationState
+     * @enum {string}
+     */
+    LactationState: 'LACTANDO' | 'SECA';
     /** MemberOut */
     MemberOut: {
       /**
@@ -267,6 +706,32 @@ export interface components {
       permissions?: components['schemas']['Permission'][] | null;
     };
     /**
+     * ParentCreate
+     * @description A dam or sire registered inline. Its sex comes from the slot it fills.
+     */
+    ParentCreate: {
+      /** Control Id */
+      control_id: string;
+      /**
+       * Birth Date
+       * Format: date
+       */
+      birth_date: string;
+      /** Name */
+      name?: string | null;
+      /** Siniiga */
+      siniiga?: string | null;
+      /** @default HOLSTEIN */
+      breed: components['schemas']['Breed'];
+      /** @default FB */
+      crossbreed_level: components['schemas']['CrossbreedLevel'];
+      contributing_breed?: components['schemas']['Breed'] | null;
+      /** @default AUTO */
+      development_stage: components['schemas']['DevelopmentStage'];
+      /** Group Id */
+      group_id?: string | null;
+    };
+    /**
      * Permission
      * @description One code per row of the §7.8 table, in its order. The value is the name.
      * @enum {string}
@@ -293,6 +758,28 @@ export interface components {
       | 'FINANCES'
       | 'DECLARATION_SEND'
       | 'BILLING';
+    /**
+     * ProjectionOut
+     * @description The engine's view of the animal today: what the list columns don't hold.
+     */
+    ProjectionOut: {
+      development_stage: components['schemas']['DevelopmentStage'];
+      /** Dim */
+      dim: number | null;
+      /** Days Open */
+      days_open: number | null;
+      /** Breeding Unlocked */
+      breeding_unlocked: boolean;
+      next_heat: components['schemas']['WindowOut'] | null;
+      pregnancy_check: components['schemas']['WindowOut'] | null;
+      calving: components['schemas']['WindowOut'] | null;
+      /** Dry Off Date */
+      dry_off_date: string | null;
+      /** Close Up Date */
+      close_up_date: string | null;
+      /** Warnings */
+      warnings: string[];
+    };
     /** RanchCreate */
     RanchCreate: {
       /** Name */
@@ -311,6 +798,16 @@ export interface components {
       /** Permissions */
       permissions: components['schemas']['Permission'][];
     };
+    /**
+     * RemovalReason
+     * @enum {string}
+     */
+    RemovalReason: 'ERROR_REGISTRO' | 'VENTA_RASTRO' | 'VENTA_OTRO_RANCHO' | 'MUERTE';
+    /**
+     * ReproState
+     * @enum {string}
+     */
+    ReproState: 'VAQUILLA' | 'RECIEN_PARIDA' | 'ABIERTA' | 'SERVIDA' | 'GESTANTE' | 'SECA';
     /**
      * Role
      * @enum {string}
@@ -331,6 +828,11 @@ export interface components {
       /** Phone */
       phone?: string | null;
     };
+    /**
+     * Sex
+     * @enum {string}
+     */
+    Sex: 'MACHO' | 'HEMBRA';
     /** SupportConfigIn */
     SupportConfigIn: {
       /** Whatsapp Number */
@@ -390,6 +892,19 @@ export interface components {
       input?: unknown;
       /** Context */
       ctx?: Record<string, never>;
+    };
+    /** WindowOut */
+    WindowOut: {
+      /**
+       * Start
+       * Format: date
+       */
+      start: string;
+      /**
+       * End
+       * Format: date
+       */
+      end: string;
     };
   };
   responses: never;
@@ -728,6 +1243,210 @@ export interface operations {
         content: {
           'application/json': components['schemas']['SupportConfigOut'];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  listAnimals: {
+    parameters: {
+      query?: {
+        kind?: components['schemas']['AnimalKind'] | null;
+        /** @description Search by ID or name */
+        q?: string | null;
+        /** @description A group id, or a preset such as GENERAL */
+        group?: string | components['schemas']['GroupPreset'] | null;
+        breed?: components['schemas']['Breed'] | null;
+        repro?: components['schemas']['ReproState'] | null;
+        health?: ('SALUDABLE' | 'ENFERMA') | null;
+        /** @description Lists the removed animals with this reason */
+        removed_reason?: components['schemas']['RemovalReason'] | null;
+        sort?:
+          | 'control_id'
+          | '-control_id'
+          | 'birth_date'
+          | '-birth_date'
+          | 'created_at'
+          | '-created_at'
+          | 'last_calving_date'
+          | '-last_calving_date'
+          | 'expected_calving_date'
+          | '-expected_calving_date';
+        page?: number;
+        page_size?: number;
+      };
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AnimalPage'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  createAnimal: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AnimalCreate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AnimalCreated'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  getAnimal: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path: {
+        animal_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AnimalDetail'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  updateAnimal: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path: {
+        animal_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AnimalUpdate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AnimalDetail'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  removeAnimal: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path: {
+        animal_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AnimalRemoval'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AnimalOut'];
+        };
+      };
+      /** @description ERROR_REGISTRO: the animal was deleted */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Validation Error */
       422: {

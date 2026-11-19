@@ -57,14 +57,19 @@ def write_projection(animal: Animal, projection: Projection) -> None:
     )
 
 
+async def compute_projection(
+    session: AsyncSession, animal: Animal, settings: RanchSettings, today: dt.date
+) -> Projection:
+    """The fold as of `today`, without writing it: for reads."""
+    events = await session.scalars(select(Event).where(Event.animal_id == animal.id))
+    return project(animal_facts(animal), map(event_fact, events), repro_settings(settings), today)
+
+
 async def reproject_animal(
     session: AsyncSession, animal: Animal, settings: RanchSettings, today: dt.date
 ) -> Projection:
     """Re-run the fold after an event is added, edited or deleted. The caller commits."""
-    events = await session.scalars(select(Event).where(Event.animal_id == animal.id))
-    projection = project(
-        animal_facts(animal), map(event_fact, events), repro_settings(settings), today
-    )
+    projection = await compute_projection(session, animal, settings, today)
     write_projection(animal, projection)
     return projection
 
