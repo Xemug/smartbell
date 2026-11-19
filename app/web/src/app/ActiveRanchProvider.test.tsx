@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { StrictMode } from 'react';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -157,6 +158,29 @@ describe('ActiveRanchProvider', () => {
     await screen.findByText('loaded');
     expect(switcher()).toHaveTextContent('Rancho A');
     expect(calls.every((call) => call.ranch === 'ranch-a')).toBe(true);
+  });
+
+  it('still sends the ranch on calls made after mount under StrictMode', async () => {
+    const queryClient = new QueryClient();
+    render(
+      <StrictMode>
+        <QueryClientProvider client={queryClient}>
+          <AuthContext.Provider value={authFor()}>
+            <ActiveRanchProvider>
+              <p>ready</p>
+            </ActiveRanchProvider>
+          </AuthContext.Provider>
+        </QueryClientProvider>
+      </StrictMode>,
+    );
+    await screen.findByText('ready');
+    calls = [];
+
+    await api.POST('/api/ranch/invitations', {
+      body: { email: 'a@b.co', first_name: 'A', role: 'MEDICO', permissions: ['ANIMALS_VIEW'] },
+    });
+
+    expect(calls).toEqual([{ path: '/api/ranch/invitations', ranch: 'ranch-a' }]);
   });
 
   it('stops sending the ranch once the shell unmounts (sign-out)', async () => {
