@@ -377,6 +377,46 @@ describe('Datos Rancho', () => {
     ).toBeInTheDocument();
   });
 
+  it('reports a save as saved even when re-reading the account fails', async () => {
+    const real = fakeApi.handle;
+    let saved = false;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (request: Request) => {
+        const path = new URL(request.url).pathname;
+        if (path === '/api/ranch' && request.method === 'PATCH') saved = true;
+        if (saved && path === '/api/auth/me') return new Response(null, { status: 503 });
+        return real(request);
+      }),
+    );
+    renderAt('/config/ranchos');
+    await user.click(await screen.findByRole('button', { name: 'Editar' }));
+    await user.type(field('Dirección'), 'Tepa');
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
+
+    expect(await screen.findByText('Los datos del rancho se guardaron')).toBeInTheDocument();
+    expect(screen.queryByText('No pudimos guardar el rancho. Intenta de nuevo.')).toBeNull();
+  });
+
+  it('offers a retry when the ranch fails to load', async () => {
+    const real = fakeApi.handle;
+    let failures = 1;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (request: Request) => {
+        if (new URL(request.url).pathname === '/api/ranch' && failures-- > 0) {
+          return new Response(null, { status: 500 });
+        }
+        return real(request);
+      }),
+    );
+    renderAt('/config/ranchos');
+
+    expect(await screen.findByText('No pudimos cargar los datos del rancho.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+    expect(await screen.findByText('Rancho: Mi rancho')).toBeInTheDocument();
+  });
+
   it('opens with the saved pin', async () => {
     fakeApi.ranches = [
       ranch('r1', 'Mi rancho', { latitude: 20.5, longitude: -103.3, address: 'Tepa' }),

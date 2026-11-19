@@ -104,7 +104,10 @@
       "deleteConfirm": "Borrar rancho",
       "deleted": "El rancho {{name}} se borró",
       "deleteError": "No pudimos borrar el rancho. Intenta de nuevo.",
-      "deleteLast": "No puedes borrar tu único rancho."
+      "deleteLast": "No puedes borrar tu único rancho.",
+      "loadError": "No pudimos cargar los datos del rancho.",
+      "retry": "Reintentar",
+      "deleteMismatch": "El nombre no coincide con el del rancho."
     }
   },
   "support": {

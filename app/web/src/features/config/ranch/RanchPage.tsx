@@ -56,7 +56,10 @@ export function RanchPage() {
         <RanchForm key={query.data.id} ranch={query.data} />
       ) : query.isError ? (
         <p role="alert" className="text-error type-body-md">
-          {t('config.ranch.saveError')}
+          {t('config.ranch.loadError')}{' '}
+          <Button variant="ghost" size="sm" onClick={() => void query.refetch()}>
+            {t('config.ranch.retry')}
+          </Button>
         </p>
       ) : (
         <div className="flex justify-center p-8">
@@ -75,6 +78,9 @@ function RanchForm({ ranch }: { ranch: RanchDetail }) {
   const snackbar = useSnackbar();
   const [editing, setEditing] = useState(false);
   const [saveError, setSaveError] = useState(false);
+  // After a change that already succeeded. If the re-read fails, the switcher stays stale until
+  // the next load; that mustn't turn the success into an error.
+  const refresh = () => auth.refreshAccount().catch(() => undefined);
   const [dialog, setDialog] = useState<'add' | 'upsell' | 'delete' | null>(null);
   // A ranch just created or kept after a delete: switched to once the account lists it.
   const [switchTo, setSwitchTo] = useState<string | null>(null);
@@ -112,10 +118,11 @@ function RanchForm({ ranch }: { ranch: RanchDetail }) {
       reset(valuesOf(result));
       setEditing(false);
       snackbar.show({ kind: 'success', message: t('config.ranch.saved') });
-      await auth.refreshAccount(); // The switcher and header show the new name.
     } catch {
       setSaveError(true);
+      return;
     }
+    void refresh(); // The switcher and header show the new name.
   });
 
   const movePin = (next: Pin) =>
@@ -261,8 +268,8 @@ function RanchForm({ ranch }: { ranch: RanchDetail }) {
         onOpenChange={(open) => setDialog(open ? 'add' : null)}
         onUpsell={() => setDialog('upsell')}
         onCreated={async (id) => {
-          await auth.refreshAccount();
           setSwitchTo(id);
+          await refresh();
         }}
       />
       <UpsellDialog
@@ -276,7 +283,7 @@ function RanchForm({ ranch }: { ranch: RanchDetail }) {
           ranch={ranch}
           onDeleted={async () => {
             setActiveRanch(fallback.id);
-            await auth.refreshAccount();
+            await refresh();
           }}
         />
       )}

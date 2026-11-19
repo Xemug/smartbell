@@ -7,8 +7,9 @@ import { TextField } from '../../../ui/TextField';
 import { useSnackbar } from '../../../ui/useSnackbar';
 import { ApiError, deleteRanch, type RanchDetail } from '../api';
 
-const same = (a: string, b: string) =>
-  a.trim().toLocaleLowerCase() === b.trim().toLocaleLowerCase();
+// The API's own comparison: NFC, trimmed, case-folded (ranches.same_name).
+const fold = (text: string) => text.normalize('NFC').trim().toLocaleLowerCase('es-MX');
+const same = (a: string, b: string) => fold(a) === fold(b);
 
 /** W 974:42223: irreversible, so the owner types the ranch's name before Borrar is enabled. */
 export function DeleteRanchDialog({
@@ -45,7 +46,13 @@ export function DeleteRanchDialog({
     } catch (error) {
       setDeleting(false);
       const code = error instanceof ApiError ? error.code : '';
-      setFailure(code === 'last_ranch' ? 'config.ranch.deleteLast' : 'config.ranch.deleteError');
+      setFailure(
+        code === 'last_ranch'
+          ? 'config.ranch.deleteLast'
+          : code === 'name_mismatch'
+            ? 'config.ranch.deleteMismatch'
+            : 'config.ranch.deleteError',
+      );
       return;
     }
     snackbar.show({ kind: 'deleted', message: t('config.ranch.deleted', { name: ranch.name }) });

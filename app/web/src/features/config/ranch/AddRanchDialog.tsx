@@ -46,12 +46,9 @@ export function AddRanchDialog({
     if (blank) return;
     setSaving(true);
     setFailed(false);
+    let created: { id: string; name: string };
     try {
-      const created = await createRanch(name.trim());
-      snackbar.show({ kind: 'success', message: t('config.ranch.added', { name: created.name }) });
-      setSaving(false);
-      close(false);
-      await onCreated(created.id);
+      created = await createRanch(name.trim());
     } catch (error) {
       setSaving(false);
       if (error instanceof ApiError && error.code === 'pro_required') {
@@ -60,7 +57,12 @@ export function AddRanchDialog({
         return;
       }
       setFailed(true);
+      return;
     }
+    snackbar.show({ kind: 'success', message: t('config.ranch.added', { name: created.name }) });
+    setSaving(false);
+    close(false);
+    await onCreated(created.id);
   };
 
   return (

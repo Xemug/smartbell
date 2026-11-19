@@ -10,8 +10,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from smartbell.enums import Role
-from smartbell.models import Animal, Ranch, User
-from smartbell.services import media, plans
+from smartbell.models import Animal, Membership, Ranch, User
+from smartbell.services import media, plans, ranches
 from tests.conftest import Account, add_member, give_pro, sign_up
 
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
@@ -442,3 +442,46 @@ async def test_a_free_legacy_owner_keeps_every_ranch(
     assert response.status_code == 402
     owned = await tenant_db.scalars(select(Ranch.name).where(Ranch.owner_user_id == user.id))
     assert sorted(owned.all()) == ["Mi rancho", "Norte", "Sur"]
+
+
+async def test_members_left_with_no_ranch_get_a_new_one(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
+) -> None:
+    ranch_id = await _second_ranch(tenant_api, tenant_db, owner)
+    only_here = await sign_up(tenant_api, "vaquero")
+    # Invited to the second ranch only: their own "Mi rancho" went elsewhere.
+    own = await tenant_db.get(Ranch, only_here.ranch_id)
+    own_membership = await tenant_db.get(Membership, (only_here.user_id, only_here.ranch_id))
+    assert own is not None and own_membership is not None
+    await tenant_db.delete(own_membership)  # SQLite doesn't cascade.
+    await tenant_db.delete(own)
+    await tenant_db.commit()
+    await add_member(tenant_db, only_here, ranch_id, Role.TECNICO_CAMPO)
+    also_elsewhere = await sign_up(tenant_api, "medico")
+    await add_member(tenant_db, also_elsewhere, ranch_id, Role.MEDICO)
+
+    await tenant_api.request(
+        "DELETE", "/api/ranch", headers=owner.headers(ranch_id), json={"confirm_name": "El Bigotes"}
+    )
+
+    stranded = (await tenant_api.get("/api/ranches", headers=auth(only_here))).json()
+    kept = (await tenant_api.get("/api/ranches", headers=auth(also_elsewhere))).json()
+    assert [(r["name"], r["role"]) for r in stranded] == [("Mi rancho", "DUENO")]
+    assert [r["id"] for r in kept] == [str(also_elsewhere.ranch_id)]
+
+
+def test_the_typed_name_ignores_case_spacing_and_accent_encoding() -> None:
+    assert ranches.same_name("  JOSÉ ", "José")
+    assert not ranches.same_name("Jose", "José")
+
+
+async def test_photos_are_served_as_inert_images(
+    tenant_api: AsyncClient, owner: Account, media_dir: Path
+) -> None:
+    headers = auth(owner) | {"Content-Type": "image/png"}
+    url = (await tenant_api.put("/api/users/me/photo", headers=headers, content=PNG)).json()
+
+    served = await tenant_api.get(url["photo_url"])
+
+    assert served.headers["x-content-type-options"] == "nosniff"
+    assert "sandbox" in served.headers["content-security-policy"]

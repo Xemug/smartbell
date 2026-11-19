@@ -102,7 +102,11 @@ async def upload_photo(
     await run_in_threadpool(files.save, media.AVATAR_PREFIX, name, data)
     previous = media.own_avatar_name(user.photo_url)
     user.photo_url = media.avatar_url(name)
-    await session.commit()
+    try:
+        await session.commit()
+    except Exception:
+        await run_in_threadpool(files.delete, media.AVATAR_PREFIX, name)  # No row points at it.
+        raise
     if previous:
         await run_in_threadpool(files.delete, media.AVATAR_PREFIX, previous)
     return UserOut.model_validate(user)
@@ -118,5 +122,10 @@ async def get_avatar(name: str, files: Annotated[media.Storage, Depends(storage)
         path,
         media_type=media.CONTENT_TYPES[kind],
         # The name changes with every upload, so a copy never goes stale.
-        headers={"Cache-Control": "public, max-age=31536000, immutable"},
+        headers={
+            "Cache-Control": "public, max-age=31536000, immutable",
+            # Served as the image it was checked to be, never sniffed or run as a page.
+            "X-Content-Type-Options": "nosniff",
+            "Content-Security-Policy": "default-src 'none'; sandbox",
+        },
     )

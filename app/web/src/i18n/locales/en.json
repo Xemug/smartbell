@@ -104,7 +104,10 @@
       "deleteConfirm": "Delete ranch",
       "deleted": "The ranch {{name}} was deleted",
       "deleteError": "We couldn't delete the ranch. Try again.",
-      "deleteLast": "You can't delete your only ranch."
+      "deleteLast": "You can't delete your only ranch.",
+      "loadError": "We couldn't load the ranch data.",
+      "retry": "Retry",
+      "deleteMismatch": "The name doesn't match the ranch's."
     }
   },
   "support": {

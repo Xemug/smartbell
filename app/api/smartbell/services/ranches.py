@@ -1,5 +1,6 @@
 """Ranches and who belongs to them. Invitations and new members belong to `user-admin`."""
 
+import unicodedata
 import uuid
 from dataclasses import dataclass
 
@@ -14,6 +15,7 @@ from smartbell.services.plans import RanchCreation, ranch_creation
 
 # Ranch data (name, address, pin) has no §7.8 code; these roles may edit it.
 RANCH_EDITORS = frozenset({Role.DUENO, Role.ADMINISTRADOR})
+FIRST_RANCH_NAME = "Mi rancho"  # domain-model §7: auto-created at sign-up, editable later.
 
 
 class MembershipRefused(Exception):
@@ -50,6 +52,9 @@ async def create_ranch(session: AsyncSession, owner: User, name: str) -> Ranch:
 
 
 async def create_owned_ranch(session: AsyncSession, owner: User, name: str) -> Ranch:
+    # Lock the owner's row so two requests at once can't both pass the Pro gate or the cap.
+    # (Postgres; SQLite has no row locks and runs one writer at a time anyway.)
+    await session.execute(select(User.id).where(User.id == owner.id).with_for_update())
     allowed = await ranch_creation(session, owner)
     if allowed is RanchCreation.LIMIT:
         raise MembershipRefused("ranch_limit", 409)
@@ -80,15 +85,43 @@ async def delete_ranch(session: AsyncSession, ctx: RanchContext, typed_name: str
     assert ranch is not None  # noqa: S101 - the caller's membership's foreign key holds it.
     if ranch.owner_user_id != ctx.user.id:
         raise MembershipRefused("owner_only", 403)
-    if typed_name.strip().casefold() != ranch.name.strip().casefold():
+    if not same_name(typed_name, ranch.name):
         raise MembershipRefused("name_mismatch", 422)
     memberships = await session.scalar(
         select(func.count()).select_from(Membership).where(Membership.user_id == ctx.user.id)
     )
     if (memberships or 0) <= 1:
         raise MembershipRefused("last_ranch", 409)
+    # Members for whom this was the only ranch get a fresh "Mi rancho", as at sign-up, so no
+    # account is left with nowhere to land.
+    member_ids = (
+        await session.scalars(
+            select(Membership.user_id).where(
+                Membership.ranch_id == ranch.id, Membership.user_id != ctx.user.id
+            )
+        )
+    ).all()
+    for member_id in member_ids:
+        elsewhere = await session.scalar(
+            select(func.count())
+            .select_from(Membership)
+            .where(Membership.user_id == member_id, Membership.ranch_id != ranch.id)
+        )
+        if not elsewhere:
+            member = await session.get(User, member_id)
+            assert member is not None  # noqa: S101 - the membership's foreign key holds it.
+            await create_ranch(session, member, FIRST_RANCH_NAME)
     await session.delete(ranch)
     await session.commit()
+
+
+def same_name(typed: str, name: str) -> bool:
+    """The delete confirmation: case, accents' encoding and surrounding spaces don't matter."""
+
+    def fold(text: str) -> str:
+        return unicodedata.normalize("NFC", text).strip().casefold()
+
+    return fold(typed) == fold(name)
 
 
 async def count_animals(session: AsyncSession, ranch_id: uuid.UUID) -> int:
