@@ -49,7 +49,7 @@ Ordered by dependency. Each row is one card; its spec is `docs/roadmap/<slug>.md
 | | **5 Replace the live app** | | | |
 | 38 | `legacy-firestore-import`: Import legacy Firestore data into Postgres | feature | M | core-data-model, auth, milk-api, animal-api |
 | 39 | `app-favicon-and-install-icons`: App favicon and install icons | chore | S | icons-export |
-| 40 | `mobile-store-release`: Capacitor iOS/Android build under the existing bundle id, with RevenueCat | feature | L | auth, tasks-home, milk-screens, groups, profile-ranch-config, user-admin, legacy-firestore-import, report-export (parity with the live app) |
+| 40 | `mobile-store-release`: Capacitor iOS/Android build under the existing bundle id, with RevenueCat | feature | L | auth, tasks-home, milk-screens, groups, profile-ranch-config, user-admin, legacy-firestore-import, report-export, sync-the-pro-entitlement-from-revenuecat-into-the-new-api (parity with the live app) |
 | 41 | `golden-path-e2e`: End-to-end golden path test | chore | M | tasks-home, dashboard, milk-screens, calving-flow, health-flows, abortion-flow, mobile-store-release |
 | | **6 Notifications and admin** | | | |
 | 42 | `email-digest`: Notification service and daily email digest | feature | M | alert-engine |
