@@ -1,5 +1,5 @@
 ---
-id: sync-the-pro-entitlement-from-revenuecat-into-the-new
+id: sync-the-pro-entitlement-from-revenuecat-into-the-new-api
 title: Sync the Pro entitlement from RevenueCat into the new API
 summary: has_pro reads Ranch.plan_id, which nothing sets yet. Set it from RevenueCat's Pro entitlement for the ranch owner, by webhook and on import, so paying users keep invites and extra ranches.
 ---
