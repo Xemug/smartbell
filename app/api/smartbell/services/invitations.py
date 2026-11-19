@@ -12,6 +12,7 @@ import uuid
 from dataclasses import dataclass
 
 from sqlalchemy import delete, func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from smartbell.enums import HistoryKey, Role
@@ -203,5 +204,10 @@ async def accept(session: AsyncSession, user: User, token: str) -> uuid.UUID:
             HistoryKey.USERS_ADDED,
             HistoryRefs(user_ids=[user.id]),
         )
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError:
+        # Another tab accepted the same link first; its transaction made the membership.
+        await session.rollback()
+        raise MembershipRefused("invitation_used", 409) from None
     return ranch_id

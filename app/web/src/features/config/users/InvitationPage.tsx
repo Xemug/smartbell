@@ -64,7 +64,14 @@ export function InvitationPage() {
       </div>
     );
   } else if (preview.isError) {
-    body = <Banner tone="error">{errorText(errorCode(preview.error))}</Banner>;
+    body = (
+      <>
+        <Banner tone="error">{errorText(errorCode(preview.error))}</Banner>
+        <Link to="/" className={linkButton('outline')} onClick={forgetInvitation}>
+          {t('users.invite.goHome')}
+        </Link>
+      </>
+    );
   } else {
     const inv = preview.data;
     const role = t(`users.roles.${inv.role}`);
@@ -117,7 +124,7 @@ export function InvitationPage() {
           </>
         )}
         {closed && (
-          <Link to="/" className={linkButton('outline')}>
+          <Link to="/" className={linkButton('outline')} onClick={forgetInvitation}>
             {t('users.invite.goHome')}
           </Link>
         )}
