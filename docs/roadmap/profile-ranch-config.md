@@ -44,8 +44,8 @@ M.
 
 ## Acceptance
 
-- [ ] Profile edits persist and show in the header.
-- [ ] Photo >2MB or non-JPG/PNG is rejected with the design's message.
-- [ ] Ranch pin position saves and reloads.
+- [x] Profile edits persist and show in the header.
+- [x] Photo >2MB or non-JPG/PNG is rejected with the design's message.
+- [x] Ranch pin position saves and reloads.
 - [ ] Matches M 1691-824, M 1697-93765, W 49-1365, W 1315-56000 (human).
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
