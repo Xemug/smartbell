@@ -34,6 +34,8 @@ function authFor(ranches = [ranchA, ranchB]): AuthApi {
     signUp: noop,
     signInWith: noop,
     resetPassword: noop,
+    sendVerificationEmail: noop,
+    refreshIdentity: noop,
     signOut: noop,
     retry: vi.fn(),
   };

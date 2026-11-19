@@ -94,6 +94,8 @@ export function AuthProvider({
           throw error;
         }
       },
+      sendVerificationEmail: () => auth.sendEmailVerification(),
+      refreshIdentity: () => auth.refreshIdentity(),
       signOut: () => auth.signOut(),
       retry: () => void sync(),
     }),

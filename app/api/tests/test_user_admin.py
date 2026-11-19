@@ -564,3 +564,22 @@ async def test_losing_an_accept_race_is_409_not_500(
     )
 
     assert (response.status_code, response.json()["detail"]) == (409, "invitation_used")
+
+
+async def test_accepting_needs_a_verified_email(
+    tenant_api: AsyncClient, tenant_db: AsyncSession
+) -> None:
+    """A forwarded link plus an unconfirmed sign-up with the invitee's address isn't enough."""
+    owner = await sign_up(tenant_api, "owner")
+    await give_pro(tenant_db, owner.ranch_id)
+    created = await invite(tenant_api, owner, email="unverified-vet@example.com")
+    squatter = await sign_up(tenant_api, "unverified-vet")
+
+    response = await tenant_api.post(
+        f"/api/invitations/{created['token']}/accept", headers=auth("unverified-vet")
+    )
+    preview = await tenant_api.get(f"/api/invitations/{created['token']}")
+
+    assert (response.status_code, response.json()["detail"]) == (403, "email_unverified")
+    assert await tenant_db.get(Membership, (squatter.user_id, owner.ranch_id)) is None
+    assert preview.json()["status"] == "pending"  # Still usable once the email is confirmed.

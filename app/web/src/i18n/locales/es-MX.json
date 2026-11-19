@@ -337,7 +337,15 @@
         "email_mismatch": "Esta invitación es para {{email}}. Entra con ese correo para aceptarla.",
         "generic": "No pudimos abrir la invitación. Intenta de nuevo.",
         "invitation_revoked": "Esta invitación ya no es válida. Pide una nueva.",
-        "plan_required": "Este rancho ya no tiene el plan Pro. Pide al dueño que lo renueve."
+        "plan_required": "Este rancho ya no tiene el plan Pro. Pide al dueño que lo renueve.",
+        "email_unverified": "Para aceptar, confirma tu correo tu correo: pide el enlace de confirmación, ábrelo y vuelve aquí."
+      },
+      "verify": {
+        "body": "Para aceptar, confirma tu correo {{email}}: pide el enlace de confirmación, ábrelo y vuelve aquí.",
+        "send": "Enviar enlace de confirmación",
+        "sent": "Enlace enviado. Revisa tu correo.",
+        "failed": "No pudimos enviar el enlace. Intenta de nuevo.",
+        "done": "Ya confirmé mi correo"
       }
     }
   }

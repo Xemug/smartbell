@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
@@ -31,7 +31,8 @@ export function InvitationPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { token = '' } = useParams();
-  const { state, retry, signOut } = useAuth();
+  const { state, retry, signOut, sendVerificationEmail, refreshIdentity } = useAuth();
+  const [verification, setVerification] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
   const preview = useQuery({
     queryKey: ['invitation', token],
     queryFn: () => previewInvitation(token),
@@ -58,6 +59,7 @@ export function InvitationPage() {
     },
   });
   const signedOut = state.status === 'signedOut';
+  const unverified = accept.isError && errorCode(accept.error) === 'email_unverified';
   useEffect(() => {
     if (signedOut) rememberInvitation(token);
   }, [signedOut, token]);
@@ -120,10 +122,64 @@ export function InvitationPage() {
             <p className="text-center text-secondary-text type-body-md">
               {t('users.invite.signedInAs', { email: state.account.user.email })}
             </p>
-            {accept.isError && <Banner tone="error">{errorText(errorCode(accept.error))}</Banner>}
-            <Button fullWidth size="lg" loading={accept.isPending} onClick={() => accept.mutate()}>
-              {t('users.invite.accept')}
-            </Button>
+            {unverified ? (
+              <>
+                <Banner tone="info">
+                  {t('users.invite.verify.body', { email: state.account.user.email })}
+                </Banner>
+                {verification === 'sent' && (
+                  <p role="status" className="text-center text-secondary-text type-body-md">
+                    {t('users.invite.verify.sent')}
+                  </p>
+                )}
+                {verification === 'failed' && (
+                  <Banner tone="error">{t('users.invite.verify.failed')}</Banner>
+                )}
+                <Button
+                  fullWidth
+                  size="lg"
+                  variant="outline"
+                  loading={verification === 'sending'}
+                  onClick={() => {
+                    setVerification('sending');
+                    sendVerificationEmail().then(
+                      () => setVerification('sent'),
+                      () => setVerification('failed'),
+                    );
+                  }}
+                >
+                  {t('users.invite.verify.send')}
+                </Button>
+                <Button
+                  fullWidth
+                  size="lg"
+                  loading={accept.isPending}
+                  onClick={() => {
+                    // The confirmed email reaches the API only in a fresh token.
+                    refreshIdentity().then(
+                      () => accept.mutate(),
+                      () => accept.mutate(),
+                    );
+                  }}
+                >
+                  {t('users.invite.verify.done')}
+                </Button>
+              </>
+            ) : (
+              <>
+                {accept.isError && (
+                  <Banner tone="error">{errorText(errorCode(accept.error))}</Banner>
+                )}
+                <Button
+                  fullWidth
+                  size="lg"
+                  loading={accept.isPending}
+                  onClick={() => accept.mutate()}
+                >
+                  {t('users.invite.accept')}
+                </Button>
+              </>
+            )}
             <Button
               fullWidth
               variant="ghost"

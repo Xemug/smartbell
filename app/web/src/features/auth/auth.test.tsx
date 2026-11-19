@@ -44,6 +44,8 @@ class FakeBackend implements AuthBackend {
   sendPasswordReset = vi.fn(async () => {
     throw new AuthError('auth/user-not-found');
   });
+  sendEmailVerification = vi.fn(async () => {});
+  refreshIdentity = vi.fn(async () => {});
   signOut = vi.fn(async () => this.set(null));
 }
 

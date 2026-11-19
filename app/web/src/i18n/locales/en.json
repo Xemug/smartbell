@@ -337,7 +337,15 @@
         "email_mismatch": "This invitation is for {{email}}. Sign in with that email to accept it.",
         "generic": "We couldn't open the invitation. Try again.",
         "invitation_revoked": "This invitation is no longer valid. Ask for a new one.",
-        "plan_required": "This ranch no longer has the Pro plan. Ask the owner to renew it."
+        "plan_required": "This ranch no longer has the Pro plan. Ask the owner to renew it.",
+        "email_unverified": "To accept, confirm tu correo: ask for the confirmation link, open it and come back here."
+      },
+      "verify": {
+        "body": "To accept, confirm {{email}}: ask for the confirmation link, open it and come back here.",
+        "send": "Send confirmation link",
+        "sent": "Link sent. Check your email.",
+        "failed": "We couldn't send the link. Try again.",
+        "done": "I've confirmed my email"
       }
     }
   }

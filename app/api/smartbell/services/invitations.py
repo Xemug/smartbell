@@ -192,11 +192,14 @@ async def _check_still_grantable(session: AsyncSession, invitation: Invitation) 
         raise MembershipRefused("invitation_revoked", 410)
 
 
-async def accept(session: AsyncSession, user: User, token: str) -> uuid.UUID:
+async def accept(
+    session: AsyncSession, user: User, token: str, *, email_verified: bool
+) -> uuid.UUID:
     """Makes `user` a member with the invited role and codes; returns the ranch id.
 
-    The token proves the link reached its recipient, and the signed-in email must be the invited
-    one, so a forwarded link is useless to anyone else.
+    The token proves the link reached someone, and the signed-in email must be the invited one
+    and *verified*: Firebase lets anyone register an unconfirmed address, so without that check a
+    forwarded link plus a sign-up with the invitee's email would take the seat.
     """
     invitation = await _by_token(session, token)
     if invitation.accepted_at is not None:
@@ -205,6 +208,8 @@ async def accept(session: AsyncSession, user: User, token: str) -> uuid.UUID:
         raise MembershipRefused("invitation_expired", 410)
     if user.email.lower() != invitation.email:
         raise MembershipRefused("email_mismatch", 403)
+    if not email_verified:
+        raise MembershipRefused("email_unverified", 403)
     ranch_id = invitation.ranch_id
     await _check_still_grantable(session, invitation)
     invitation.accepted_at = _now()

@@ -129,6 +129,8 @@ function authFor(role: Role, permissions: Permission[], userId = 'u-owner'): Aut
     signUp: noop,
     signInWith: noop,
     resetPassword: noop,
+    sendVerificationEmail: vi.fn(async () => {}),
+    refreshIdentity: vi.fn(async () => {}),
     signOut: noop,
     retry: vi.fn(),
   };
@@ -449,6 +451,32 @@ describe('InvitationPage', () => {
       ),
     ).toBeInTheDocument();
     expect(pendingInvitation()).toBeNull();
+  });
+
+  it('asks an unconfirmed email to confirm, then accepts with a fresh token', async () => {
+    let verified = false;
+    overrides['POST /api/invitations/tok-123/accept'] = () =>
+      verified
+        ? Response.json({ ranch_id: 'ranch-9' })
+        : Response.json({ detail: 'email_unverified' }, { status: 403 });
+    const auth = authFor('DUENO', ALL);
+    auth.refreshIdentity = vi.fn(async () => {
+      verified = true;
+    });
+    rememberInvitation('tok-123');
+    renderAt('/invitacion/tok-123', auth);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Aceptar invitación' }));
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Enviar enlace de confirmación' }),
+    );
+    expect(auth.sendVerificationEmail).toHaveBeenCalled();
+    expect(await screen.findByText('Enlace enviado. Revisa tu correo.')).toBeInTheDocument();
+    expect(pendingInvitation()).toBe('tok-123'); // Not a dead end: the invite stays.
+    await userEvent.click(screen.getByRole('button', { name: 'Ya confirmé mi correo' }));
+
+    expect(await screen.findByText('home')).toBeInTheDocument();
+    expect(auth.refreshIdentity).toHaveBeenCalled();
   });
 
   it('sends a just-signed-in invitee back to the invite', async () => {

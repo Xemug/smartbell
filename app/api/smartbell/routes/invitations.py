@@ -16,7 +16,7 @@ from smartbell.db import get_session
 from smartbell.enums import Role
 from smartbell.models import Invitation, User
 from smartbell.routes.ranches import MemberRole
-from smartbell.security import get_current_user
+from smartbell.security import TokenClaims, get_current_user, get_token_claims
 from smartbell.security.permissions import Permission, preset
 from smartbell.security.ranch import RanchContext, get_ranch_context, require
 from smartbell.services import invitations, plans
@@ -174,10 +174,14 @@ async def preview_invitation(
 async def accept_invitation(
     token: str,
     user: Annotated[User, Depends(get_current_user)],
+    claims: Annotated[TokenClaims, Depends(get_token_claims)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> AcceptedOut:
+    """Needs the invited email, verified: 403 `email_unverified` until the invitee confirms it."""
+    # The token's email must be the account's too, so a verified claim can't vouch for another.
+    verified = claims.email_verified and (claims.email or "").lower() == user.email.lower()
     try:
-        ranch_id = await invitations.accept(session, user, token[:100])
+        ranch_id = await invitations.accept(session, user, token[:100], email_verified=verified)
     except MembershipRefused as error:
         raise _refused(error) from error
     return AcceptedOut(ranch_id=ranch_id)

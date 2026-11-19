@@ -7,6 +7,8 @@ import {
   initializeAuth,
   OAuthProvider,
   onAuthStateChanged,
+  reload,
+  sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -69,6 +71,16 @@ export function createFirebaseBackend(): AuthBackend {
         await signInWithPopup(auth, providerFor(provider));
       }),
     sendPasswordReset: (email) => mapErrors(() => sendPasswordResetEmail(auth, email)),
+    sendEmailVerification: () =>
+      mapErrors(async () => {
+        if (auth.currentUser) await sendEmailVerification(auth.currentUser);
+      }),
+    refreshIdentity: () =>
+      mapErrors(async () => {
+        if (!auth.currentUser) return;
+        await reload(auth.currentUser);
+        await auth.currentUser.getIdToken(true);
+      }),
     signOut: () => mapErrors(() => signOut(auth)),
   };
 }
