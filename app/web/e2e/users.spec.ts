@@ -22,5 +22,7 @@ test('Administrar usuarios lists the owner and shows the Pro upsell', async ({ p
 
 test('an unknown invite link says so', async ({ page }) => {
   await page.goto('/invitacion/no-such-token-0000000000000000');
-  await expect(page.getByText('Este enlace no es válido. Pide una nueva invitación.')).toBeVisible();
+  await expect(
+    page.getByText('Este enlace no es válido. Pide una nueva invitación.'),
+  ).toBeVisible();
 });
