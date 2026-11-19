@@ -353,13 +353,13 @@ describe('Datos Rancho', () => {
     renderAt('/config/ranchos');
     expect(await screen.findByText('Rancho: Mi rancho')).toBeInTheDocument();
     expect(screen.getByText('045')).toBeInTheDocument(); // Vacas en sistema.
-    expect(screen.getByText('no pin')).toBeInTheDocument();
+    expect(await screen.findByText('no pin')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Editar' }));
     await user.clear(field('Nombre del rancho'));
     await user.type(field('Nombre del rancho'), 'El Bigotes');
     await user.type(field('Dirección'), 'Carretera a Tepa km 12');
-    await user.click(screen.getByRole('button', { name: 'drag pin' }));
+    await user.click(await screen.findByRole('button', { name: 'drag pin' }));
     await user.click(screen.getByRole('button', { name: 'Guardar' }));
 
     await waitFor(() => expect(fakeApi.sent('PATCH', '/api/ranch')).toHaveLength(1));
