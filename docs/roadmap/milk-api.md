@@ -60,7 +60,7 @@ S.
 
 ## Acceptance
 
-- [ ] Posting the same day twice overwrites the herd log.
-- [ ] Weekly, monthly and quarterly aggregates match a fixture.
-- [ ] Logging a cow in withdrawal to TANQUE returns a warning.
-- [ ] Tests for the new code pass in CI.
+- [x] Posting the same day twice overwrites the herd log.
+- [x] Weekly, monthly and quarterly aggregates match a fixture.
+- [x] Logging a cow in withdrawal to TANQUE returns a warning.
+- [x] Tests for the new code pass in CI.
