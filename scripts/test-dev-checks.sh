@@ -124,6 +124,28 @@ s.listen(); time.sleep(60)' "$1" "$2" &
   fi
 fi
 
+# Exactly one of many processes racing for a free lock gets it (a `mkdir` lock let two in on
+# Ubuntu 26.04), and the winner's PID is in the file.
+mkdir -p "$tmp/race"
+race_failures=""
+for round in $(seq 20); do
+  rm -f "$tmp/race/"*
+  for i in $(seq 12); do
+    bash -c 'source "$1"; try_lock "$2" && echo $$ >"$3"' _ "$root/scripts/dev-checks.sh" \
+      "$tmp/race/lock" "$tmp/race/won.$i" &
+  done
+  wait
+  winners="$({ cat "$tmp/race/"won.* 2>/dev/null || true; } | wc -l | tr -d ' ')"
+  if [[ "$winners" != 1 || "$(cat "$tmp/race/lock" 2>/dev/null)" != "$(cat "$tmp/race/"won.* 2>/dev/null || true)" ]]; then
+    race_failures="$race_failures round $round: $winners winners;"
+  fi
+done
+if [[ -z "$race_failures" ]]; then
+  pass "exactly one of 12 racing processes takes the lock (20 rounds)"
+else
+  fail "lock isn't exclusive:$race_failures"
+fi
+
 # Six dev.sh-like processes picking at the same moment get six different ports, before any binds.
 export SMARTBELL_PORT_DIR="$tmp/ports"
 start=$(first_free_port 47300)
@@ -138,6 +160,26 @@ if [[ "$(echo "$picked" | wc -l | tr -d ' ')" == 6 && "$(echo "$picked" | sort -
   pass "concurrent picks get different ports ($(echo $picked))"
 else
   fail "concurrent picks collided: $(echo $picked)"
+fi
+
+# A .lock directory left by an older dev.sh doesn't block picking, and an unwritable lock path
+# fails with a message instead of hanging.
+mkdir -p "$SMARTBELL_PORT_DIR/.lock"
+got="$(bash -c 'source "$1"; pick_port "$2" "test" 2>/dev/null' _ "$root/scripts/dev-checks.sh" 47400)"
+if [[ -n "$got" ]]; then
+  pass "an old .lock directory doesn't block picking"
+else
+  fail "pick_port with an old .lock directory returned nothing"
+fi
+rm -f "$SMARTBELL_PORT_DIR"/[0-9]*
+mkdir -p "$tmp/blocked/.pick-lock"
+status=0
+out="$(SMARTBELL_PORT_DIR="$tmp/blocked" bash -c 'source "$1"; with_port_lock true' _ "$root/scripts/dev-checks.sh" 2>&1)" ||
+  status=$?
+if [[ "$status" == 1 && "$out" == *"can't create the port lock"* ]]; then
+  pass "an uncreatable lock fails with a message"
+else
+  fail "uncreatable lock: exit $status. Output: $out"
 fi
 
 # A reservation whose dev.sh is gone doesn't hold its port, and release_ports drops only its own.
