@@ -53,4 +53,4 @@ S.
 - [x] A purchase event gives every ranch the owner owns Pro, and a lapse or refund removes it (tests ported from `legacy/firebase`).
 - [x] A wrong or missing webhook secret is refused and changes nothing.
 - [x] An imported paying owner can invite on first sign-in; a free owner sees the upsell.
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
