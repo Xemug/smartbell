@@ -197,12 +197,27 @@ async def test_withdrawal_ends_on_its_last_day(
     assert response.json()["warnings"] == []
 
 
-async def test_reposting_a_cow_overwrites_that_destination(
+async def test_reposting_a_cow_replaces_her_day(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
+) -> None:
+    cow = await add_cow(tenant_api, tenant_db, owner, "Pinta")
+    await post_cows(tenant_api, owner, [(cow, "TANQUE", "20")])
+    # Corrected: the litres went to antibiotics, not the tank. Counted once.
+    response = await post_cows(tenant_api, owner, [(cow, "ANTIBIOTICOS", "20")])
+    stats = await tenant_api.get(f"/api/milk/cows/{cow}", headers=owner.headers())
+
+    assert [(log["destination"], log["liters"]) for log in response.json()["logs"]] == [
+        ("ANTIBIOTICOS", "20.00")
+    ]
+    assert stats.json()["total_liters"] == "20.00"
+
+
+async def test_reposting_a_cow_overwrites_her_split(
     tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
 ) -> None:
     cow = await add_cow(tenant_api, tenant_db, owner, "Pinta")
     await post_cows(tenant_api, owner, [(cow, "TANQUE", "20"), (cow, "BECERRAS", "4")])
-    response = await post_cows(tenant_api, owner, [(cow, "TANQUE", "22.5")])
+    response = await post_cows(tenant_api, owner, [(cow, "TANQUE", "22.5"), (cow, "BECERRAS", "4")])
 
     assert response.json()["logs"] == [
         {"animal_id": str(cow), "date": TODAY.isoformat(), "destination": d, "liters": liters}
@@ -407,7 +422,18 @@ async def test_summary_refuses_bad_ranges(tenant_api: AsyncClient, owner: Accoun
         params={"granularity": "DAY", "start": "2025-01-01", "end": "2026-11-20"},
     )
 
+    far = await tenant_api.get(
+        "/api/milk/summary",
+        headers=owner.headers(),
+        params={"granularity": "YEAR", "start": "9999-01-01", "end": "9999-12-31"},
+    )
+    ancient = await tenant_api.get(
+        "/api/milk/herd-logs", headers=owner.headers(), params={"end": "0001-01-01"}
+    )
+
     assert field_error(backwards) == (["query", "start"], "start_after_end")
+    assert field_error(far) == (["query", "start"], "date_out_of_range")
+    assert field_error(ancient) == (["query", "end"], "date_out_of_range")
     assert field_error(too_long) == (["query", "start"], "range_too_long")
 
 

@@ -157,7 +157,9 @@ async def put_cow_logs(
     entries: Sequence[CowEntry],
     today: dt.date,
 ) -> CowLogsResult:
-    """Logs litres per cow and destination for one day, overwriting what was there.
+    """Logs litres per cow and destination for one day. Each cow named in the body has her day
+    replaced: a destination left out is cleared, so moving litres from TANQUE to ANTIBIOTICOS
+    doesn't count them twice.
 
     Every cow must be an active female of the ranch; one bad entry refuses the whole body. Logs
     that break the withdrawal rule are saved and come back as warnings.
@@ -190,6 +192,12 @@ async def put_cow_logs(
                 ("body", "entries", index, "animal_id"), "not_a_cow", "Solo las hembras dan leche"
             )
 
+    await session.execute(
+        delete(MilkCowLog).where(
+            MilkCowLog.ranch_id == ranch_id, MilkCowLog.date == day, MilkCowLog.animal_id.in_(ids)
+        )
+    )
+    # Still an upsert: a concurrent request for the same cow and day may insert in between.
     statement = _insert(session, MilkCowLog).values(
         [
             {
@@ -310,6 +318,18 @@ def next_bucket(start: dt.date, granularity: MilkGranularity) -> dt.date:
             return add_months(6)
         case MilkGranularity.YEAR:
             return add_months(12)
+
+
+# Query dates outside these bounds are refused, so bucket and default-range arithmetic can't
+# overflow `datetime.date`.
+MIN_QUERY_DATE = dt.date(1900, 1, 1)
+MAX_QUERY_DATE = dt.date(2999, 12, 31)
+
+
+def check_dates(**days: dt.date | None) -> None:
+    for name, day in days.items():
+        if day is not None and not MIN_QUERY_DATE <= day <= MAX_QUERY_DATE:
+            raise _invalid(("query", name), "date_out_of_range", "Fecha fuera de rango")
 
 
 def check_range(start: dt.date, end: dt.date, granularity: MilkGranularity) -> None:

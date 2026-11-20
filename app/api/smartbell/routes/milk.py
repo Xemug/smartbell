@@ -102,9 +102,10 @@ async def list_herd_logs(
     end: dt.date | None = None,
 ) -> list[HerdLogOut]:
     """Defaults to the last 7 days, the shipped app's "Últimos 7 días"."""
-    end = end or today
-    start = start or end - dt.timedelta(days=6)
     try:
+        milk.check_dates(start=start, end=end)
+        end = end or today
+        start = start or end - dt.timedelta(days=6)
         milk.check_range(start, end, MilkGranularity.WEEK)
     except FieldError as error:
         raise _field_error(error) from error
@@ -182,9 +183,10 @@ async def summary(
     end: dt.date | None = None,
 ) -> MilkSummary:
     """Production history ending `end` (today by default), from `start` (a week before)."""
-    end = end or today
-    start = start or end - dt.timedelta(days=6)
     try:
+        milk.check_dates(start=start, end=end)
+        end = end or today
+        start = start or end - dt.timedelta(days=6)
         result = await milk.summary(session, ctx.ranch_id, granularity, start, end)
     except FieldError as error:
         raise _field_error(error) from error
