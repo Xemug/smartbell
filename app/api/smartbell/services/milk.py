@@ -177,8 +177,16 @@ async def put_cow_logs(
         seen.add(key)
 
     ids = list(dict.fromkeys(entry.animal_id for entry in entries))
+    # Each cow's row is locked until commit, in id order so two bodies can't deadlock. Without
+    # it, two replacements of one cow's empty day both delete nothing and both insert, keeping
+    # two destinations. FOR NO KEY UPDATE conflicts with itself but not with the key-share locks
+    # of FK checks, so inserting other records of the cow isn't held up. (SQLite has no row
+    # locks; its writes are serialized anyway.)
     found = await session.scalars(
-        select(Animal).where(Animal.ranch_id == ranch_id, Animal.id.in_(ids))
+        select(Animal)
+        .where(Animal.ranch_id == ranch_id, Animal.id.in_(ids))
+        .order_by(Animal.id)
+        .with_for_update(key_share=True)
     )
     animals = {animal.id: animal for animal in found}
     for index, entry in enumerate(entries):
@@ -197,7 +205,7 @@ async def put_cow_logs(
             MilkCowLog.ranch_id == ranch_id, MilkCowLog.date == day, MilkCowLog.animal_id.in_(ids)
         )
     )
-    # Still an upsert: a concurrent request for the same cow and day may insert in between.
+    # An upsert too, as a backstop to the lock above.
     statement = _insert(session, MilkCowLog).values(
         [
             {

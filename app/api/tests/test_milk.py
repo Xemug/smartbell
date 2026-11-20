@@ -1,5 +1,6 @@
 """The milk records API (`milk-api`): herd daily log, per-cow litres by destination, aggregates."""
 
+import asyncio
 import datetime as dt
 import uuid
 from decimal import Decimal
@@ -9,12 +10,13 @@ import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient, Response
 from sqlalchemy import func, select, update
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
-from smartbell.enums import LactationState, MilkGranularity, Role
+from smartbell.db import make_sessionmaker
+from smartbell.enums import LactationState, MilkDestination, MilkGranularity, Role
 from smartbell.models import Animal, Membership, MilkCowLog, MilkHerdLog
 from smartbell.routes.animals import get_today
-from smartbell.services.milk import bucket_start, next_bucket
+from smartbell.services.milk import CowEntry, bucket_start, next_bucket, put_cow_logs
 from tests.conftest import Account, add_member, sign_up
 
 TODAY = dt.date(2026, 11, 20)  # A Friday.
@@ -225,6 +227,37 @@ async def test_reposting_a_cow_overwrites_her_split(
     ]
     listed = await tenant_api.get("/api/milk/cow-logs", headers=owner.headers())
     assert len(listed.json()) == 2
+
+
+async def test_concurrent_replacements_of_one_cow_keep_only_the_last(
+    tenant_api: AsyncClient,
+    tenant_db: AsyncSession,
+    schema: AsyncEngine,
+    owner: Account,
+    db_backend: str,
+) -> None:
+    if db_backend != "postgresql":
+        pytest.skip("Needs two real connections; SQLite has no row locks")
+    cow = await add_cow(tenant_api, tenant_db, owner, "Pinta")
+    sessions = make_sessionmaker(schema)
+
+    async def log(session: AsyncSession, destination: MilkDestination) -> None:
+        entry = CowEntry(cow, destination, Decimal(20))
+        await put_cow_logs(session, owner.ranch_id, TODAY, [entry], TODAY)
+
+    async with sessions() as first, sessions() as second:
+        await log(first, MilkDestination.TANQUE)  # holds the cow's row until it commits
+        racing = asyncio.create_task(log(second, MilkDestination.ANTIBIOTICOS))
+        await asyncio.sleep(0.3)
+        assert not racing.done(), "the second replacement should wait for the first"
+        await first.commit()
+        await racing
+        await second.commit()
+
+    logs = (await tenant_db.scalars(select(MilkCowLog))).all()
+    assert [(log.destination, log.liters) for log in logs] == [
+        (MilkDestination.ANTIBIOTICOS, Decimal("20.00"))
+    ]
 
 
 async def test_cow_log_refusals(
