@@ -1,6 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { cleanAddress, geocodeAddress, searchesFor, timing } from './geocode';
+import {
+  addressAt,
+  cleanAddress,
+  formatCoordinates,
+  geocodeAddress,
+  parseCoordinates,
+  searchesFor,
+  timing,
+} from './geocode';
 
 beforeEach(() => {
   timing.gapMs = 0;
@@ -106,5 +114,76 @@ describe('geocodeAddress', () => {
     );
     await expect(geocodeAddress('Too fast')).rejects.toThrow('geocode 429');
     expect(await geocodeAddress('   ')).toBeNull();
+  });
+});
+
+describe('coordinates as an address', () => {
+  it('reads typed coordinates and writes them back the same way', () => {
+    expect(parseCoordinates('20.95, -102.6')).toEqual({ latitude: 20.95, longitude: -102.6 });
+    expect(parseCoordinates(' 20.950000 -102.600000 ')).toEqual({
+      latitude: 20.95,
+      longitude: -102.6,
+    });
+    expect(parseCoordinates('95, 10')).toBeNull(); // No latitude past the pole.
+    expect(parseCoordinates('Calle 5, 120')).toBeNull();
+    expect(formatCoordinates({ latitude: 20.95, longitude: -102.6 })).toBe(
+      '20.950000, -102.600000',
+    );
+  });
+
+  it('places typed coordinates without asking OSM', async () => {
+    const fetch = vi.fn();
+    vi.stubGlobal('fetch', fetch);
+    expect(await geocodeAddress('20.95, -102.6')).toEqual({
+      pin: { latitude: 20.95, longitude: -102.6 },
+      exact: true,
+    });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe('addressAt', () => {
+  const reverse = (address: Record<string, string>) =>
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ address })),
+    );
+
+  it('names the street, colonia, town and state', async () => {
+    reverse({
+      road: 'Calle Joseph Haydn',
+      house_number: '4942',
+      suburb: 'Prados Guadalupe',
+      city: 'Zapopan',
+      state: 'Jalisco',
+      country: 'México',
+      country_code: 'mx',
+    });
+    expect(await addressAt({ latitude: 20.68, longitude: -103.41 })).toBe(
+      'Calle Joseph Haydn 4942, Prados Guadalupe, Zapopan, Jalisco',
+    );
+  });
+
+  it('adds the country outside Mexico', async () => {
+    reverse({
+      road: 'Woodridge Way',
+      house_number: '3919',
+      town: 'Tucker',
+      state: 'Georgia',
+      country: 'Estados Unidos',
+      country_code: 'us',
+    });
+    expect(await addressAt({ latitude: 33.85, longitude: -84.21 })).toBe(
+      'Woodridge Way 3919, Tucker, Georgia, Estados Unidos',
+    );
+  });
+
+  it('returns null where there is no street, and asks at street level', async () => {
+    const fetch = vi.fn(async () => Response.json({ address: { state: 'Jalisco' } }));
+    vi.stubGlobal('fetch', fetch);
+    expect(await addressAt({ latitude: 20.95, longitude: -102.6 })).toBeNull();
+    const url = new URL(String((fetch.mock.calls[0] as unknown[])[0]));
+    expect(url.pathname).toBe('/reverse');
+    expect(url.searchParams.get('zoom')).toBe('17');
   });
 });

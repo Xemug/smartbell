@@ -37,7 +37,12 @@ vi.mock('./ranch/RanchMap', () => ({
 const geocode = vi.hoisted(() =>
   vi.fn<(address: string) => Promise<{ pin: Pin; exact: boolean } | null>>(),
 );
-vi.mock('./ranch/geocode', () => ({ geocodeAddress: geocode }));
+const addressAt = vi.hoisted(() => vi.fn<(pin: Pin) => Promise<string | null>>());
+vi.mock('./ranch/geocode', async (actual) => ({
+  ...(await actual<typeof import('./ranch/geocode')>()),
+  geocodeAddress: geocode,
+  addressAt,
+}));
 type Pin = { latitude: number; longitude: number };
 
 class FakeBackend implements AuthBackend {
@@ -175,6 +180,8 @@ beforeEach(() => {
   localStorage.clear();
   geocode.mockReset();
   geocode.mockResolvedValue(null);
+  addressAt.mockReset();
+  addressAt.mockResolvedValue(null);
 });
 
 afterEach(() => {
@@ -369,14 +376,18 @@ describe('Datos Rancho', () => {
     await user.click(screen.getByRole('button', { name: 'Editar' }));
     await user.clear(field('Nombre del rancho'));
     await user.type(field('Nombre del rancho'), 'El Bigotes');
-    await user.type(field('Dirección'), 'Carretera a Tepa km 12');
+    addressAt.mockResolvedValue('Carretera a Tepa km 12, Tepatitlán, Jalisco');
     await user.click(await screen.findByRole('button', { name: 'drag pin' }));
+    // The address follows the pin.
+    await waitFor(() =>
+      expect(field('Dirección')).toHaveValue('Carretera a Tepa km 12, Tepatitlán, Jalisco'),
+    );
     await user.click(screen.getByRole('button', { name: 'Guardar' }));
 
     await waitFor(() => expect(fakeApi.sent('PATCH', '/api/ranch')).toHaveLength(1));
     expect(fakeApi.first('PATCH', '/api/ranch').body).toEqual({
       name: 'El Bigotes',
-      address: 'Carretera a Tepa km 12',
+      address: 'Carretera a Tepa km 12, Tepatitlán, Jalisco',
       latitude: 20.812346,
       longitude: -102.765123,
     });
@@ -482,6 +493,42 @@ describe('Datos Rancho', () => {
       address: '3919 Calle Inventada',
       latitude: null,
       longitude: null,
+    });
+  });
+
+  it('writes the coordinates as the address where the pin has no street', async () => {
+    renderAt('/config/ranchos');
+    await user.click(await screen.findByRole('button', { name: 'Editar' }));
+    await user.type(field('Dirección'), 'Por el potrero');
+    await user.click(screen.getByRole('button', { name: 'drag pin' }));
+
+    await waitFor(() => expect(field('Dirección')).toHaveValue('20.812346, -102.765123'));
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(fakeApi.sent('PATCH', '/api/ranch')).toHaveLength(1));
+    expect(fakeApi.first('PATCH', '/api/ranch').body).toMatchObject({
+      address: '20.812346, -102.765123',
+      latitude: 20.812346,
+      longitude: -102.765123,
+    });
+    // The address came from the pin: nothing looks it up again and moves the pin.
+    expect(geocode).not.toHaveBeenCalledWith('20.812346, -102.765123');
+  });
+
+  it('saves the street the pin names even when Guardar beats the lookup', async () => {
+    let answer: (address: string) => void = () => {};
+    addressAt.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+    renderAt('/config/ranchos');
+    await user.click(await screen.findByRole('button', { name: 'Editar' }));
+    await user.type(field('Dirección'), 'x');
+    await user.click(screen.getByRole('button', { name: 'drag pin' }));
+    expect(await screen.findByText('Buscando la dirección de este punto…')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
+
+    answer('Calle Hidalgo 4, Centro, Tepatitlán, Jalisco');
+    await waitFor(() => expect(fakeApi.sent('PATCH', '/api/ranch')).toHaveLength(1));
+    expect(fakeApi.first('PATCH', '/api/ranch').body).toMatchObject({
+      address: 'Calle Hidalgo 4, Centro, Tepatitlán, Jalisco',
+      latitude: 20.812346,
     });
   });
 

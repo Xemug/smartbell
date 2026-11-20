@@ -2,9 +2,9 @@ import type { Pin } from './pin';
 
 // OpenStreetMap's free geocoder, the same data as the map tiles. Its usage policy allows one
 // request a second and no search-as-you-type, so callers look up a finished address (on blur or
-// on save), never per keystroke, and requests here are spaced out; the browser's Referer
-// identifies the app.
-const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
+// on save) or a dropped pin, never per keystroke, and requests here are spaced out; the browser's
+// Referer identifies the app.
+const NOMINATIM = 'https://nominatim.openstreetmap.org';
 
 /** Mexico's bounding box (west, north, east, south), used as a preference, not a limit. */
 const MEXICO = '-118.6,32.8,-86.5,14.4';
@@ -54,13 +54,20 @@ export function searchesFor(address: string): string[] {
   return [...new Set(searches)];
 }
 
+/** One request to Nominatim, at most one a second across the page. */
+async function ask<T>(path: string, params: URLSearchParams, signal?: AbortSignal): Promise<T> {
+  const wait = lastRequest + timing.gapMs - Date.now();
+  if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+  lastRequest = Date.now();
+  const response = await fetch(`${NOMINATIM}${path}?${params}`, { signal });
+  if (!response.ok) throw new Error(`geocode ${response.status}`);
+  return (await response.json()) as T;
+}
+
 async function search(q: string, signal?: AbortSignal): Promise<Pin | null> {
   const key = q.toLowerCase();
   const known = cache.get(key);
   if (known !== undefined) return known;
-  const wait = lastRequest + timing.gapMs - Date.now();
-  if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
-  lastRequest = Date.now();
   const params = new URLSearchParams({
     q,
     format: 'jsonv2',
@@ -70,9 +77,7 @@ async function search(q: string, signal?: AbortSignal): Promise<Pin | null> {
     bounded: '0',
     'accept-language': 'es',
   });
-  const response = await fetch(`${NOMINATIM}?${params}`, { signal });
-  if (!response.ok) throw new Error(`geocode ${response.status}`);
-  const [hit] = (await response.json()) as { lat: string; lon: string }[];
+  const [hit] = await ask<{ lat: string; lon: string }[]>('/search', params, signal);
   const pin = hit ? { latitude: Number(hit.lat), longitude: Number(hit.lon) } : null;
   const found = pin && Number.isFinite(pin.latitude) && Number.isFinite(pin.longitude) ? pin : null;
   cache.set(key, found);
@@ -84,10 +89,75 @@ export async function geocodeAddress(
   address: string,
   signal?: AbortSignal,
 ): Promise<Located | null> {
+  const typed = parseCoordinates(address);
+  if (typed) return { pin: typed, exact: true };
   const searches = searchesFor(address);
   for (const [index, q] of searches.entries()) {
     const pin = await search(q, signal);
     if (pin) return { pin, exact: index === 0 };
   }
   return null;
+}
+
+// "20.95, -102.6" or "20.95 -102.6": a spot with no street, written as its coordinates.
+const COORDINATES = /^\s*(-?\d{1,2}(?:\.\d+)?)\s*[,\s]\s*(-?\d{1,3}(?:\.\d+)?)\s*$/u;
+
+/** The pin an address that is just coordinates names, or null. */
+export function parseCoordinates(text: string): Pin | null {
+  const match = COORDINATES.exec(text);
+  if (!match) return null;
+  const latitude = Number(match[1]);
+  const longitude = Number(match[2]);
+  if (Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return null;
+  return { latitude, longitude };
+}
+
+/** How a pin with no street is written in the address field. */
+export const formatCoordinates = ({ latitude, longitude }: Pin) =>
+  `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+
+interface ReverseHit {
+  address?: Partial<
+    Record<
+      | 'road'
+      | 'house_number'
+      | 'neighbourhood'
+      | 'suburb'
+      | 'quarter'
+      | 'city'
+      | 'town'
+      | 'village'
+      | 'municipality'
+      | 'state'
+      | 'country'
+      | 'country_code',
+      string
+    >
+  >;
+}
+
+/**
+ * The street address at a pin ("Calle Joseph Haydn 4942, Prados Guadalupe, Zapopan, Jalisco"),
+ * or null where there is no street nearby: out in the fields, the coordinates are the address.
+ */
+export async function addressAt(pin: Pin, signal?: AbortSignal): Promise<string | null> {
+  const params = new URLSearchParams({
+    lat: String(pin.latitude),
+    lon: String(pin.longitude),
+    format: 'jsonv2',
+    zoom: '17', // Street level: a farther guess would name the wrong place.
+    addressdetails: '1',
+    'accept-language': 'es',
+  });
+  const hit = await ask<ReverseHit>('/reverse', params, signal);
+  const a = hit.address;
+  if (!a?.road) return null;
+  const parts = [
+    [a.road, a.house_number].filter(Boolean).join(' '),
+    a.neighbourhood ?? a.suburb ?? a.quarter,
+    a.city ?? a.town ?? a.village ?? a.municipality,
+    a.state,
+    a.country_code && a.country_code !== 'mx' ? a.country : undefined,
+  ];
+  return [...new Set(parts.filter(Boolean))].join(', ');
 }

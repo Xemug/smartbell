@@ -17,10 +17,21 @@ import { getRanch, updateRanch, type RanchCreation, type RanchDetail } from '../
 import { ConfigLayout } from '../ConfigLayout';
 import { AddRanchDialog, UpsellDialog } from './AddRanchDialog';
 import { DeleteRanchDialog } from './DeleteRanchDialog';
-import { geocodeAddress } from './geocode';
+import { addressAt, formatCoordinates, geocodeAddress } from './geocode';
 import { roundPin, type Pin } from './pin';
 
 const RanchMap = lazy(() => import('./RanchMap'));
+
+type Lookup = 'idle' | 'busy' | 'naming' | 'approx' | 'missed' | 'failed';
+/** What the line under the map says while editing, by the state of the address lookup. */
+const LOOKUP_HINT: Record<Lookup, string> = {
+  idle: 'config.ranch.mapHint',
+  busy: 'config.ranch.locating',
+  naming: 'config.ranch.naming',
+  approx: 'config.ranch.approximate',
+  missed: 'config.ranch.notFound',
+  failed: 'config.ranch.lookupFailed',
+};
 
 const schema = z.object({
   name: z.string().trim().min(1, 'config.ranch.nameRequired').max(120),
@@ -96,9 +107,7 @@ function RanchForm({ ranch }: { ranch: RanchDetail }) {
   // The address the pin was last placed for, so a new address moves the pin to it once.
   const locatedFor = useRef(ranch.address?.trim() ?? '');
   const lookup = useRef(0); // Bumped by every lookup and every hand move: stale answers lose.
-  const [locating, setLocating] = useState<'idle' | 'busy' | 'approx' | 'missed' | 'failed'>(
-    'idle',
-  );
+  const [locating, setLocating] = useState<Lookup>('idle');
 
   useEffect(() => {
     if (switchTo && ranches.some((r) => r.id === switchTo)) {
@@ -149,9 +158,10 @@ function RanchForm({ ranch }: { ranch: RanchDetail }) {
     setEditing(false);
   };
 
-  const submit = handleSubmit(async ({ name, address }) => {
+  const submit = handleSubmit(async ({ name }) => {
     setSaveError(false);
-    await locate(); // Guardar straight after typing: the pin still follows the address.
+    await locate(); // Guardar straight after typing or dropping: pin and address match first.
+    const address = getValues('address').trim();
     const saved = getValues('pin');
     try {
       const result = await updateRanch({
@@ -176,11 +186,25 @@ function RanchForm({ ranch }: { ranch: RanchDetail }) {
     void refresh(); // The switcher and header show the new name.
   });
 
+  /** A pin dropped or dragged by hand: it wins, and the address follows it. */
   const movePin = (next: Pin) => {
-    lookup.current++;
-    locatedFor.current = getValues('address').trim();
-    setLocating('idle');
-    placePin(next);
+    const mine = ++lookup.current;
+    const pin = roundPin(next);
+    placePin(pin);
+    setLocating('naming');
+    const name = (address: string) => {
+      setValue('address', address, { shouldDirty: true, shouldValidate: true });
+      locatedFor.current = address.trim(); // Already where it says: no lookup back.
+      setLocating('idle');
+    };
+    pending.current = addressAt(pin).then(
+      (address) => {
+        if (mine === lookup.current) name(address ?? formatCoordinates(pin));
+      },
+      () => {
+        if (mine === lookup.current) name(formatCoordinates(pin));
+      },
+    );
   };
 
   const openAdd = () => setDialog(creation === 'allowed' ? 'add' : 'upsell');
@@ -278,17 +302,7 @@ function RanchForm({ ranch }: { ranch: RanchDetail }) {
             </Suspense>
             <p className="text-secondary-text type-body-sm" aria-live="polite">
               {editing
-                ? t(
-                    locating === 'busy'
-                      ? 'config.ranch.locating'
-                      : locating === 'missed'
-                        ? 'config.ranch.notFound'
-                        : locating === 'approx'
-                          ? 'config.ranch.approximate'
-                          : locating === 'failed'
-                            ? 'config.ranch.lookupFailed'
-                            : 'config.ranch.mapHint',
-                  )
+                ? t(LOOKUP_HINT[locating])
                 : pin
                   ? ranch.can_edit
                     ? t('config.ranch.mapReadOnly')
