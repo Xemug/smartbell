@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format, startOfDay, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
@@ -28,7 +28,7 @@ import {
   SaveError,
   useFakeDoorReport,
   useSaveSupportConfig,
-  useSupportConfig,
+  useAdminSupportConfig,
   type FakeDoorCount,
   type SupportConfigIn,
 } from './api';
@@ -94,10 +94,19 @@ function SupportForm({ config }: { config: SupportConfig }) {
   const { t } = useTranslation();
   const snackbar = useSnackbar();
   const save = useSaveSupportConfig();
-  const { control, handleSubmit, reset, setError } = useForm<Values>({
+  const { control, formState, handleSubmit, reset, setError } = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: valuesOf(config),
   });
+  const { isDirty } = formState;
+
+  // The page may open on a cached copy. When the fresh one arrives, show it, unless the founder
+  // has started typing: their edits win, and a save then replaces the whole config on purpose.
+  useEffect(() => {
+    if (!isDirty) reset(valuesOf(config));
+    // Only a new config should reset; typing must not.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config]);
 
   const submit = handleSubmit((values) =>
     save.mutate(bodyOf(values), {
@@ -209,7 +218,7 @@ function SupportForm({ config }: { config: SupportConfig }) {
 
 function SoporteCard() {
   const { t } = useTranslation();
-  const config = useSupportConfig();
+  const config = useAdminSupportConfig();
   return (
     <Card title={t('admin.support.title')}>
       {config.isError ? (
@@ -257,6 +266,8 @@ function DemandaCard() {
     {
       key: 'last',
       header: t('admin.demand.lastTap'),
+      // Four columns overflow a 375 px phone; the counts are what matter there.
+      hideOnMobile: true,
       sortValue: (row) => row.last_tapped_at ?? '',
       cell: (row) =>
         row.last_tapped_at
@@ -267,7 +278,8 @@ function DemandaCard() {
 
   return (
     <Card title={t('admin.demand.title')}>
-      <div className="grid gap-4">
+      {/* One shrinkable column, so a wide table scrolls inside the card, not the page. */}
+      <div className="grid grid-cols-1 gap-4">
         <DateField
           label={t('admin.demand.since')}
           value={day}

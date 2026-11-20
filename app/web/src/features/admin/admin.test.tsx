@@ -54,7 +54,7 @@ interface Call {
   body: unknown;
 }
 let calls: Call[];
-let overrides: Record<string, () => Response>;
+let overrides: Record<string, () => Response | Promise<Response>>;
 
 function authFor(isAdmin: boolean): AuthApi {
   const noop = vi.fn(async () => {});
@@ -86,9 +86,11 @@ function authFor(isAdmin: boolean): AuthApi {
   };
 }
 
-function renderAt(path: string, isAdmin: boolean) {
+function renderAt(path: string, isAdmin: boolean, cachedConfig?: object) {
   const router = createMemoryRouter([shellRoute], { initialEntries: [path] });
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  // What the app's support links left in the cache earlier in the session.
+  if (cachedConfig) client.setQueryData(['support-config'], cachedConfig);
   render(
     <QueryClientProvider client={client}>
       <SnackbarProvider>
@@ -173,6 +175,41 @@ describe('Soporte form', () => {
     // `{` and `[` start key descriptors in user-event; doubled, they are typed as is.
     if (value) await userEvent.type(field(name), value.replace(/[{[]/g, '$&$&'));
   }
+
+  const stale = { ...savedConfig, whatsapp_number: '5211111111111', support_message: 'Viejo.' };
+
+  it('opens on a cached config but shows the fresh one once it arrives', async () => {
+    renderAt(ADMIN_SUPPORT_PATH, true, stale);
+
+    await waitFor(() => expect(field('Número de WhatsApp')).toHaveValue('523334056398'));
+    expect(field('Mensaje de soporte')).toHaveValue('Hola, necesito ayuda.');
+    expect(calls.filter((call) => call.path === '/api/support/config')).toHaveLength(1);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await screen.findByText('Cambios guardados');
+    // The save carries the fresh number, not the stale one it opened with.
+    expect(
+      puts().map((call) => (call.body as { whatsapp_number: string }).whatsapp_number),
+    ).toEqual(['523334056398']);
+  });
+
+  it('keeps what the founder typed when the fresh config lands afterwards', async () => {
+    let answer: (response: Response) => void = () => {};
+    overrides['GET /api/support/config'] = () => new Promise((resolve) => (answer = resolve));
+    renderAt(ADMIN_SUPPORT_PATH, true, stale);
+    await waitFor(() => expect(field('Mensaje de soporte')).toHaveValue('Viejo.'));
+
+    await replace('Mensaje de soporte', 'Nuevo texto.');
+    answer(Response.json(savedConfig));
+
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: 'Probar en WhatsApp' })).toHaveAttribute(
+        'href',
+        expect.stringContaining('523334056398'),
+      ),
+    );
+    expect(field('Mensaje de soporte')).toHaveValue('Nuevo texto.');
+  });
 
   it('saves every field, and an emptied message goes back to the default', async () => {
     await ready();

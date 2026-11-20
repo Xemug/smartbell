@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { api } from '../../api/client';
 import type { components } from '../../api/schema';
-import { useSupportConfig, type SupportConfig } from '../../app/support';
+import { supportConfigQuery, type SupportConfig } from '../../app/support';
 
 export type SupportConfigIn = components['schemas']['SupportConfigIn'];
 export type FakeDoorCount = components['schemas']['FakeDoorCount'];
@@ -34,8 +34,14 @@ function refusedFields(error: unknown): (keyof SupportConfigIn)[] {
   return [...new Set(fields)];
 }
 
-/** The live config: the same query the app's support links read, so a save shows everywhere. */
-export { useSupportConfig };
+/**
+ * The live config, from the same cache the app's support links read so a save shows everywhere.
+ * Never stale here: the links cache it for minutes, and editing from an old copy would undo
+ * another admin's change.
+ */
+export function useAdminSupportConfig() {
+  return useQuery({ ...supportConfigQuery, staleTime: 0, refetchOnMount: 'always' });
+}
 
 export function useSaveSupportConfig() {
   const client = useQueryClient();
@@ -45,7 +51,7 @@ export function useSaveSupportConfig() {
       if (!data) throw new SaveError(refusedFields(error));
       return data;
     },
-    onSuccess: (saved) => client.setQueryData(['support-config'], saved),
+    onSuccess: (saved) => client.setQueryData(supportConfigQuery.queryKey, saved),
   });
 }
 
