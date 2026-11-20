@@ -46,7 +46,7 @@ export default function RanchMap({ pin, editable, onMove, label }: RanchMapProps
       map.current = null;
       marker.current = null;
     };
-    // The view is set once; later pins move the marker, not the camera.
+    // The view is set once; later pins move the marker, and the camera only to keep it in view.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -70,6 +70,9 @@ export default function RanchMap({ pin, editable, onMove, label }: RanchMapProps
       instance.setView(at, Math.max(instance.getZoom(), 14));
     } else {
       marker.current.setLatLng(at);
+      // A pin placed from the address can land off screen; a drag or tap never does.
+      if (!instance.getBounds().contains(at))
+        instance.setView(at, Math.max(instance.getZoom(), 14));
     }
     if (editable) marker.current.dragging?.enable();
     else marker.current.dragging?.disable();

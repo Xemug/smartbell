@@ -33,6 +33,13 @@ vi.mock('./ranch/RanchMap', () => ({
   ),
 }));
 
+// The OSM geocoder is a network call; each test says what it finds.
+const geocode = vi.hoisted(() =>
+  vi.fn<(address: string) => Promise<{ pin: Pin; exact: boolean } | null>>(),
+);
+vi.mock('./ranch/geocode', () => ({ geocodeAddress: geocode }));
+type Pin = { latitude: number; longitude: number };
+
 class FakeBackend implements AuthBackend {
   password = true;
   onChange(listener: (signedIn: boolean) => void) {
@@ -164,6 +171,8 @@ beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn(fakeApi.handle));
   vi.stubGlobal('scrollTo', vi.fn());
   localStorage.clear();
+  geocode.mockReset();
+  geocode.mockResolvedValue(null);
 });
 
 afterEach(() => {
@@ -375,6 +384,118 @@ describe('Datos Rancho', () => {
     expect(
       screen.getByRole('button', { name: 'Cambiar de rancho: El Bigotes' }),
     ).toBeInTheDocument();
+  });
+
+  it('moves the pin to the address typed, and lets a hand move win', async () => {
+    geocode.mockResolvedValue({
+      pin: { latitude: 20.6866131, longitude: -103.4185478 },
+      exact: true,
+    });
+    renderAt('/config/ranchos');
+    await user.click(await screen.findByRole('button', { name: 'Editar' }));
+    await user.type(field('Dirección'), 'Joseph Hyden 4942, Prados de Guadalupe');
+    await user.tab(); // Leaving the field looks it up.
+
+    expect(await screen.findByText('pin 20.686613,-103.418548')).toBeInTheDocument();
+    expect(geocode).toHaveBeenCalledWith('Joseph Hyden 4942, Prados de Guadalupe');
+    // Fine-tuning by hand keeps the hand-placed pin through the save.
+    await user.click(screen.getByRole('button', { name: 'drag pin' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(fakeApi.sent('PATCH', '/api/ranch')).toHaveLength(1));
+    expect(fakeApi.first('PATCH', '/api/ranch').body).toMatchObject({
+      latitude: 20.812346,
+      longitude: -102.765123,
+    });
+    expect(geocode).toHaveBeenCalledTimes(1);
+  });
+
+  it('looks the address up on Guardar when the field was never left', async () => {
+    geocode.mockResolvedValue({ pin: { latitude: 20.1, longitude: -103.2 }, exact: false });
+    renderAt('/config/ranchos');
+    await user.click(await screen.findByRole('button', { name: 'Editar' }));
+    await user.type(field('Dirección'), 'Tepatitlán');
+    await user.keyboard('{Enter}');
+
+    await waitFor(() => expect(fakeApi.sent('PATCH', '/api/ranch')).toHaveLength(1));
+    expect(fakeApi.first('PATCH', '/api/ranch').body).toEqual({
+      name: 'Mi rancho',
+      address: 'Tepatitlán',
+      latitude: 20.1,
+      longitude: -103.2,
+    });
+  });
+
+  it('waits for a lookup still running before saving', async () => {
+    let answer: (found: { pin: Pin; exact: boolean }) => void = () => {};
+    geocode.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+    renderAt('/config/ranchos');
+    await user.click(await screen.findByRole('button', { name: 'Editar' }));
+    await user.type(field('Dirección'), 'Carretera a Tepa km 12, Tepatitlán');
+    await user.tab();
+    expect(await screen.findByText('Buscando la dirección en el mapa…')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
+    expect(fakeApi.sent('PATCH', '/api/ranch')).toHaveLength(0);
+
+    answer({ pin: { latitude: 20.9, longitude: -102.8 }, exact: true });
+    await waitFor(() => expect(fakeApi.sent('PATCH', '/api/ranch')).toHaveLength(1));
+    expect(fakeApi.first('PATCH', '/api/ranch').body).toMatchObject({
+      latitude: 20.9,
+      longitude: -102.8,
+    });
+  });
+
+  it('says when the lookup failed, and retries on the next blur', async () => {
+    geocode.mockRejectedValueOnce(new Error('geocode 429'));
+    geocode.mockResolvedValueOnce({ pin: { latitude: 20.5, longitude: -103.1 }, exact: true });
+    renderAt('/config/ranchos');
+    await user.click(await screen.findByRole('button', { name: 'Editar' }));
+    await user.type(field('Dirección'), 'Hidalgo 4, Tepatitlán');
+    await user.tab();
+    expect(
+      await screen.findByText(
+        'No pudimos buscar la dirección en este momento. Toca el mapa donde está tu rancho.',
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(field('Dirección'));
+    await user.tab();
+    expect(await screen.findByText('pin 20.5,-103.1')).toBeInTheDocument();
+  });
+
+  it('asks for a nudge when only the area was found', async () => {
+    geocode.mockResolvedValue({ pin: { latitude: 20.81, longitude: -102.76 }, exact: false });
+    renderAt('/config/ranchos');
+    await user.click(await screen.findByRole('button', { name: 'Editar' }));
+    await user.type(field('Dirección'), 'Av. Juárez 120, Centro, Tepatitlán');
+    await user.tab();
+
+    expect(await screen.findByText('pin 20.81,-102.76')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Ubicamos la zona aproximada. Arrastra el pin al punto exacto de tu rancho.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('says so when the address is not on the map, and still saves', async () => {
+    renderAt('/config/ranchos');
+    await user.click(await screen.findByRole('button', { name: 'Editar' }));
+    await user.type(field('Dirección'), 'Rancho sin calle');
+    await user.tab();
+
+    expect(
+      await screen.findByText(
+        'No encontramos esa dirección en el mapa. Toca el mapa donde está tu rancho.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText('no pin')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(fakeApi.sent('PATCH', '/api/ranch')).toHaveLength(1));
+    expect(fakeApi.first('PATCH', '/api/ranch').body).toEqual({
+      name: 'Mi rancho',
+      address: 'Rancho sin calle',
+    });
+    expect(geocode).toHaveBeenCalledTimes(1); // Guardar doesn't ask again for the same address.
   });
 
   it('reports a save as saved even when re-reading the account fails', async () => {

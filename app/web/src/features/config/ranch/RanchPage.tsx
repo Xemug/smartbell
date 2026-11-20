@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
@@ -17,6 +17,7 @@ import { getRanch, updateRanch, type RanchCreation, type RanchDetail } from '../
 import { ConfigLayout } from '../ConfigLayout';
 import { AddRanchDialog, UpsellDialog } from './AddRanchDialog';
 import { DeleteRanchDialog } from './DeleteRanchDialog';
+import { geocodeAddress } from './geocode';
 import { roundPin, type Pin } from './pin';
 
 const RanchMap = lazy(() => import('./RanchMap'));
@@ -87,11 +88,17 @@ function RanchForm({ ranch }: { ranch: RanchDetail }) {
   const creation: RanchCreation =
     auth.state.status === 'signedIn' ? auth.state.account.ranch_creation : 'upsell';
 
-  const { control, handleSubmit, formState, reset, setValue } = useForm<Values>({
+  const { control, handleSubmit, formState, getValues, reset, setValue } = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: valuesOf(ranch),
   });
   const pin = useWatch({ control, name: 'pin' });
+  // The address the pin was last placed for, so a new address moves the pin to it once.
+  const locatedFor = useRef(ranch.address?.trim() ?? '');
+  const lookup = useRef(0); // Bumped by every lookup and every hand move: stale answers lose.
+  const [locating, setLocating] = useState<'idle' | 'busy' | 'approx' | 'missed' | 'failed'>(
+    'idle',
+  );
 
   useEffect(() => {
     if (switchTo && ranches.some((r) => r.id === switchTo)) {
@@ -100,14 +107,47 @@ function RanchForm({ ranch }: { ranch: RanchDetail }) {
     }
   }, [switchTo, ranches, setActiveRanch]);
 
+  const placePin = (next: Pin) =>
+    setValue('pin', roundPin(next), { shouldDirty: true, shouldValidate: true });
+
+  // The lookup in flight, so Guardar waits for it instead of saving the old pin.
+  const pending = useRef<Promise<void>>(Promise.resolve());
+
+  /** Moves the pin to a changed address. A pin moved by hand afterwards wins. */
+  const locate = (): Promise<void> => {
+    const address = getValues('address').trim();
+    if (!address || address === locatedFor.current) return pending.current;
+    locatedFor.current = address;
+    const mine = ++lookup.current;
+    setLocating('busy');
+    pending.current = geocodeAddress(address).then(
+      (found) => {
+        if (mine !== lookup.current) return;
+        if (found) placePin(found.pin);
+        setLocating(!found ? 'missed' : found.exact ? 'idle' : 'approx');
+      },
+      () => {
+        if (mine !== lookup.current) return;
+        locatedFor.current = ''; // Offline or throttled: leaving the field again retries.
+        setLocating('failed');
+      },
+    );
+    return pending.current;
+  };
+
   const cancel = () => {
+    lookup.current++;
+    locatedFor.current = ranch.address?.trim() ?? '';
+    setLocating('idle');
     reset(valuesOf(ranch));
     setSaveError(false);
     setEditing(false);
   };
 
-  const submit = handleSubmit(async ({ name, address, pin: saved }) => {
+  const submit = handleSubmit(async ({ name, address }) => {
     setSaveError(false);
+    await locate(); // Guardar straight after typing: the pin still follows the address.
+    const saved = getValues('pin');
     try {
       const result = await updateRanch({
         name,
@@ -116,6 +156,7 @@ function RanchForm({ ranch }: { ranch: RanchDetail }) {
       });
       queryClient.setQueryData(ranchKey(result.id), result);
       reset(valuesOf(result));
+      locatedFor.current = result.address?.trim() ?? '';
       setEditing(false);
       snackbar.show({ kind: 'success', message: t('config.ranch.saved') });
     } catch {
@@ -125,8 +166,12 @@ function RanchForm({ ranch }: { ranch: RanchDetail }) {
     void refresh(); // The switcher and header show the new name.
   });
 
-  const movePin = (next: Pin) =>
-    setValue('pin', roundPin(next), { shouldDirty: true, shouldValidate: true });
+  const movePin = (next: Pin) => {
+    lookup.current++;
+    locatedFor.current = getValues('address').trim();
+    setLocating('idle');
+    placePin(next);
+  };
 
   const openAdd = () => setDialog(creation === 'allowed' ? 'add' : 'upsell');
   const others = ranches.filter((r) => r.id !== ranch.id);
@@ -197,6 +242,10 @@ function RanchForm({ ranch }: { ranch: RanchDetail }) {
               render={(field) => (
                 <TextField
                   {...field}
+                  onBlur={() => {
+                    field.onBlur();
+                    void locate();
+                  }}
                   autoComplete="street-address"
                   label={t('config.ranch.address')}
                   placeholder={t('config.ranch.addressPlaceholder')}
@@ -217,9 +266,19 @@ function RanchForm({ ranch }: { ranch: RanchDetail }) {
                 label={t('config.ranch.map')}
               />
             </Suspense>
-            <p className="text-secondary-text type-body-sm">
+            <p className="text-secondary-text type-body-sm" aria-live="polite">
               {editing
-                ? t('config.ranch.mapHint')
+                ? t(
+                    locating === 'busy'
+                      ? 'config.ranch.locating'
+                      : locating === 'missed'
+                        ? 'config.ranch.notFound'
+                        : locating === 'approx'
+                          ? 'config.ranch.approximate'
+                          : locating === 'failed'
+                            ? 'config.ranch.lookupFailed'
+                            : 'config.ranch.mapHint',
+                  )
                 : pin
                   ? ranch.can_edit
                     ? t('config.ranch.mapReadOnly')
