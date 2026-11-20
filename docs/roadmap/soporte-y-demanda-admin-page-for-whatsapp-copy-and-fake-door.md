@@ -2,6 +2,7 @@
 id: soporte-y-demanda-admin-page-for-whatsapp-copy-and-fake-door
 title: "Soporte y demanda: admin page for WhatsApp copy and fake-door taps"
 summary: A staff-only page in the web app where Smartbell admins edit the WhatsApp number, prefilled messages and community link, and see fake-door taps per feature.
+verifiedAt: 2026-11-20
 ---
 
 # Soporte y demanda: admin page for WhatsApp copy and fake-door taps
