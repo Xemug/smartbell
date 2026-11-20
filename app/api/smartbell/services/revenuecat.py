@@ -39,12 +39,19 @@ def _parse_date(value: Any) -> dt.datetime | None:
     return parsed if parsed.tzinfo else parsed.replace(tzinfo=dt.UTC)
 
 
+def _dict(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
 def _is_sandbox_purchase(subscriber: Subscriber, product_id: Any) -> bool:
-    subscription = (subscriber.get("subscriptions") or {}).get(product_id) or {}
-    one_time = (subscriber.get("non_subscriptions") or {}).get(product_id) or []
+    if not isinstance(product_id, str):
+        return False
+    subscription = _dict(_dict(subscriber.get("subscriptions")).get(product_id))
+    one_time = _dict(subscriber.get("non_subscriptions")).get(product_id)
+    one_time = one_time if isinstance(one_time, list) else []
     # One real purchase is enough, even if the same person also bought it while testing.
     return subscription.get("is_sandbox") is True or (
-        len(one_time) > 0 and all(p.get("is_sandbox") is True for p in one_time)
+        len(one_time) > 0 and all(_dict(p).get("is_sandbox") is True for p in one_time)
     )
 
 
@@ -52,15 +59,20 @@ def has_active_pro(
     subscriber: Subscriber | None, now: dt.datetime, allow_sandbox: bool = False
 ) -> bool:
     """True when RevenueCat's subscriber record grants Pro right now."""
-    entitlement = ((subscriber or {}).get("entitlements") or {}).get(plans.PRO_ENTITLEMENT)
-    if not isinstance(entitlement, dict) or subscriber is None:
+    if not isinstance(subscriber, dict):
+        return False
+    entitlement = _dict(subscriber.get("entitlements")).get(plans.PRO_ENTITLEMENT)
+    if not isinstance(entitlement, dict):
         return False
     # A production event can arrive for a tester who also holds a sandbox purchase.
     if not allow_sandbox and _is_sandbox_purchase(
         subscriber, entitlement.get("product_identifier")
     ):
         return False
-    if entitlement.get("expires_date") is None:
+    # Lifetime is an explicit null; a record missing the key is malformed, not forever.
+    if "expires_date" not in entitlement:
+        return False
+    if entitlement["expires_date"] is None:
         return True  # lifetime
     ends = [
         d
@@ -125,16 +137,22 @@ async def apply_event(
     if event.get("environment") == "SANDBOX" and not allow_sandbox:
         return {"action": "ignored", "reason": "sandbox"}
 
+    # Never creates a user: an unknown id (not signed up, not imported) is skipped. The rows stay
+    # locked until commit, so a second delivery for the same user waits and then reads RevenueCat
+    # after this one wrote: the last write is always from the latest read. Sorted, so two
+    # transfers in opposite directions can't deadlock.
+    users = await session.scalars(
+        select(User)
+        .where(User.firebase_uid.in_(uids_from_event(event)))
+        .order_by(User.firebase_uid)
+        .with_for_update()
+    )
     updated: list[dict[str, Any]] = []
-    for uid in uids_from_event(event):
-        # Never creates a user: an unknown id (not signed up, not imported) is skipped.
-        user = await session.scalar(select(User).where(User.firebase_uid == uid))
-        if user is None:
-            continue
+    for user in users.all():
         pro = await sync_user_pro(
             session, user, fetch_subscriber, allow_sandbox=allow_sandbox, now=now
         )
-        updated.append({"uid": uid, "pro": pro})
+        updated.append({"uid": user.firebase_uid, "pro": pro})
     if not updated:
         return {"action": "ignored", "reason": "no matching user"}
     await session.commit()
@@ -154,7 +172,9 @@ async def import_pro_entitlement(
     Reads RevenueCat's live state, never the legacy `Users.premium` field (any client could write
     that). Returns whether they have Pro, or None when no user has that uid. The caller commits.
     """
-    user = await session.scalar(select(User).where(User.firebase_uid == firebase_uid))
+    user = await session.scalar(
+        select(User).where(User.firebase_uid == firebase_uid).with_for_update()
+    )
     if user is None:
         return None
     return await sync_user_pro(
@@ -174,7 +194,8 @@ def http_subscriber_fetcher(
                 response = await client.get(url, headers={"Authorization": f"Bearer {secret_key}"})
         except httpx.HTTPError as err:
             raise RevenueCatUnavailable(type(err).__name__) from None
-        if response.status_code != 200:
+        # 201: RevenueCat created the subscriber just now, as it does for anyone who never paid.
+        if response.status_code not in (200, 201):
             raise RevenueCatUnavailable(f"RevenueCat returned {response.status_code}")
         try:
             subscriber = response.json().get("subscriber")

@@ -37,7 +37,11 @@ The parity rule on `mobile-store-release`: no live feature may disappear. Paying
 - **Atomic per event:** a TRANSFER touches two users. If RevenueCat fails for one, nothing is committed and the webhook returns non-2xx so RevenueCat retries.
 - **Webhook config:** `REVENUECAT_WEBHOOK_AUTH` (the whole `Authorization` header value set in RevenueCat's dashboard), `REVENUECAT_SECRET_KEY` (to read `GET /v1/subscribers/{uid}`), `REVENUECAT_API_URL`, `REVENUECAT_ALLOW_SANDBOX` (default false). Either secret unset: every call gets 503. A wrong header: 401. Neither is required at startup, so existing deploys keep booting.
 - **Import:** `legacy-firestore-import` isn't built yet. It must call `revenuecat.import_pro_entitlement(session, firebase_uid, fetch_subscriber)` once per imported user, after that user's ranches exist, then commit. It reads RevenueCat's live state, never `Users.premium`.
-- **Known gap, same as legacy:** two events for the same user processed at the same moment can finish in the wrong order and leave a stale value until the next event. RevenueCat sends events one at a time per user in practice.
+- **Concurrent deliveries:** the event's users are locked (`SELECT … FOR UPDATE`, sorted by uid) before RevenueCat is read, so a second delivery for the same user waits and re-reads after the first commits.
+- **RevenueCat `201`:** `GET /v1/subscribers/{uid}` creates unknown subscribers and answers 201; that counts as a normal answer (free), not an outage.
+- **Known gaps (accepted after review, 2026-11-20):**
+  - An event for a uid with no `User` row is answered 200 and dropped, as in legacy. New-app users have a row before they can reach the paywall (`auth` creates it at sign-in), and legacy users get theirs from the import, which reads RevenueCat at that point.
+  - Pro bought while owning no ranch lands nowhere: every sign-up gets "Mi rancho", so this needs a member-only imported user who buys Pro before creating a ranch. The next RevenueCat event fixes it. If it matters, `plans-billing` can move Pro onto the user.
 - **PR #22 (`profile-ranch-config`)** also rewrites `plans.py` (`has_pro(session, user)` plus `ranch_creation`). Whichever merges second resolves by keeping both: #22's user-scoped check should read `Ranch.plan_id` on owned ranches, which is what this card writes.
 
 ## Effort

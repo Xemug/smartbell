@@ -492,3 +492,51 @@ async def test_an_imported_free_owner_sees_the_upsell(
 
 async def test_the_import_skips_an_unknown_uid(tenant_db: AsyncSession) -> None:
     assert await revenuecat.import_pro_entitlement(tenant_db, "nobody", fixed(PRO)) is None
+
+
+# --- Review fixes --------------------------------------------------------------------------------
+
+
+def test_a_record_missing_expires_date_is_not_lifetime() -> None:
+    assert not has_active_pro({"entitlements": {"Pro": {"product_identifier": "x"}}}, NOW)
+
+
+@pytest.mark.parametrize(
+    "subscriber",
+    [
+        {
+            "entitlements": {"Pro": {"expires_date": None, "product_identifier": "l"}},
+            "non_subscriptions": {"l": [None]},
+        },
+        {
+            "entitlements": {"Pro": {"expires_date": None, "product_identifier": ["x"]}},
+            "subscriptions": [],
+        },
+        {"entitlements": []},
+        {
+            "entitlements": {"Pro": {"expires_date": None, "product_identifier": "m"}},
+            "subscriptions": {"m": "x"},
+            "non_subscriptions": "x",
+        },
+    ],
+    ids=["null-purchase", "list-product", "list-entitlements", "string-shapes"],
+)
+def test_odd_subscriber_shapes_do_not_crash(subscriber: Subscriber) -> None:
+    has_active_pro(subscriber, NOW)
+
+
+async def test_the_fetcher_accepts_a_subscriber_revenuecat_just_created() -> None:
+    transport = httpx.MockTransport(lambda request: httpx.Response(201, json={"subscriber": FREE}))
+    fetch = revenuecat.http_subscriber_fetcher("https://rc.test", "sk", transport=transport)
+
+    assert await fetch("never-paid") == FREE
+
+
+async def test_an_oversized_body_is_refused(hooked_app: FastAPI, tenant_api: AsyncClient) -> None:
+    from smartbell.routes.webhooks import MAX_BODY_BYTES
+
+    body = json.dumps({"event": {"type": "RENEWAL", "pad": "x" * MAX_BODY_BYTES}})
+    response = await tenant_api.post(
+        "/api/webhooks/revenuecat", headers={"Authorization": SECRET}, content=body
+    )
+    assert response.status_code == 413

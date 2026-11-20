@@ -6,6 +6,7 @@ no secret configured means every call is refused. Non-2xx makes RevenueCat retry
 
 import hashlib
 import hmac
+import json
 import logging
 from typing import Annotated, Any
 
@@ -59,11 +60,13 @@ async def revenuecat_webhook(
     if not _same_secret(given, settings.revenuecat_webhook_auth):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unauthorized")
 
-    raw = await request.body()
-    if len(raw) > MAX_BODY_BYTES:
-        raise HTTPException(status.HTTP_413_CONTENT_TOO_LARGE, "too_large")
+    raw = bytearray()
+    async for chunk in request.stream():  # Stop reading at the cap, not after the whole body.
+        raw += chunk
+        if len(raw) > MAX_BODY_BYTES:
+            raise HTTPException(status.HTTP_413_CONTENT_TOO_LARGE, "too_large")
     try:
-        body: Any = await request.json()
+        body: Any = json.loads(raw)
     except ValueError:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "bad_event") from None
     event = body.get("event") if isinstance(body, dict) else None
