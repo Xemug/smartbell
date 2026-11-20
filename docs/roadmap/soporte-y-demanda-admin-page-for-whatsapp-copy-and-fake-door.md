@@ -48,5 +48,5 @@ S.
 - [x] A non-admin never sees the menu entry, is redirected from the route, and gets 403 from the API (tests).
 - [x] An admin saves each field, and an invalid number or link is refused with a field error.
 - [x] The table matches the API for a fixture with taps across two dates, and the "since" filter narrows it.
-- [ ] The founder edits the Soporte message in the browser and sees it in WhatsApp (human).
+- [x] The founder edits the Soporte message in the browser and sees it in WhatsApp (human, confirmed 2026-11-20).
 - [x] Tests for the new code pass in CI.
