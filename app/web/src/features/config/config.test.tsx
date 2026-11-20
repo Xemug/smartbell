@@ -464,6 +464,27 @@ describe('Datos Rancho', () => {
     expect(await screen.findByText('pin 20.5,-103.1')).toBeInTheDocument();
   });
 
+  it('drops the old pin when a new address is not on the map', async () => {
+    fakeApi.ranches = [
+      ranch('r1', 'Mi rancho', { latitude: 20.67, longitude: -103.35, address: 'Chapalita' }),
+    ];
+    renderAt('/config/ranchos');
+    expect(await screen.findByText('pin 20.67,-103.35')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Editar' }));
+    await user.clear(field('Dirección'));
+    await user.type(field('Dirección'), '3919 Calle Inventada');
+    await user.tab();
+
+    expect(await screen.findByText('no pin')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(fakeApi.sent('PATCH', '/api/ranch')).toHaveLength(1));
+    expect(fakeApi.first('PATCH', '/api/ranch').body).toMatchObject({
+      address: '3919 Calle Inventada',
+      latitude: null,
+      longitude: null,
+    });
+  });
+
   it('asks for a nudge when only the area was found', async () => {
     geocode.mockResolvedValue({ pin: { latitude: 20.81, longitude: -102.76 }, exact: false });
     renderAt('/config/ranchos');

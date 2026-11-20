@@ -113,6 +113,8 @@ function RanchForm({ ranch }: { ranch: RanchDetail }) {
   // The lookup in flight, so Guardar waits for it instead of saving the old pin.
   const pending = useRef<Promise<void>>(Promise.resolve());
 
+  const clearPin = () => setValue('pin', null, { shouldDirty: true, shouldValidate: true });
+
   /** Moves the pin to a changed address. A pin moved by hand afterwards wins. */
   const locate = (): Promise<void> => {
     const address = getValues('address').trim();
@@ -123,12 +125,15 @@ function RanchForm({ ranch }: { ranch: RanchDetail }) {
     pending.current = geocodeAddress(address).then(
       (found) => {
         if (mine !== lookup.current) return;
+        // A new address the map can't place drops the old pin: it marks a different place now.
         if (found) placePin(found.pin);
+        else clearPin();
         setLocating(!found ? 'missed' : found.exact ? 'idle' : 'approx');
       },
       () => {
         if (mine !== lookup.current) return;
         locatedFor.current = ''; // Offline or throttled: leaving the field again retries.
+        clearPin();
         setLocating('failed');
       },
     );
@@ -152,7 +157,12 @@ function RanchForm({ ranch }: { ranch: RanchDetail }) {
       const result = await updateRanch({
         name,
         address,
-        ...(saved ? roundPin(saved) : {}),
+        // A saved pin the new address couldn't place is cleared, not left behind.
+        ...(saved
+          ? roundPin(saved)
+          : ranch.latitude !== null
+            ? { latitude: null, longitude: null }
+            : {}),
       });
       queryClient.setQueryData(ranchKey(result.id), result);
       reset(valuesOf(result));

@@ -6,6 +6,9 @@ import type { Pin } from './pin';
 // identifies the app.
 const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
 
+/** Mexico's bounding box (west, north, east, south), used as a preference, not a limit. */
+const MEXICO = '-118.6,32.8,-86.5,14.4';
+
 /** Spacing between requests. Tests set it to 0. */
 export const timing = { gapMs: 1100 };
 let lastRequest = 0;
@@ -62,7 +65,9 @@ async function search(q: string, signal?: AbortSignal): Promise<Pin | null> {
     q,
     format: 'jsonv2',
     limit: '1',
-    countrycodes: 'mx',
+    // Mexico ranks first (most ranches are there) without hiding the rest of the world.
+    viewbox: MEXICO,
+    bounded: '0',
     'accept-language': 'es',
   });
   const response = await fetch(`${NOMINATIM}?${params}`, { signal });
@@ -74,7 +79,7 @@ async function search(q: string, signal?: AbortSignal): Promise<Pin | null> {
   return found;
 }
 
-/** Where an address is, or null when OSM doesn't know it. Mexico only: every ranch is there. */
+/** Where an address is, or null when OSM doesn't know it. Anywhere, Mexico first. */
 export async function geocodeAddress(
   address: string,
   signal?: AbortSignal,

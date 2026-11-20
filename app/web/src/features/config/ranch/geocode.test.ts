@@ -39,7 +39,7 @@ describe('searchesFor', () => {
 });
 
 describe('geocodeAddress', () => {
-  it('asks OSM in Mexico and reads the first hit as exact', async () => {
+  it('asks OSM worldwide, Mexico first, and reads the first hit as exact', async () => {
     const fetch = vi.fn(async () => Response.json([{ lat: '20.6866131', lon: '-103.4185478' }]));
     vi.stubGlobal('fetch', fetch);
 
@@ -49,7 +49,9 @@ describe('geocodeAddress', () => {
     });
     const url = new URL(String((fetch.mock.calls[0] as unknown[])[0]));
     expect(url.origin + url.pathname).toBe('https://nominatim.openstreetmap.org/search');
-    expect(url.searchParams.get('countrycodes')).toBe('mx');
+    expect(url.searchParams.get('countrycodes')).toBeNull(); // A ranch in the US is found too.
+    expect(url.searchParams.get('viewbox')).toBe('-118.6,32.8,-86.5,14.4');
+    expect(url.searchParams.get('bounded')).toBe('0');
     expect(url.searchParams.get('limit')).toBe('1');
 
     await geocodeAddress('joseph haydn 4942, zapopan');
