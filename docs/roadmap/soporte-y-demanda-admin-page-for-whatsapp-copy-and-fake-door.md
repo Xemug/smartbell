@@ -49,4 +49,4 @@ S.
 - [x] An admin saves each field, and an invalid number or link is refused with a field error.
 - [x] The table matches the API for a fixture with taps across two dates, and the "since" filter narrows it.
 - [ ] The founder edits the Soporte message in the browser and sees it in WhatsApp (human).
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
