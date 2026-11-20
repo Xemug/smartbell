@@ -29,13 +29,24 @@ The parity rule on `mobile-store-release`: no live feature may disappear. Paying
 - **Initial state:** the import sets it from the live RevenueCat state, not from the client-writable legacy `premium` field.
 - **Out of scope:** the paywall and purchase screens, which stay in `plans-billing`.
 
+## Decisions and assumptions (2026-11-20, while building)
+
+- **Where the rules live:** `services/revenuecat.py` is a port of `legacy/firebase/functions/lib.js` (`hasActivePro`, `uidsFromEvent`, `applyRevenueCatEvent`), and `services/plans.py` stays the only place that answers "has Pro". It now also holds `set_owner_pro`.
+- **`plan_id` value:** `"Pro"` (the RevenueCat entitlement id) while active, `NULL` otherwise, written on every ranch the owner owns.
+- **`has_pro(ranch_id)` asks about the owner:** a ranch counts as Pro when any ranch its owner owns carries the entitlement. So a ranch created after the purchase is Pro at once, with no wait for the next event. There is no ownership transfer yet; when one is added it must move `plan_id` with it.
+- **Atomic per event:** a TRANSFER touches two users. If RevenueCat fails for one, nothing is committed and the webhook returns non-2xx so RevenueCat retries.
+- **Webhook config:** `REVENUECAT_WEBHOOK_AUTH` (the whole `Authorization` header value set in RevenueCat's dashboard), `REVENUECAT_SECRET_KEY` (to read `GET /v1/subscribers/{uid}`), `REVENUECAT_API_URL`, `REVENUECAT_ALLOW_SANDBOX` (default false). Either secret unset: every call gets 503. A wrong header: 401. Neither is required at startup, so existing deploys keep booting.
+- **Import:** `legacy-firestore-import` isn't built yet. It must call `revenuecat.import_pro_entitlement(session, firebase_uid, fetch_subscriber)` once per imported user, after that user's ranches exist, then commit. It reads RevenueCat's live state, never `Users.premium`.
+- **Known gap, same as legacy:** two events for the same user processed at the same moment can finish in the wrong order and leave a stale value until the next event. RevenueCat sends events one at a time per user in practice.
+- **PR #22 (`profile-ranch-config`)** also rewrites `plans.py` (`has_pro(session, user)` plus `ranch_creation`). Whichever merges second resolves by keeping both: #22's user-scoped check should read `Ranch.plan_id` on owned ranches, which is what this card writes.
+
 ## Effort
 
 S.
 
 ## Acceptance
 
-- [ ] A purchase event gives every ranch the owner owns Pro, and a lapse or refund removes it (tests ported from `legacy/firebase`).
-- [ ] A wrong or missing webhook secret is refused and changes nothing.
-- [ ] An imported paying owner can invite on first sign-in; a free owner sees the upsell.
+- [x] A purchase event gives every ranch the owner owns Pro, and a lapse or refund removes it (tests ported from `legacy/firebase`).
+- [x] A wrong or missing webhook secret is refused and changes nothing.
+- [x] An imported paying owner can invite on first sign-in; a free owner sees the upsell.
 - [ ] Tests for the new code pass in CI.

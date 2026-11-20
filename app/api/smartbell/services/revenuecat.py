@@ -56,7 +56,9 @@ def has_active_pro(
     if not isinstance(entitlement, dict) or subscriber is None:
         return False
     # A production event can arrive for a tester who also holds a sandbox purchase.
-    if not allow_sandbox and _is_sandbox_purchase(subscriber, entitlement.get("product_identifier")):
+    if not allow_sandbox and _is_sandbox_purchase(
+        subscriber, entitlement.get("product_identifier")
+    ):
         return False
     if entitlement.get("expires_date") is None:
         return True  # lifetime
