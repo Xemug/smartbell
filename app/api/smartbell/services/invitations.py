@@ -45,7 +45,7 @@ class InvitationPreview:
     invited_by: str | None
     email: str
     role: Role
-    status: str  # "pending", "accepted" or "expired"
+    status: str  # "pending", "accepted", "expired" or "revoked"
 
 
 def hash_token(token: str) -> str:
@@ -63,10 +63,13 @@ def _expired(invitation: Invitation) -> bool:
     return expires <= _now()
 
 
-def _status(invitation: Invitation) -> str:
+async def _status(session: AsyncSession, invitation: Invitation) -> str:
+    """Says "revoked" when accepting is sure to fail: sender gone or trimmed, or no Pro."""
     if invitation.accepted_at is not None:
         return "accepted"
-    return "expired" if _expired(invitation) else "pending"
+    if _expired(invitation):
+        return "expired"
+    return "pending" if await _grantable(session, invitation) else "revoked"
 
 
 def _check_codes(ctx: RanchContext, role: Role, codes: frozenset[Permission]) -> None:
@@ -78,6 +81,11 @@ def _check_codes(ctx: RanchContext, role: Role, codes: frozenset[Permission]) ->
 
 
 async def list_pending(session: AsyncSession, ranch_id: uuid.UUID) -> list[Invitation]:
+    """Invites that can still be accepted; a revoked one is left out, so the inviter sends anew."""
+    return [row for row in await _open(session, ranch_id) if await _grantable(session, row)]
+
+
+async def _open(session: AsyncSession, ranch_id: uuid.UUID) -> list[Invitation]:
     rows = await session.scalars(
         select(Invitation)
         .where(
@@ -117,7 +125,7 @@ async def create(
             Invitation.accepted_at.is_(None),
         )
     )
-    if len(await list_pending(session, ctx.ranch_id)) >= MAX_PENDING_INVITATIONS:
+    if len(await _open(session, ctx.ranch_id)) >= MAX_PENDING_INVITATIONS:
         raise MembershipRefused("invitation_limit", 409)
     token = secrets.token_urlsafe(32)
     invitation = Invitation(
@@ -134,7 +142,12 @@ async def create(
         expires_at=_now() + INVITATION_TTL,
     )
     session.add(invitation)
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError:
+        # Another request invited the same email at the same moment; its invite stands.
+        await session.rollback()
+        raise MembershipRefused("invitation_pending", 409) from None
     return invitation, token
 
 
@@ -169,8 +182,16 @@ async def preview(session: AsyncSession, token: str) -> InvitationPreview:
         invited_by=inviter.first_name if inviter else None,
         email=invitation.email,
         role=invitation.role,
-        status=_status(invitation),
+        status=await _status(session, invitation),
     )
+
+
+async def _grantable(session: AsyncSession, invitation: Invitation) -> bool:
+    try:
+        await _check_still_grantable(session, invitation)
+    except MembershipRefused:
+        return False
+    return True
 
 
 async def _check_still_grantable(session: AsyncSession, invitation: Invitation) -> None:
@@ -187,7 +208,9 @@ async def _check_still_grantable(session: AsyncSession, invitation: Invitation) 
     if sender is None:
         raise MembershipRefused("invitation_revoked", 410)
     held = effective(sender.role, sender.permissions)
-    codes = frozenset(Permission(code) for code in invitation.permissions)
+    codes = frozenset(c for c in Permission if c.value in invitation.permissions)
+    if len(codes) != len(set(invitation.permissions)):  # A code that no longer exists.
+        raise MembershipRefused("invitation_revoked", 410)
     if Permission.USERS_ADD not in held or not codes <= held:
         raise MembershipRefused("invitation_revoked", 410)
 
@@ -212,25 +235,27 @@ async def accept(
         raise MembershipRefused("email_unverified", 403)
     ranch_id = invitation.ranch_id
     await _check_still_grantable(session, invitation)
+    if await session.get(Membership, (user.id, ranch_id)) is not None:
+        # Accepting wouldn't apply the invited role; editing the member is how that changes.
+        raise MembershipRefused("already_member", 409)
     invitation.accepted_at = _now()
     try:
-        if await session.get(Membership, (user.id, ranch_id)) is None:
-            session.add(
-                Membership(
-                    user_id=user.id,
-                    ranch_id=ranch_id,
-                    role=invitation.role,
-                    permissions=list(invitation.permissions),
-                )
+        session.add(
+            Membership(
+                user_id=user.id,
+                ranch_id=ranch_id,
+                role=invitation.role,
+                permissions=list(invitation.permissions),
             )
-            # record() flushes, so a lost race surfaces here, not only at commit.
-            await history.record(
-                session,
-                ranch_id,
-                invitation.invited_by_user_id,
-                HistoryKey.USERS_ADDED,
-                HistoryRefs(user_ids=[user.id]),
-            )
+        )
+        # record() flushes, so a lost race surfaces here, not only at commit.
+        await history.record(
+            session,
+            ranch_id,
+            invitation.invited_by_user_id,
+            HistoryKey.USERS_ADDED,
+            HistoryRefs(user_ids=[user.id]),
+        )
         await session.commit()
     except IntegrityError:
         # Another tab accepted the same link first; its transaction made the membership.

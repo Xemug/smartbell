@@ -75,7 +75,7 @@ def _out(invitation: Invitation) -> InvitationOut:
         first_name=invitation.first_name,
         last_name=invitation.last_name,
         role=invitation.role,
-        permissions=[Permission(code) for code in invitation.permissions],
+        permissions=[code for code in Permission if code.value in invitation.permissions],
         created_at=invitation.created_at,
         expires_at=invitation.expires_at,
     )

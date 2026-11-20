@@ -8,6 +8,7 @@ import pytest
 from fastapi import APIRouter, Depends, FastAPI, status
 from httpx import AsyncClient
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from smartbell.enums import HistoryKey, Role
@@ -583,3 +584,91 @@ async def test_accepting_needs_a_verified_email(
     assert (response.status_code, response.json()["detail"]) == (403, "email_unverified")
     assert await tenant_db.get(Membership, (squatter.user_id, owner.ranch_id)) is None
     assert preview.json()["status"] == "pending"  # Still usable once the email is confirmed.
+
+
+async def test_two_invites_to_one_email_at_once_leave_one(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The second request's delete ran before the first committed, so it saw nothing to replace."""
+    owner = await sign_up(tenant_api, "owner")
+    await give_pro(tenant_db, owner.ranch_id)
+    await invite(tenant_api, owner)
+    original_execute = AsyncSession.execute
+
+    async def stale_execute(self: AsyncSession, statement: Any, *args: Any, **kw: Any) -> Any:
+        if getattr(statement, "is_delete", False) and statement.table.name == "invitations":
+            return None  # What this request saw before the other one committed.
+        return await original_execute(self, statement, *args, **kw)
+
+    monkeypatch.setattr(AsyncSession, "execute", stale_execute)
+
+    response = await tenant_api.post(
+        "/api/ranch/invitations", headers=owner.headers(), json=invite_body()
+    )
+
+    assert (response.status_code, response.json()["detail"]) == (409, "invitation_pending")
+    monkeypatch.undo()
+    listed = await tenant_api.get("/api/ranch/invitations", headers=owner.headers())
+    assert len(listed.json()) == 1
+
+
+async def test_a_dead_senders_invite_reads_revoked_and_leaves_the_list(
+    ranch_pair: RanchPair, tenant_api: AsyncClient, tenant_db: AsyncSession
+) -> None:
+    await give_pro(tenant_db, ranch_pair.ranch_a)
+    admin = await sign_up(tenant_api, "admin")
+    await add_member(tenant_db, admin, ranch_pair.ranch_a, Role.ADMINISTRADOR)
+    created = await invite(tenant_api, Account(admin.uid, admin.user_id, ranch_pair.ranch_a))
+    owner_headers = ranch_pair.owner.headers(ranch_pair.ranch_a)
+    await tenant_api.delete(f"/api/ranch/members/{admin.user_id}", headers=owner_headers)
+
+    preview = await tenant_api.get(f"/api/invitations/{created['token']}")
+    listed = await tenant_api.get("/api/ranch/invitations", headers=owner_headers)
+
+    assert preview.json()["status"] == "revoked"
+    assert listed.json() == []
+
+
+async def test_accepting_as_an_existing_member_is_refused_and_keeps_the_invite(
+    tenant_api: AsyncClient, tenant_db: AsyncSession
+) -> None:
+    """Accepting would not apply the invited role, so it must not pretend to."""
+    owner = await sign_up(tenant_api, "owner")
+    await give_pro(tenant_db, owner.ranch_id)
+    created = await invite(tenant_api, owner)
+    vet = await sign_up(tenant_api, "vet")
+    await add_member(tenant_db, vet, owner.ranch_id, Role.TECNICO_CAMPO)
+
+    response = await tenant_api.post(
+        f"/api/invitations/{created['token']}/accept", headers=auth("vet")
+    )
+
+    assert (response.status_code, response.json()["detail"]) == (409, "already_member")
+    membership = await tenant_db.get(Membership, (vet.user_id, owner.ranch_id))
+    assert membership is not None and membership.role is Role.TECNICO_CAMPO
+    invitation = await tenant_db.scalar(
+        select(Invitation).where(Invitation.token_hash == hash_token(str(created["token"])))
+    )
+    assert invitation is not None and invitation.accepted_at is None
+
+
+async def test_one_open_invite_per_email_is_enforced_by_the_database(
+    tenant_api: AsyncClient, tenant_db: AsyncSession
+) -> None:
+    owner = await sign_up(tenant_api, "owner")
+    for n in range(2):
+        tenant_db.add(
+            Invitation(
+                id=uuid.uuid4(),
+                ranch_id=owner.ranch_id,
+                email="vet@example.com",
+                first_name="Juan",
+                role=Role.MEDICO,
+                permissions=MEDICO_CODES,
+                token_hash=f"{n:064d}",
+                expires_at=dt.datetime.now(dt.UTC) + dt.timedelta(days=7),
+            )
+        )
+    with pytest.raises(IntegrityError):
+        await tenant_db.commit()
+    await tenant_db.rollback()

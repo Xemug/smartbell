@@ -175,6 +175,13 @@ export function UsersPage() {
           </Button>
         </Banner>
       )}
+      {invitations.isError && (
+        <Banner tone="error" title={t('users.pending.loadError')}>
+          <Button size="sm" variant="outline" onClick={() => void invitations.refetch()}>
+            {t('users.retry')}
+          </Button>
+        </Banner>
+      )}
       {members.data && (
         <DataTable
           label={t('users.title')}

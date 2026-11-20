@@ -230,6 +230,15 @@ beforeEach(() => {
 });
 
 describe('UsersPage', () => {
+  it('says the pending invites failed to load, instead of hiding them', async () => {
+    overrides['GET /api/ranch/invitations'] = () => Response.json({}, { status: 500 });
+    renderAt('/config/usuarios');
+
+    expect(
+      await screen.findByText('No pudimos cargar las invitaciones pendientes.'),
+    ).toBeInTheDocument();
+  });
+
   it('lists members with role and actions only for the members the owner may change', async () => {
     renderAt('/config/usuarios');
 
@@ -472,11 +481,46 @@ describe('InvitationPage', () => {
     );
     expect(auth.sendVerificationEmail).toHaveBeenCalled();
     expect(await screen.findByText('Enlace enviado. Revisa tu correo.')).toBeInTheDocument();
-    expect(pendingInvitation()).toBe('tok-123'); // Not a dead end: the invite stays.
     await userEvent.click(screen.getByRole('button', { name: 'Ya confirmé mi correo' }));
 
     expect(await screen.findByText('home')).toBeInTheDocument();
     expect(auth.refreshIdentity).toHaveBeenCalled();
+  });
+
+  it('says a revoked invite is dead and does not remember it', async () => {
+    overrides['GET /api/invitations/tok-123'] = () =>
+      Response.json({
+        ranch_name: 'Rancho San José',
+        invited_by: 'Ana',
+        email: 'ana@example.com',
+        role: 'MEDICO',
+        status: 'revoked',
+      });
+    renderAt('/invitacion/tok-123', signedOut);
+
+    expect(
+      await screen.findByText('Esta invitación ya no es válida. Pide una nueva.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Crear cuenta' })).toBeNull();
+    expect(pendingInvitation()).toBeNull();
+  });
+
+  it('forgets the link once a signed-in user lands on it, so later sign-ins go home', async () => {
+    rememberInvitation('tok-123');
+    renderAt('/invitacion/tok-123');
+
+    await screen.findByRole('button', { name: 'Aceptar invitación' });
+
+    expect(pendingInvitation()).toBeNull();
+  });
+
+  it('offers a retry when the account fails to load on the invite page', async () => {
+    const auth: AuthApi = { ...authFor('DUENO', ALL), state: { status: 'sessionError' } };
+    renderAt('/invitacion/tok-123', auth);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Reintentar' }));
+
+    expect(auth.retry).toHaveBeenCalled();
   });
 
   it('sends a just-signed-in invitee back to the invite', async () => {

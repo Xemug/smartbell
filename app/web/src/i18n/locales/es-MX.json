@@ -232,7 +232,8 @@
       "title": "Invitaciones pendientes",
       "expires": "Vence el {{date}}",
       "revoke": "Cancelar invitación a {{email}}",
-      "revoked": "Invitación cancelada"
+      "revoked": "Invitación cancelada",
+      "loadError": "No pudimos cargar las invitaciones pendientes."
     },
     "roles": {
       "DUENO": "Dueño",
@@ -316,7 +317,9 @@
       "cannot_edit_self": "No puedes cambiar tus propios permisos.",
       "permission_denied": "No tienes permiso para hacer esto.",
       "member_not_found": "Este usuario ya no está en tu rancho.",
-      "generic": "Algo salió mal. Intenta de nuevo."
+      "generic": "Algo salió mal. Intenta de nuevo.",
+      "invitation_not_found": "Esta invitación ya no existe.",
+      "invitation_pending": "Ya hay una invitación pendiente para este correo."
     },
     "invite": {
       "title": "Te invitaron a Smartbell",
@@ -338,7 +341,8 @@
         "generic": "No pudimos abrir la invitación. Intenta de nuevo.",
         "invitation_revoked": "Esta invitación ya no es válida. Pide una nueva.",
         "plan_required": "Este rancho ya no tiene el plan Pro. Pide al dueño que lo renueve.",
-        "email_unverified": "Para aceptar, confirma tu correo tu correo: pide el enlace de confirmación, ábrelo y vuelve aquí."
+        "email_unverified": "Para aceptar, confirma tu correo tu correo: pide el enlace de confirmación, ábrelo y vuelve aquí.",
+        "already_member": "Ya trabajas en este rancho. Pide al dueño que cambie tus permisos si hace falta."
       },
       "verify": {
         "body": "Para aceptar, confirma tu correo {{email}}: pide el enlace de confirmación, ábrelo y vuelve aquí.",
@@ -346,7 +350,9 @@
         "sent": "Enlace enviado. Revisa tu correo.",
         "failed": "No pudimos enviar el enlace. Intenta de nuevo.",
         "done": "Ya confirmé mi correo"
-      }
+      },
+      "sessionError": "No pudimos cargar tu cuenta.",
+      "retry": "Reintentar"
     }
   }
 }

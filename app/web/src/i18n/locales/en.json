@@ -232,7 +232,8 @@
       "title": "Pending invitations",
       "expires": "Expires {{date}}",
       "revoke": "Cancel invitation to {{email}}",
-      "revoked": "Invitation cancelled"
+      "revoked": "Invitation cancelled",
+      "loadError": "We couldn't load the pending invites."
     },
     "roles": {
       "DUENO": "Owner",
@@ -316,7 +317,9 @@
       "cannot_edit_self": "You can't change your own permissions.",
       "permission_denied": "You don't have permission to do this.",
       "member_not_found": "This user is no longer on your ranch.",
-      "generic": "Something went wrong. Try again."
+      "generic": "Something went wrong. Try again.",
+      "invitation_not_found": "This invite no longer exists.",
+      "invitation_pending": "There is already a pending invite for this email."
     },
     "invite": {
       "title": "You're invited to Smartbell",
@@ -338,7 +341,8 @@
         "generic": "We couldn't open the invitation. Try again.",
         "invitation_revoked": "This invitation is no longer valid. Ask for a new one.",
         "plan_required": "This ranch no longer has the Pro plan. Ask the owner to renew it.",
-        "email_unverified": "To accept, confirm tu correo: ask for the confirmation link, open it and come back here."
+        "email_unverified": "To accept, confirm tu correo: ask for the confirmation link, open it and come back here.",
+        "already_member": "You already work at this ranch. Ask the owner to change your permissions if needed."
       },
       "verify": {
         "body": "To accept, confirm {{email}}: ask for the confirmation link, open it and come back here.",
@@ -346,7 +350,9 @@
         "sent": "Link sent. Check your email.",
         "failed": "We couldn't send the link. Try again.",
         "done": "I've confirmed my email"
-      }
+      },
+      "sessionError": "We couldn't load your account.",
+      "retry": "Try again"
     }
   }
 }

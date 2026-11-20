@@ -5,7 +5,7 @@ import uuid
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import DateTime, Float, ForeignKey, Numeric, String
+from sqlalchemy import DateTime, Float, ForeignKey, Index, Numeric, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from smartbell.db import Base
@@ -150,6 +150,17 @@ class Invitation(Base):
     """An invite to join a ranch (`user-admin`). Only a hash of its link token is stored."""
 
     __tablename__ = "invitations"
+    # One open invite per person and ranch: a second request at the same moment can't leave two.
+    __table_args__ = (
+        Index(
+            "uq_invitations_ranch_id_email_open",
+            "ranch_id",
+            "email",
+            unique=True,
+            postgresql_where=text("accepted_at IS NULL"),
+            sqlite_where=text("accepted_at IS NULL"),
+        ),
+    )
 
     id: Mapped[UuidPk]
     ranch_id: Mapped[uuid.UUID] = mapped_column(

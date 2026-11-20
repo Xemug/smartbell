@@ -15,6 +15,7 @@ import { acceptInvitation, errorCode, previewInvitation } from './api';
 import { forgetInvitation, rememberInvitation } from './invitationLink';
 
 const terminalErrors = new Set([
+  'already_member',
   'email_mismatch',
   'invitation_used',
   'invitation_expired',
@@ -33,6 +34,8 @@ export function InvitationPage() {
   const { token = '' } = useParams();
   const { state, retry, signOut, sendVerificationEmail, refreshIdentity } = useAuth();
   const [verification, setVerification] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
+  // Kept apart from accept.error, which clears while a retry is in flight and would flicker.
+  const [unverified, setUnverified] = useState(false);
   const preview = useQuery({
     queryKey: ['invitation', token],
     queryFn: () => previewInvitation(token),
@@ -42,6 +45,7 @@ export function InvitationPage() {
     mutationFn: () => acceptInvitation(token),
     // These won't change on a retry, so the sign-in must stop sending them back here.
     onError: (error) => {
+      setUnverified(errorCode(error) === 'email_unverified');
       if (terminalErrors.has(errorCode(error))) forgetInvitation();
     },
     onSuccess: (ranchId) => {
@@ -59,10 +63,14 @@ export function InvitationPage() {
     },
   });
   const signedOut = state.status === 'signedOut';
-  const unverified = accept.isError && errorCode(accept.error) === 'email_unverified';
+  const signedIn = state.status === 'signedIn';
+  const open = preview.data?.status === 'pending';
   useEffect(() => {
-    if (signedOut) rememberInvitation(token);
-  }, [signedOut, token]);
+    // Remembered only to bring a signed-out invitee back after signing up or in; once they are
+    // here signed in it has done its job, so a later sign-in in this tab goes where it normally would.
+    if (signedOut && open) rememberInvitation(token);
+    if (signedIn) forgetInvitation();
+  }, [signedOut, signedIn, open, token]);
 
   const errorText = (code: string) =>
     t(`users.invite.errors.${code}`, {
@@ -101,8 +109,22 @@ export function InvitationPage() {
         </p>
         {closed && (
           <Banner tone="warning">
-            {errorText(inv.status === 'accepted' ? 'invitation_used' : 'invitation_expired')}
+            {errorText(
+              inv.status === 'accepted'
+                ? 'invitation_used'
+                : inv.status === 'revoked'
+                  ? 'invitation_revoked'
+                  : 'invitation_expired',
+            )}
           </Banner>
+        )}
+        {!closed && state.status === 'sessionError' && (
+          <>
+            <Banner tone="error">{t('users.invite.sessionError')}</Banner>
+            <Button fullWidth size="lg" onClick={retry}>
+              {t('users.invite.retry')}
+            </Button>
+          </>
         )}
         {!closed && signedOut && (
           <>
@@ -117,7 +139,7 @@ export function InvitationPage() {
             </Link>
           </>
         )}
-        {!closed && state.status === 'signedIn' && (
+        {!closed && signedIn && (
           <>
             <p className="text-center text-secondary-text type-body-md">
               {t('users.invite.signedInAs', { email: state.account.user.email })}
