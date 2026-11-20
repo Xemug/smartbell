@@ -72,24 +72,39 @@ first_free_port() {
 # moment skips it. Shared by every checkout of this machine's user.
 port_dir="${SMARTBELL_PORT_DIR:-${TMPDIR:-/tmp}/smartbell-dev-ports}"
 
-# Runs "$@" while holding a machine-wide lock, so two dev.sh can't pick the same port.
+# Takes the lock file $1 for this dev.sh: true only if it didn't exist. bash's noclobber opens
+# with O_CREAT|O_EXCL, so of two callers racing exactly one wins, and the file holds the owner's
+# PID from the moment it exists. Don't use `mkdir` as the lock: the Rust coreutils that Ubuntu
+# 26.04 ships let two racing `mkdir`s both succeed, and CI saw two pickers get the same port.
+try_lock() {
+  (set -o noclobber && echo $$ >"$1") 2>/dev/null
+}
+
+# Runs "$@" while holding a machine-wide lock, so two dev.sh can't pick the same port. The lock
+# is a file named .pick-lock: older dev.sh used a .lock directory, which a crashed or not yet
+# updated checkout can leave behind, and noclobber can never take a path that is a directory.
 with_port_lock() {
-  local lock="$port_dir/.lock" owner waited=0 status=0
+  local lock="$port_dir/.pick-lock" owner waited=0 status=0
   mkdir -p "$port_dir"
-  until mkdir "$lock" 2>/dev/null; do
-    owner="$(cat "$lock/pid" 2>/dev/null || true)"
+  until try_lock "$lock"; do
+    if [[ -e "$lock" && ! -f "$lock" ]] || [[ ! -w "$port_dir" ]]; then
+      # Not a lock anyone holds, and one that can never be taken: wait no longer.
+      echo "dev.sh: can't create the port lock $lock. Check that $port_dir is writable." >&2
+      return 1
+    fi
+    owner="$(cat "$lock" 2>/dev/null || true)"
     # A lock whose dev.sh is gone, or one held for over 10 s, is stale.
     if { [[ -n "$owner" ]] && ! kill -0 "$owner" 2>/dev/null; } || [[ "$waited" -ge 100 ]]; then
-      rm -rf "$lock"
+      rm -f "$lock"
       waited=0
       continue
     fi
     sleep 0.1
     waited=$((waited + 1))
   done
-  echo $$ >"$lock/pid"
   "$@" || status=$?
-  rm -rf "$lock"
+  # Only drop the lock if it is still ours (another dev.sh may have broken it as stale).
+  [[ "$(cat "$lock" 2>/dev/null)" == "$$" ]] && rm -f "$lock"
   return "$status"
 }
 
@@ -123,7 +138,7 @@ release_ports() {
 # the server).
 pick_port() {
   local port
-  port="$(with_port_lock reserve_free_port "$1")"
+  port="$(with_port_lock reserve_free_port "$1")" || return 1
   if [[ "$port" != "$1" ]]; then
     echo "dev.sh: port $1 is in use (another checkout?), so $2 runs on $port." >&2
   fi

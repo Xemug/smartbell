@@ -24,13 +24,21 @@ A red main hides real failures and blocks the green-CI acceptance item on every 
 
 Find why the lock isn't exclusive on Linux. For example, a check-then-create that isn't atomic, `mkdir` versus `flock` behaviour, or a stale-lock reclaim racing a live holder. Make the reservation atomic on both macOS bash 3.2 and Linux bash 5, with no new dependency macOS lacks. Keep the test strict, and don't loosen or skip it. Run it many times in a loop on both systems to show it no longer flakes.
 
+## Root cause (found 2026-11-19)
+
+The `ubuntu-latest` runner is Ubuntu 26.04. Its `/usr/bin/mkdir` is uutils coreutils 0.10.0 (Rust), and two racing `mkdir`s can both succeed there. The `mkdir` lock in `with_port_lock` therefore let two pickers in at once. A traced loop on the runner collided in 22 of 60 runs, with two "GOT lock" lines and no stale break between them. macOS's `mkdir` is atomic, which is why it passed there.
+
+The fix takes the lock with bash's `noclobber` (O_CREAT|O_EXCL, built in from bash 3.2 up), as a file at `.pick-lock`. The new name means a `.lock` directory left by an older dev.sh can't block it.
+
+Still open: breaking a stale lock (after a dev.sh crash, or after 10 s) is check-then-remove, so two waiters could both break it. This is rare and was already there before this fix.
+
 ## Effort
 
 S.
 
 ## Acceptance
 
-- [ ] `scripts/test-dev-checks.sh` passes 50 runs in a row on Linux (CI or a container) and on macOS `/bin/bash` 3.2.
-- [ ] The concurrency test still fails if the lock is removed (shown once in the PR).
+- [x] `scripts/test-dev-checks.sh` passes 50 runs in a row on Linux (CI or a container) and on macOS `/bin/bash` 3.2.
+- [x] The concurrency test still fails if the lock is removed (shown once in the PR).
 - [ ] Main's `scripts` job is green after merge.
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
