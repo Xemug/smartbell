@@ -32,9 +32,17 @@ class MilkHerdLog(Base):
 
 
 class MilkCowLog(Base):
+    """One row per cow, day and destination; re-entering one overwrites it."""
+
     __tablename__ = "milk_cow_logs"
     __table_args__ = (
-        Index("ix_milk_cow_logs_animal_id_date", "animal_id", "date"),
+        Index(
+            "uq_milk_cow_logs_animal_id_date_destination",
+            "animal_id",
+            "date",
+            "destination",
+            unique=True,
+        ),
         CheckConstraint("liters >= 0", name="liters_not_negative"),
     )
 
