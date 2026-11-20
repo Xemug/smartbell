@@ -2,6 +2,7 @@
 id: milk-api
 title: Milk records API: herd daily log and per-cow litres by destination
 summary: MilkHerdLog (one per day, overwrite) and MilkCowLog (litres by destination: tanque, becerras, antibióticos) endpoints with aggregates by week/month/quarter/semester/year and litres per cow per day.
+verifiedAt: 2026-11-20
 ---
 
 # Milk records API: herd daily log and per-cow litres by destination
