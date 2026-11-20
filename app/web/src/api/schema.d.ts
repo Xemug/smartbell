@@ -212,7 +212,10 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Accept Invitation */
+    /**
+     * Accept Invitation
+     * @description Needs the invited email, verified: 403 `email_unverified` until the invitee confirms it.
+     */
     post: operations['acceptInvitation'];
     delete?: never;
     options?: never;
@@ -374,6 +377,8 @@ export interface components {
       user: components['schemas']['UserOut'];
       /** Ranches */
       ranches: components['schemas']['RanchOut'][];
+      /** Is Admin */
+      is_admin: boolean;
     };
     /**
      * AnimalCreate
@@ -1031,6 +1036,8 @@ export interface components {
       user: components['schemas']['UserOut'];
       /** Ranches */
       ranches: components['schemas']['RanchOut'][];
+      /** Is Admin */
+      is_admin: boolean;
       /** Created */
       created: boolean;
     };

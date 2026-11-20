@@ -122,6 +122,7 @@ function authFor(role: Role, permissions: Permission[], userId = 'u-owner'): Aut
           photo_url: null,
         },
         ranches: [{ id: 'ranch-1', name: 'Rancho San José', role, permissions }],
+        is_admin: false,
       },
       created: false,
     },
