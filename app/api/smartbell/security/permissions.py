@@ -93,8 +93,13 @@ def preset(role: Role) -> list[str]:
 
 
 def effective(role: Role, stored: list[str]) -> frozenset[Permission]:
-    """What a member may do. The Dueño always has everything; unknown stored codes are ignored."""
+    """What a member may do: the stored codes, capped by the role's preset.
+
+    §7.8: nobody gets more access than their role allows, so a code outside the preset is ignored
+    even if stored, and only the Dueño ever holds USERS_DELETE. The Dueño always has everything;
+    unknown stored codes are ignored.
+    """
     if role is Role.DUENO:
         return _ALL
-    known = {code.value for code in Permission}
-    return frozenset(Permission(code) for code in stored if code in known)
+    allowed = ROLE_PRESETS[role]
+    return frozenset(Permission(code) for code in stored if code in allowed)

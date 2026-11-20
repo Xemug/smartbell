@@ -2,6 +2,8 @@ import { lazy, Suspense } from 'react';
 import type { RouteObject } from 'react-router-dom';
 
 import { RequireAuth } from '../features/auth/guards';
+import { INVITATION_ROUTE } from '../features/config/users/invitationLink';
+import { InvitationPage } from '../features/config/users/InvitationPage';
 import { guestRoute } from '../features/auth/routes';
 import { shellRoute } from './routes';
 
@@ -16,6 +18,8 @@ const DevUiPage = lazy(() => import('../pages/DevUiPage').then((m) => ({ default
 
 export const appRoutes: RouteObject[] = [
   guestRoute,
+  // Public: the invitee reads who invites them before they have an account.
+  { path: INVITATION_ROUTE, element: <InvitationPage /> },
   { element: <RequireAuth />, children: [shellRoute] },
   {
     path: '/dev/tokens',

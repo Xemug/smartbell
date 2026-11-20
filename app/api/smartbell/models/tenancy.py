@@ -5,7 +5,7 @@ import uuid
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import DateTime, Float, ForeignKey, Numeric, String
+from sqlalchemy import DateTime, Float, ForeignKey, Index, Numeric, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from smartbell.db import Base
@@ -144,3 +144,39 @@ class Notification(Base):
     )
     sent_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[dt.datetime] = created_at()
+
+
+class Invitation(Base):
+    """An invite to join a ranch (`user-admin`). Only a hash of its link token is stored."""
+
+    __tablename__ = "invitations"
+    # One open invite per person and ranch: a second request at the same moment can't leave two.
+    __table_args__ = (
+        Index(
+            "uq_invitations_ranch_id_email_open",
+            "ranch_id",
+            "email",
+            unique=True,
+            postgresql_where=text("accepted_at IS NULL"),
+            sqlite_where=text("accepted_at IS NULL"),
+        ),
+    )
+
+    id: Mapped[UuidPk]
+    ranch_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("ranches.id", ondelete="CASCADE"), index=True
+    )
+    email: Mapped[str] = mapped_column(String(320))  # Lowercased; the invitee must sign in with it.
+    first_name: Mapped[str] = mapped_column(String(100))
+    last_name: Mapped[str | None] = mapped_column(String(100))
+    phone: Mapped[str | None] = mapped_column(String(20))  # E.164
+    role: Mapped[Role] = mapped_column(str_enum(Role, "role"))
+    permissions: Mapped[list[str]] = mapped_column(Json, default=list, server_default="[]")
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)  # sha256 hex of the token
+    # SET NULL: an invite outlives the account of whoever sent it.
+    invited_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    created_at: Mapped[dt.datetime] = created_at()
+    expires_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True))
+    accepted_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True))

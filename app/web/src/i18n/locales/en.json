@@ -207,5 +207,152 @@
     "firstCow": "Register your first cow",
     "or": "or",
     "signUpWith": "Sign up with:"
+  },
+  "users": {
+    "title": "Users in the system",
+    "count": "Users in the system | {{count}}",
+    "add": "Add user",
+    "loadError": "We couldn't load the users.",
+    "retry": "Retry",
+    "columns": {
+      "name": "Name",
+      "role": "User type",
+      "lastActive": "Last activity",
+      "never": "No activity"
+    },
+    "owner": "Ranch owner",
+    "you": "You",
+    "edit": "Edit {{name}}",
+    "delete": "Remove {{name}}",
+    "deleteTitle": "Remove {{name}}?",
+    "deleteBody": "Removed users can no longer work on your ranch, but their history is kept.",
+    "deleteConfirm": "Remove",
+    "deleted": "{{name}} was removed",
+    "pending": {
+      "title": "Pending invitations",
+      "expires": "Expires {{date}}",
+      "revoke": "Cancel invitation to {{email}}",
+      "revoked": "Invitation cancelled",
+      "loadError": "We couldn't load the pending invites."
+    },
+    "roles": {
+      "DUENO": "Owner",
+      "ADMINISTRADOR": "Administrator",
+      "MEDICO": "Vet",
+      "NUTRIOLOGO": "Nutritionist",
+      "TECNICO_CAMPO": "Field technician"
+    },
+    "form": {
+      "newTitle": "Enter your new user's details",
+      "editTitle": "Edit {{name}}'s permissions",
+      "back": "Back to users",
+      "tabGeneral": "General data",
+      "tabPermissions": "Custom permissions",
+      "firstName": "First name(s)",
+      "lastName": "Last name",
+      "phone": "Phone",
+      "email": "Email",
+      "role": "User type",
+      "permissionsIntro": "Set your new user's permissions",
+      "permissionsLocked": "This user type can't have this permission.",
+      "needPermission": "Select at least one permission",
+      "create": "Create user",
+      "save": "Save changes",
+      "saved": "{{name}}'s permissions were saved",
+      "notFound": "This user is no longer on your ranch."
+    },
+    "categories": {
+      "ganado": "Cattle",
+      "usuarios": "Users",
+      "dispositivos": "Devices",
+      "salud": "Health",
+      "reportes": "Reports",
+      "finanzas": "Finance"
+    },
+    "permissions": {
+      "ANIMALS_CREATE": "Add cows",
+      "ANIMALS_VIEW": "View cow inventory",
+      "ANIMALS_EDIT": "Edit cow information",
+      "ANIMALS_DELETE": "Delete cows",
+      "GROUPS_CREATE": "Add groups",
+      "GROUPS_VIEW_EDIT": "View and edit groups",
+      "GROUPS_DELETE": "Delete groups",
+      "USERS_ADD": "Add users",
+      "USERS_VIEW": "View users and their activity",
+      "USERS_EDIT": "Edit users (details and permissions)",
+      "USERS_DELETE": "Remove users",
+      "DEVICES_ADD_VIEW": "Add and view devices",
+      "DEVICES_ASSIGN": "Assign a device to a cow",
+      "DEVICES_DELETE": "Delete devices",
+      "EVENTS_RECORD": "Confirm repro alerts, record and follow up health events",
+      "REPORTS_VIEW": "View summary reports",
+      "REPORTS_EXPORT": "Print or download custom reports",
+      "FINANCES": "Income and expenses",
+      "SINIIGA": "REEMO and SINIIGA records",
+      "DECLARATION_SEND": "Send tax filing",
+      "BILLING": "Smartbell plan billing"
+    },
+    "link": {
+      "title": "Invitation ready!",
+      "body": "Share this link with {{name}}. They must sign up or sign in with {{email}}. The link expires in 7 days.",
+      "copy": "Copy link",
+      "copied": "Link copied",
+      "whatsapp": "Send on WhatsApp",
+      "whatsappText": "Join my ranch on Smartbell: {{link}}",
+      "done": "Done"
+    },
+    "upsell": {
+      "title": "Adding users is part of the Pro plan",
+      "body": "Invite your vet, nutritionist or field technician and choose what each one can do.",
+      "cta": "See plans"
+    },
+    "errors": {
+      "plan_required": "Adding users is part of the Pro plan.",
+      "already_member": "This person already works on your ranch.",
+      "exceeds_role": "That user type can't have some of the chosen permissions.",
+      "cannot_grant": "You can't give permissions you don't have.",
+      "permissions_required": "Select at least one permission.",
+      "invitation_limit": "You have too many pending invitations. Cancel one and try again.",
+      "owner_protected": "The ranch owner can't be edited or removed.",
+      "cannot_edit_self": "You can't change your own permissions.",
+      "permission_denied": "You don't have permission to do this.",
+      "member_not_found": "This user is no longer on your ranch.",
+      "generic": "Something went wrong. Try again.",
+      "invitation_not_found": "This invite no longer exists.",
+      "invitation_pending": "There is already a pending invite for this email."
+    },
+    "invite": {
+      "title": "You're invited to Smartbell",
+      "body": "{{inviter}} invites you to work on {{ranch}} as {{role}}.",
+      "bodyNoInviter": "You're invited to work on {{ranch}} as {{role}}.",
+      "emailHint": "Use {{email}} to sign up or sign in.",
+      "signUp": "Sign up",
+      "signIn": "I have an account",
+      "accept": "Accept invitation",
+      "signedInAs": "Signed in as {{email}}.",
+      "switchAccount": "Use another account",
+      "loading": "Loading invitation…",
+      "goHome": "Go home",
+      "errors": {
+        "invitation_not_found": "This link isn't valid. Ask for a new invitation.",
+        "invitation_expired": "This invitation has expired. Ask for a new one.",
+        "invitation_used": "This invitation was already used.",
+        "email_mismatch": "This invitation is for {{email}}. Sign in with that email to accept it.",
+        "generic": "We couldn't open the invitation. Try again.",
+        "invitation_revoked": "This invitation is no longer valid. Ask for a new one.",
+        "plan_required": "This ranch no longer has the Pro plan. Ask the owner to renew it.",
+        "email_unverified": "To accept, confirm tu correo: ask for the confirmation link, open it and come back here.",
+        "already_member": "You already work at this ranch. Ask the owner to change your permissions if needed."
+      },
+      "verify": {
+        "body": "To accept, confirm {{email}}: ask for the confirmation link, open it and come back here.",
+        "send": "Send confirmation link",
+        "sent": "Link sent. Check your email.",
+        "failed": "We couldn't send the link. Try again.",
+        "done": "I've confirmed my email"
+      },
+      "sessionError": "We couldn't load your account.",
+      "retry": "Try again"
+    }
   }
 }

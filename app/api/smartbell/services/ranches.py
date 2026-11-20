@@ -1,4 +1,4 @@
-"""Ranches and who belongs to them. Invitations and new members belong to `user-admin`."""
+"""Ranches and who belongs to them. Invitations live in `services/invitations.py`."""
 
 import uuid
 from dataclasses import dataclass
@@ -6,10 +6,12 @@ from dataclasses import dataclass
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from smartbell.enums import Role
+from smartbell.enums import HistoryKey, Role
 from smartbell.models import Membership, Ranch, RanchSettings, User
-from smartbell.security.permissions import Permission, effective, preset
+from smartbell.schemas.history import HistoryRefs
+from smartbell.security.permissions import ROLE_PRESETS, Permission, effective, preset
 from smartbell.security.ranch import RanchContext
+from smartbell.services import history
 
 MAX_OWNED_RANCHES = 20  # Keeps one account from filling the database; far above any real herd.
 
@@ -29,6 +31,14 @@ class MemberRow:
     role: Role
     permissions: frozenset[Permission]
     is_owner: bool
+
+
+def check_grant(ctx: RanchContext, role: Role, codes: frozenset[Permission]) -> None:
+    """§7.8 limits: codes stay inside the role's preset, and the editor holds every one of them."""
+    if not codes <= ROLE_PRESETS[role]:
+        raise MembershipRefused("exceeds_role", 403)
+    if not codes <= ctx.permissions:
+        raise MembershipRefused("cannot_grant", 403)
 
 
 async def create_ranch(session: AsyncSession, owner: User, name: str) -> Ranch:
@@ -123,16 +133,35 @@ async def update_member(
         codes = frozenset(permissions)
     else:
         codes = frozenset(Permission(code) for code in preset(new_role))
-    if not (current | codes) <= ctx.permissions:
+    if not codes:
+        raise MembershipRefused("permissions_required", 422)
+    if not current <= ctx.permissions:
         raise MembershipRefused("cannot_grant", 403)
+    check_grant(ctx, new_role, codes)
     membership.role = new_role
     membership.permissions = [code.value for code in Permission if code in codes]
+    await history.record(
+        session, ctx.ranch_id, ctx.user.id, HistoryKey.USERS_EDITED, HistoryRefs(user_ids=[user_id])
+    )
     await session.commit()
     return membership
 
 
 async def remove_member(session: AsyncSession, ctx: RanchContext, user_id: uuid.UUID) -> None:
-    """The owner can never be removed from their ranch; ownership moves first (not built yet)."""
+    """Dar de baja: the member loses access; their user row and history entries stay.
+
+    Only the Dueño removes members (§7.8). The owner can never be removed from their ranch;
+    ownership moves first (not built yet).
+    """
+    if ctx.role is not Role.DUENO:
+        raise MembershipRefused("permission_denied", 403)
     membership = await _editable_membership(session, ctx, user_id)
     await session.delete(membership)
+    await history.record(
+        session,
+        ctx.ranch_id,
+        ctx.user.id,
+        HistoryKey.USERS_REMOVED,
+        HistoryRefs(user_ids=[user_id]),
+    )
     await session.commit()

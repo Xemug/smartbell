@@ -14,6 +14,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from smartbell.models import Ranch
 from tests.conftest import RanchPair
 
 Seed = Callable[[RanchPair, AsyncClient, AsyncSession], Awaitable[set[str]]]
@@ -30,8 +31,28 @@ async def _seed_members(pair: RanchPair, api: AsyncClient, db: AsyncSession) -> 
     return {str(pair.member_a.user_id)}
 
 
+async def _seed_invitations(pair: RanchPair, api: AsyncClient, db: AsyncSession) -> set[str]:
+    ranch = await db.get(Ranch, pair.ranch_a)
+    assert ranch is not None
+    ranch.plan_id = "pro"
+    await db.commit()
+    response = await api.post(
+        "/api/ranch/invitations",
+        headers=pair.owner.headers(pair.ranch_a),
+        json={
+            "email": "vet@example.com",
+            "first_name": "Vet",
+            "role": "MEDICO",
+            "permissions": ["ANIMALS_VIEW"],
+        },
+    )
+    assert response.status_code == 201, response.text
+    return {response.json()["id"]}
+
+
 LIST_ENDPOINTS = [
     ListEndpoint("/api/ranch/members", _seed_members, id_key="user_id"),
+    ListEndpoint("/api/ranch/invitations", _seed_invitations),
 ]
 
 
