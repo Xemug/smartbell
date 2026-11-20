@@ -23,6 +23,10 @@ export interface AuthApi {
   signUp(data: SignUpData): Promise<void>;
   signInWith(provider: SocialProvider): Promise<void>;
   resetPassword(email: string): Promise<void>;
+  /** Sends the confirm-your-email link; accepting an invite needs a confirmed address. */
+  sendVerificationEmail(): Promise<void>;
+  /** Picks up a just-confirmed email in the token the API sees. */
+  refreshIdentity(): Promise<void>;
   signOut(): Promise<void>;
   retry(): void;
   /** Re-reads the account (profile and ranches) after an edit, so the shell shows it. */

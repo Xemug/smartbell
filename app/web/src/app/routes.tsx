@@ -3,6 +3,8 @@ import { Navigate, type RouteObject } from 'react-router-dom';
 import { FIRST_COW_PATH } from '../features/auth/guards';
 import { AccountPage } from '../features/config/account/AccountPage';
 import { RanchPage } from '../features/config/ranch/RanchPage';
+import { EditUserPage, NewUserPage } from '../features/config/users/UserFormPage';
+import { UsersPage } from '../features/config/users/UsersPage';
 import { HomePage } from '../pages/HomePage';
 import { AppShell } from './AppShell';
 import { PlaceholderPage } from './PlaceholderPage';
@@ -22,7 +24,9 @@ export const shellRoute: RouteObject = {
     { path: '/config/perfil', element: <AccountPage /> },
     { path: '/config/ranchos', element: <RanchPage /> },
     { path: '/config/mensajes', element: <PlaceholderPage titleKey="config.messages" /> },
-    { path: '/config/usuarios', element: <PlaceholderPage titleKey="config.users" /> },
+    { path: '/config/usuarios', element: <UsersPage /> },
+    { path: '/config/usuarios/nuevo', element: <NewUserPage /> },
+    { path: '/config/usuarios/:userId', element: <EditUserPage /> },
     { path: '/config/*', element: <PlaceholderPage titleKey="config.title" /> },
     { path: '*', element: <Navigate to="/" replace /> },
   ],

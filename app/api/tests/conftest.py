@@ -135,8 +135,10 @@ def tenant_app(settings: Settings, schema: AsyncEngine) -> FastAPI:
     ) -> TokenClaims:
         assert credentials is not None
         uid = credentials.credentials
+        # A uid starting "unverified-" stands for a sign-up that hasn't confirmed its email.
+        verified = not uid.startswith("unverified-")
         return TokenClaims(
-            uid=uid, email=f"{uid}@example.com", email_verified=True, name=uid, picture=None
+            uid=uid, email=f"{uid}@example.com", email_verified=verified, name=uid, picture=None
         )
 
     app.dependency_overrides[get_session] = session_override

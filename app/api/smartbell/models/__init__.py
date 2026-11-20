@@ -5,6 +5,7 @@ from smartbell.models.events import DeletionRequest, Event
 from smartbell.models.milk import MilkCowLog, MilkHerdLog
 from smartbell.models.support import FakeDoorTap, SupportSettings
 from smartbell.models.tenancy import (
+    Invitation,
     Membership,
     Notification,
     NotificationPreference,
@@ -23,6 +24,7 @@ __all__ = [
     "FakeDoorTap",
     "Group",
     "HistoryEntry",
+    "Invitation",
     "Membership",
     "MilkCowLog",
     "MilkHerdLog",

@@ -3,6 +3,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/EmptyState';
+import { invitationPath, pendingInvitation } from '../config/users/invitationLink';
 import { SplashScreen } from './SplashScreen';
 import { useAuth } from './useAuth';
 
@@ -39,13 +40,20 @@ function safeReturnPath(state: unknown): string {
   return typeof from === 'string' && from.startsWith('/') && !from.startsWith('//') ? from : '/';
 }
 
-/** Home, log-in and sign-up. A new account goes to the first-cow step, others back in. */
+/** Home, log-in and sign-up. A new account goes to the first-cow step, others back in, and an
+ * invitee back to their invite. */
 export function GuestOnly() {
   const { state } = useAuth();
   const location = useLocation();
   if (state.status === 'loading') return <SplashScreen />;
   if (state.status === 'signedIn') {
-    const to = state.created ? FIRST_COW_PATH : safeReturnPath(location.state);
+    // Someone who came from an invite link goes back to it to accept, new account or not.
+    const invitation = pendingInvitation();
+    const to = invitation
+      ? invitationPath(invitation)
+      : state.created
+        ? FIRST_COW_PATH
+        : safeReturnPath(location.state);
     return <Navigate to={to} replace />;
   }
   if (state.status === 'sessionError') return <SessionError />;

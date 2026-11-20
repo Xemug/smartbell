@@ -294,5 +294,152 @@
     "firstCow": "Registra tu primera vaca",
     "or": "ó",
     "signUpWith": "Registrarme con:"
+  },
+  "users": {
+    "title": "Listado de Usuarios en Sistema",
+    "count": "Usuarios en sistema | {{count}}",
+    "add": "Agregar Usuario",
+    "loadError": "No pudimos cargar los usuarios.",
+    "retry": "Reintentar",
+    "columns": {
+      "name": "Nombre",
+      "role": "Usuario",
+      "lastActive": "Última actividad",
+      "never": "Sin actividad"
+    },
+    "owner": "Dueño del rancho",
+    "you": "Tú",
+    "edit": "Editar a {{name}}",
+    "delete": "Dar de baja a {{name}}",
+    "deleteTitle": "¿Dar de baja a {{name}}?",
+    "deleteBody": "Recuerda que eliminar usuarios evitará que estos puedan trabajar en tu rancho virtual, pero su historial se mantendrá en registro.",
+    "deleteConfirm": "Dar de baja",
+    "deleted": "Se dio de baja a {{name}}",
+    "pending": {
+      "title": "Invitaciones pendientes",
+      "expires": "Vence el {{date}}",
+      "revoke": "Cancelar invitación a {{email}}",
+      "revoked": "Invitación cancelada",
+      "loadError": "No pudimos cargar las invitaciones pendientes."
+    },
+    "roles": {
+      "DUENO": "Dueño",
+      "ADMINISTRADOR": "Administrador",
+      "MEDICO": "Médico",
+      "NUTRIOLOGO": "Nutriólogo",
+      "TECNICO_CAMPO": "Técnico de campo"
+    },
+    "form": {
+      "newTitle": "Registra los datos generales de tu nuevo usuario",
+      "editTitle": "Edita los permisos de {{name}}",
+      "back": "Regresar a usuarios",
+      "tabGeneral": "Datos Generales",
+      "tabPermissions": "Personalizar permisos",
+      "firstName": "Nombre(s)",
+      "lastName": "Apellidos",
+      "phone": "Teléfono",
+      "email": "Correo Electrónico",
+      "role": "Tipo de usuario",
+      "permissionsIntro": "Configura los permisos para tu nuevo usuario",
+      "permissionsLocked": "Este tipo de usuario no puede tener este permiso.",
+      "needPermission": "Selecciona al menos un permiso",
+      "create": "Crear Usuario",
+      "save": "Guardar cambios",
+      "saved": "Se guardaron los permisos de {{name}}",
+      "notFound": "Este usuario ya no está en tu rancho."
+    },
+    "categories": {
+      "ganado": "Ganado",
+      "usuarios": "Usuarios",
+      "dispositivos": "Dispositivos",
+      "salud": "Salud",
+      "reportes": "Reportes",
+      "finanzas": "Finanzas"
+    },
+    "permissions": {
+      "ANIMALS_CREATE": "Agregar vacas al sistema",
+      "ANIMALS_VIEW": "Consultar inventario vacas",
+      "ANIMALS_EDIT": "Editar información vacas",
+      "ANIMALS_DELETE": "Eliminar vacas del sistema",
+      "GROUPS_CREATE": "Agregar grupos al sistema",
+      "GROUPS_VIEW_EDIT": "Consultar y editar grupos",
+      "GROUPS_DELETE": "Eliminar grupos del sistema",
+      "USERS_ADD": "Agregar usuarios",
+      "USERS_VIEW": "Consultar listado y actividad de usuarios",
+      "USERS_EDIT": "Editar usuarios (información general y permisos)",
+      "USERS_DELETE": "Eliminar usuarios",
+      "DEVICES_ADD_VIEW": "Agregar y consultar dispositivos",
+      "DEVICES_ASSIGN": "Asignar dispositivo a vaca",
+      "DEVICES_DELETE": "Eliminar dispositivo",
+      "EVENTS_RECORD": "Confirmación de alertas de reproducción, registro y seguimiento de eventos de salud",
+      "REPORTS_VIEW": "Ver Reportes Resumen de estadísticas",
+      "REPORTS_EXPORT": "Generar reportes personalizados para imprimir o descargar",
+      "FINANCES": "Registros de ingresos y egresos",
+      "SINIIGA": "Consulta y manejo de registros en REEMO y SINIIGA",
+      "DECLARATION_SEND": "Envío de declaración",
+      "BILLING": "Facturación planes smartbell"
+    },
+    "link": {
+      "title": "¡Invitación lista!",
+      "body": "Comparte este enlace con {{name}}. Debe crear su cuenta o entrar con {{email}}. El enlace vence en 7 días.",
+      "copy": "Copiar enlace",
+      "copied": "Enlace copiado",
+      "whatsapp": "Enviar por WhatsApp",
+      "whatsappText": "Te invito a trabajar en mi rancho en Smartbell: {{link}}",
+      "done": "Listo"
+    },
+    "upsell": {
+      "title": "Agregar usuarios es parte del plan Pro",
+      "body": "Invita a tu médico, nutriólogo o técnico de campo y decide qué puede hacer cada uno.",
+      "cta": "Ver planes"
+    },
+    "errors": {
+      "plan_required": "Agregar usuarios es parte del plan Pro.",
+      "already_member": "Esta persona ya trabaja en tu rancho.",
+      "exceeds_role": "Ese tipo de usuario no puede tener alguno de los permisos elegidos.",
+      "cannot_grant": "No puedes dar permisos que tú no tienes.",
+      "permissions_required": "Selecciona al menos un permiso.",
+      "invitation_limit": "Tienes demasiadas invitaciones pendientes. Cancela alguna e intenta de nuevo.",
+      "owner_protected": "El dueño del rancho no se puede editar ni dar de baja.",
+      "cannot_edit_self": "No puedes cambiar tus propios permisos.",
+      "permission_denied": "No tienes permiso para hacer esto.",
+      "member_not_found": "Este usuario ya no está en tu rancho.",
+      "generic": "Algo salió mal. Intenta de nuevo.",
+      "invitation_not_found": "Esta invitación ya no existe.",
+      "invitation_pending": "Ya hay una invitación pendiente para este correo."
+    },
+    "invite": {
+      "title": "Te invitaron a Smartbell",
+      "body": "{{inviter}} te invita a trabajar en {{ranch}} como {{role}}.",
+      "bodyNoInviter": "Te invitaron a trabajar en {{ranch}} como {{role}}.",
+      "emailHint": "Usa el correo {{email}} para crear tu cuenta o entrar.",
+      "signUp": "Crear cuenta",
+      "signIn": "Ya tengo cuenta",
+      "accept": "Aceptar invitación",
+      "signedInAs": "Entraste como {{email}}.",
+      "switchAccount": "Entrar con otra cuenta",
+      "loading": "Cargando invitación…",
+      "goHome": "Ir al inicio",
+      "errors": {
+        "invitation_not_found": "Este enlace no es válido. Pide una nueva invitación.",
+        "invitation_expired": "Esta invitación ya venció. Pide una nueva.",
+        "invitation_used": "Esta invitación ya se usó.",
+        "email_mismatch": "Esta invitación es para {{email}}. Entra con ese correo para aceptarla.",
+        "generic": "No pudimos abrir la invitación. Intenta de nuevo.",
+        "invitation_revoked": "Esta invitación ya no es válida. Pide una nueva.",
+        "plan_required": "Este rancho ya no tiene el plan Pro. Pide al dueño que lo renueve.",
+        "email_unverified": "Para aceptar, confirma tu correo tu correo: pide el enlace de confirmación, ábrelo y vuelve aquí.",
+        "already_member": "Ya trabajas en este rancho. Pide al dueño que cambie tus permisos si hace falta."
+      },
+      "verify": {
+        "body": "Para aceptar, confirma tu correo {{email}}: pide el enlace de confirmación, ábrelo y vuelve aquí.",
+        "send": "Enviar enlace de confirmación",
+        "sent": "Enlace enviado. Revisa tu correo.",
+        "failed": "No pudimos enviar el enlace. Intenta de nuevo.",
+        "done": "Ya confirmé mi correo"
+      },
+      "sessionError": "No pudimos cargar tu cuenta.",
+      "retry": "Reintentar"
+    }
   }
 }

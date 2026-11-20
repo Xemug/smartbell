@@ -128,15 +128,54 @@ async def test_edited_permissions_apply_on_the_next_request(
     guarded_app: FastAPI, tenant_api: AsyncClient, tenant_db: AsyncSession
 ) -> None:
     owner = await sign_up(tenant_api, "owner")
-    tecnico = await _member_with_role(tenant_api, tenant_db, owner, Role.TECNICO_CAMPO)
-    url = f"/api/ranch/members/{tecnico.user_id}"
-    granted = [*preset(Role.TECNICO_CAMPO), Permission.ANIMALS_CREATE.value]
+    medico = await _member_with_role(tenant_api, tenant_db, owner, Role.MEDICO)
+    url = f"/api/ranch/members/{medico.user_id}"
+    without = [c for c in preset(Role.MEDICO) if c != Permission.ANIMALS_CREATE.value]
 
-    edit = await tenant_api.patch(url, headers=owner.headers(), json={"permissions": granted})
-    after = await tenant_api.post("/api/probe/animals", headers=tecnico.headers(owner.ranch_id))
+    revoke = await tenant_api.patch(url, headers=owner.headers(), json={"permissions": without})
+    denied = await tenant_api.post("/api/probe/animals", headers=medico.headers(owner.ranch_id))
+    restore = await tenant_api.patch(url, headers=owner.headers(), json={"role": "MEDICO"})
+    allowed = await tenant_api.post("/api/probe/animals", headers=medico.headers(owner.ranch_id))
 
-    assert edit.status_code == 200, edit.text
-    assert after.status_code == 201
+    assert revoke.status_code == 200, revoke.text
+    assert denied.status_code == 403
+    assert restore.status_code == 200
+    assert allowed.status_code == 201
+
+
+async def test_codes_never_exceed_the_role_preset(
+    ranch_pair: RanchPair, tenant_api: AsyncClient
+) -> None:
+    """§7.8: nobody gets more than their role allows, not even from the Dueño."""
+    url = f"/api/ranch/members/{ranch_pair.member_a.user_id}"
+    headers = ranch_pair.owner.headers(ranch_pair.ranch_a)
+
+    for code in ("ANIMALS_CREATE", "USERS_DELETE", "BILLING"):
+        response = await tenant_api.patch(
+            url, headers=headers, json={"role": "NUTRIOLOGO", "permissions": [code]}
+        )
+        assert response.status_code == 403, code
+        assert response.json()["detail"] == "exceeds_role"
+
+
+async def test_stored_codes_outside_the_preset_are_ignored(
+    guarded_app: FastAPI, tenant_api: AsyncClient, tenant_db: AsyncSession
+) -> None:
+    owner = await sign_up(tenant_api, "owner")
+    tecnico = await sign_up(tenant_api, "tecnico")
+    tenant_db.add(
+        Membership(
+            user_id=tecnico.user_id,
+            ranch_id=owner.ranch_id,
+            role=Role.TECNICO_CAMPO,
+            permissions=[*preset(Role.TECNICO_CAMPO), Permission.ANIMALS_CREATE.value],
+        )
+    )
+    await tenant_db.commit()
+
+    response = await tenant_api.post("/api/probe/animals", headers=tecnico.headers(owner.ranch_id))
+
+    assert response.status_code == 403
 
 
 # --- Ranches ----------------------------------------------------------------------------------
@@ -262,20 +301,31 @@ async def test_nobody_can_be_made_dueno(ranch_pair: RanchPair, tenant_api: Async
 async def test_an_admin_cannot_grant_what_they_lack(
     ranch_pair: RanchPair, tenant_api: AsyncClient, tenant_db: AsyncSession
 ) -> None:
+    """An Admin the Dueño trimmed to no ANIMALS_DELETE can't hand it to a Médico."""
     admin = await sign_up(tenant_api, "admin")
     await add_member(tenant_db, admin, ranch_pair.ranch_a, Role.ADMINISTRADOR)
+    trimmed = [c for c in preset(Role.ADMINISTRADOR) if c != Permission.ANIMALS_DELETE.value]
+    trim = await tenant_api.patch(
+        f"/api/ranch/members/{admin.user_id}",
+        headers=ranch_pair.owner.headers(ranch_pair.ranch_a),
+        json={"permissions": trimmed},
+    )
     url = f"/api/ranch/members/{ranch_pair.member_a.user_id}"
-
-    billing = await tenant_api.patch(
-        url, headers=admin.headers(ranch_pair.ranch_a), json={"permissions": ["BILLING"]}
-    )
-    to_admin = await tenant_api.patch(
-        url, headers=admin.headers(ranch_pair.ranch_a), json={"role": "ADMINISTRADOR"}
+    await tenant_api.patch(
+        url, headers=ranch_pair.owner.headers(ranch_pair.ranch_a), json={"role": "TECNICO_CAMPO"}
     )
 
-    assert billing.status_code == 403
-    assert billing.json()["detail"] == "cannot_grant"
-    assert to_admin.status_code == 200
+    to_medico = await tenant_api.patch(
+        url, headers=admin.headers(ranch_pair.ranch_a), json={"role": "MEDICO"}
+    )
+    to_nutriologo = await tenant_api.patch(
+        url, headers=admin.headers(ranch_pair.ranch_a), json={"role": "NUTRIOLOGO"}
+    )
+
+    assert trim.status_code == 200
+    assert to_medico.status_code == 403
+    assert to_medico.json()["detail"] == "cannot_grant"
+    assert to_nutriologo.status_code == 200
 
 
 async def test_members_cannot_edit_themselves(
@@ -359,15 +409,16 @@ async def test_a_member_of_another_ranch_is_not_found(
 async def test_an_admin_cannot_strip_codes_they_lack(
     ranch_pair: RanchPair, tenant_api: AsyncClient, tenant_db: AsyncSession
 ) -> None:
-    """The Dueño gave member_a billing; an Admin, who lacks it, can't demote them."""
+    """A trimmed Admin can't demote a Médico who holds a code the Admin lost."""
     admin = await sign_up(tenant_api, "admin")
     await add_member(tenant_db, admin, ranch_pair.ranch_a, Role.ADMINISTRADOR)
-    url = f"/api/ranch/members/{ranch_pair.member_a.user_id}"
-    grant = await tenant_api.patch(
-        url,
-        headers=ranch_pair.owner.headers(ranch_pair.ranch_a),
-        json={"permissions": [*preset(Role.MEDICO), "BILLING"]},
+    owner = ranch_pair.owner.headers(ranch_pair.ranch_a)
+    trimmed = [c for c in preset(Role.ADMINISTRADOR) if c != Permission.ANIMALS_DELETE.value]
+    await tenant_api.patch(
+        f"/api/ranch/members/{admin.user_id}", headers=owner, json={"permissions": trimmed}
     )
+    url = f"/api/ranch/members/{ranch_pair.member_a.user_id}"
+    grant = await tenant_api.patch(url, headers=owner, json={"role": "MEDICO"})
 
     demote = await tenant_api.patch(
         url, headers=admin.headers(ranch_pair.ranch_a), json={"role": "TECNICO_CAMPO"}

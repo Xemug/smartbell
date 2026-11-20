@@ -9,6 +9,8 @@ import {
   OAuthProvider,
   onAuthStateChanged,
   reauthenticateWithCredential,
+  reload,
+  sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -80,6 +82,16 @@ export function createFirebaseBackend(): AuthBackend {
         if (!user?.email) throw new AuthError('auth/requires-recent-login');
         await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, current));
         await updatePassword(user, next);
+      }),
+    sendEmailVerification: () =>
+      mapErrors(async () => {
+        if (auth.currentUser) await sendEmailVerification(auth.currentUser);
+      }),
+    refreshIdentity: () =>
+      mapErrors(async () => {
+        if (!auth.currentUser) return;
+        await reload(auth.currentUser);
+        await auth.currentUser.getIdToken(true);
       }),
     signOut: () => mapErrors(() => signOut(auth)),
   };

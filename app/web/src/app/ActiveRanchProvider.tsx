@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { setActiveRanchId } from '../api/client';
 import { useOptionalAuth } from '../features/auth/useAuth';
@@ -47,17 +47,13 @@ export function ActiveRanchProvider({ children }: { children: ReactNode }) {
   const activeRanch = ranches.find((ranch) => ranch.id === activeId) ?? ranches[0] ?? noRanch;
   // Set during render, not in an effect: children's queries start in their effects, which run
   // before this component's own, and must already carry the right ranch.
-  const sentRanchId = account ? activeRanch.id || null : null;
-  setActiveRanchId(sentRanchId);
-  const sent = useRef(sentRanchId);
-  sent.current = sentRanchId;
+  const currentId = account ? activeRanch.id || null : null;
+  setActiveRanchId(currentId);
+  // StrictMode replays effects (setup, cleanup, setup), and the unmount cleanup below then clears
+  // the ranch: set it again on setup. No cleanup here, so a ranch change never leaves a gap.
+  useEffect(() => setActiveRanchId(currentId), [currentId]);
   // Signing out unmounts the shell: the next account's first calls must not carry this ranch.
-  // Mount sets it again because StrictMode's dev remount runs this cleanup with no render after
-  // it. Only on mount: clearing on every change would let children's effects fetch without it.
-  useEffect(() => {
-    setActiveRanchId(sent.current);
-    return () => setActiveRanchId(null);
-  }, []);
+  useEffect(() => () => setActiveRanchId(null), []);
 
   const setActiveRanch = useCallback(
     (id: string) => {

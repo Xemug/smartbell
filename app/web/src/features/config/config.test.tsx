@@ -52,6 +52,8 @@ class FakeBackend implements AuthBackend {
   signInWithProvider = vi.fn(async () => {});
   sendPasswordReset = vi.fn(async () => {});
   signOut = vi.fn(async () => {});
+  sendEmailVerification = vi.fn(async () => {});
+  refreshIdentity = vi.fn(async () => {});
   hasPassword = () => this.password;
   changePassword = vi.fn(async (current: string) => {
     if (current !== 'actual123') throw new AuthError('auth/invalid-credential');

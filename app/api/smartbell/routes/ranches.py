@@ -1,8 +1,10 @@
 """The caller's ranches, and the members of the active ranch (`X-Ranch-Id`).
 
-Editing and deleting the active ranch are `profile-ranch-config`'s; inviting members `user-admin`'s.
+Editing and deleting the active ranch belong to `profile-ranch-config`; invitations are in
+`invitations.py`.
 """
 
+import datetime as dt
 import uuid
 from typing import Annotated, Literal
 
@@ -97,6 +99,7 @@ class MemberOut(BaseModel):
     last_name: str | None
     email: str
     photo_url: str | None
+    last_active_at: dt.datetime | None  # "Última actividad" on the users list.
     role: Role
     permissions: list[Permission]
     is_owner: bool
@@ -120,6 +123,7 @@ def member_out(row: ranches.MemberRow) -> MemberOut:
         last_name=row.user.last_name,
         email=row.user.email,
         photo_url=row.user.photo_url,
+        last_active_at=row.user.last_active_at,
         role=row.role,
         permissions=[code for code in Permission if code in row.permissions],
         is_owner=row.is_owner,
