@@ -2,6 +2,7 @@
 
 import uuid
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from smartbell.enums import HistoryCard, HistoryKey
@@ -35,6 +36,16 @@ async def record(
     session.add(entry)
     await session.flush()
     return entry
+
+
+async def entries(session: AsyncSession, ranch_id: uuid.UUID) -> list[HistoryEntry]:
+    """The ranch's entries, oldest first."""
+    rows = await session.scalars(
+        select(HistoryEntry)
+        .where(HistoryEntry.ranch_id == ranch_id)
+        .order_by(HistoryEntry.created_at, HistoryEntry.seq)
+    )
+    return list(rows)
 
 
 def render(entry: HistoryEntry) -> str:
