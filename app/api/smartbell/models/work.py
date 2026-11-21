@@ -4,8 +4,22 @@ import datetime as dt
 import uuid
 from typing import Any
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, String, UniqueConstraint, text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import (
+    BigInteger,
+    CheckConstraint,
+    Connection,
+    DateTime,
+    ForeignKey,
+    Identity,
+    Index,
+    String,
+    UniqueConstraint,
+    event,
+    func,
+    select,
+    text,
+)
+from sqlalchemy.orm import Mapped, Mapper, mapped_column
 
 from smartbell.db import Base
 from smartbell.enums import (
@@ -102,9 +116,14 @@ class Task(Base):
 
 class HistoryEntry(Base):
     __tablename__ = "history_entries"
-    __table_args__ = (Index("ix_history_entries_ranch_id_created_at", "ranch_id", "created_at"),)
+    __table_args__ = (
+        Index("ix_history_entries_ranch_id_created_at_seq", "ranch_id", "created_at", "seq"),
+    )
 
     id: Mapped[UuidPk]
+    # Insert order: breaks ties between entries that share `created_at`, which is the
+    # transaction's start on Postgres and whole seconds on SQLite.
+    seq: Mapped[int] = mapped_column(BigInteger, Identity())
     ranch_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("ranches.id", ondelete="CASCADE"))
     # SET NULL: deleting a user keeps their entries.
     user_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
@@ -113,3 +132,15 @@ class HistoryEntry(Base):
     refs: Mapped[dict[str, Any]] = mapped_column(Json, default=dict, server_default="{}")
     n: Mapped[int] = mapped_column(default=1, server_default="1")
     created_at: Mapped[dt.datetime] = created_at()
+
+
+@event.listens_for(HistoryEntry, "before_insert")
+def _number_on_sqlite(
+    _mapper: Mapper[HistoryEntry], connection: Connection, entry: HistoryEntry
+) -> None:
+    """SQLite (the local test database) has no identity columns, so number the entry here.
+
+    SQLite takes one writer at a time, so the next number can't be taken twice.
+    """
+    if connection.dialect.name == "sqlite" and entry.seq is None:
+        entry.seq = select(func.coalesce(func.max(HistoryEntry.seq), 0) + 1).scalar_subquery()
