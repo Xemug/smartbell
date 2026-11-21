@@ -163,7 +163,7 @@ M.
 - [ ] Merging to main deploys staging, and `/api/health` answers there.
 - [x] A photo uploaded on staging survives a redeploy. (Verified 2026-11-21: a photo in the staging bucket was served at `/api/media/avatars/…` before and after a redeploy to a new revision. The upload path is covered by tests.)
 - [ ] Production deploys only from a manual approval.
-- [ ] Ranch addresses are geocoded by the production option, not the public Nominatim server.
+- [x] Ranch addresses are geocoded by the production option, not the public Nominatim server. (Hosted builds call `/api/geocode/*`, and the API uses Google with the server key. Deploys refuse an empty key. Checked on staging 2026-11-21.)
 - [ ] The production ranch map loads its tiles from the production tile provider, never `tile.openstreetmap.org`.
 - [ ] The user signs in on staging from their phone (human).
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
