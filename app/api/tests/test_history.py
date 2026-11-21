@@ -323,3 +323,11 @@ def test_refs_refuse_blank_names(name: str) -> None:
 def test_refs_refuse_unknown_fields() -> None:
     with pytest.raises(ValidationError):
         HistoryRefs(cow_ids=[])  # type: ignore[call-arg]
+
+
+async def test_record_returns_entries_numbered_in_written_order(
+    session: AsyncSession, ranch: Ranch, user: User
+) -> None:
+    a = await record(session, ranch.id, user.id, HistoryKey.RANCH_EDITED, HistoryRefs(ranch="a"))
+    b = await record(session, ranch.id, user.id, HistoryKey.RANCH_EDITED, HistoryRefs(ranch="b"))
+    assert isinstance(a.seq, int) and b.seq > a.seq, (a.seq, b.seq)

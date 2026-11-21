@@ -41,7 +41,7 @@ async def test_upgrade_head_on_empty_database(db_conn: AsyncConnection) -> None:
     await db_conn.run_sync(_upgrade_head)
 
     version = (await db_conn.execute(text("SELECT version_num FROM alembic_version"))).scalar_one()
-    assert version == "0006"
+    assert version == "0007"
 
 
 async def test_upgrade_creates_every_model_table(db_conn: AsyncConnection) -> None:
@@ -66,12 +66,12 @@ async def test_migration_matches_the_models(db_conn: AsyncConnection, db_backend
     assert await db_conn.run_sync(_schema_drift) == []
 
 
-async def test_0006_numbers_existing_history_in_its_old_order(
+async def test_0007_numbers_existing_history_in_its_old_order(
     db_conn: AsyncConnection, db_backend: str
 ) -> None:
     if db_backend != "postgresql":
         pytest.skip("the backfill is Postgres SQL")
-    await db_conn.run_sync(lambda c: command.upgrade(_config(c), "0005"))
+    await db_conn.run_sync(lambda c: command.upgrade(_config(c), "0006"))
     ranch_id, owner_id = uuid.uuid4(), uuid.uuid4()
     await db_conn.execute(
         text("INSERT INTO users (id, first_name, email) VALUES (:id, 'Ana', 'ana@example.com')"),
