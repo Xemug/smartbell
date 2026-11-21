@@ -406,6 +406,24 @@ class MilkDestination(_Name):
     ANTIBIOTICOS = auto()
 
 
+class MilkGranularity(_Name):
+    """Bucket size of the production history. Weeks start on Monday (§7.3)."""
+
+    DAY = auto()
+    WEEK = auto()
+    MONTH = auto()
+    QUARTER = auto()
+    SEMESTER = auto()
+    YEAR = auto()
+
+
+class MilkWarning(_Name):
+    """A cow logged against the milk-withdrawal rule (§7.3). Saved anyway; shown as a warning."""
+
+    WITHDRAWAL_TO_TANK = auto()  # in withdrawal, but her milk went to the tank
+    ANTIBIOTICS_OUTSIDE_WITHDRAWAL = auto()  # antibiotic milk from a cow not in withdrawal
+
+
 class HistoryCategory(_Name):
     GANADO = auto()
     USUARIOS = auto()
