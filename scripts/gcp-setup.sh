@@ -28,6 +28,8 @@ instance=smartbell-db
 step() { printf '\n== %s\n' "$*"; }
 exists() { "$@" >/dev/null 2>&1; }
 token() { gcloud auth print-access-token; }
+# New service accounts take a little while to show up in IAM.
+retry() { local i; for i in 1 2 3 4 5 6; do "$@" && return 0; sleep 10; done; "$@"; }
 
 step "project $project"
 exists gcloud projects describe "$project" || gcloud projects create "$project" --name="$name"
@@ -49,24 +51,24 @@ exists gcloud iam service-accounts describe "$api_sa" --project="$project" ||
 exists gcloud iam service-accounts describe "$deploy_sa" --project="$project" ||
   gcloud iam service-accounts create smartbell-deploy --project="$project" --display-name="GitHub deploys"
 for role in roles/cloudsql.client roles/secretmanager.secretAccessor; do
-  gcloud projects add-iam-policy-binding "$project" --member="serviceAccount:$api_sa" \
+  retry gcloud projects add-iam-policy-binding "$project" --member="serviceAccount:$api_sa" \
     --role="$role" --condition=None >/dev/null
 done
 for role in roles/run.admin roles/cloudbuild.builds.editor roles/artifactregistry.writer \
   roles/firebasehosting.admin roles/secretmanager.secretAccessor roles/storage.admin \
   roles/serviceusage.serviceUsageConsumer roles/logging.viewer roles/cloudsql.viewer; do
-  gcloud projects add-iam-policy-binding "$project" --member="serviceAccount:$deploy_sa" \
+  retry gcloud projects add-iam-policy-binding "$project" --member="serviceAccount:$deploy_sa" \
     --role="$role" --condition=None >/dev/null
 done
-gcloud iam service-accounts add-iam-policy-binding "$api_sa" --project="$project" \
+retry gcloud iam service-accounts add-iam-policy-binding "$api_sa" --project="$project" \
   --member="serviceAccount:$deploy_sa" --role=roles/iam.serviceAccountUser >/dev/null
 # Cloud Build runs as the Compute Engine default account in new projects.
 build_sa="$number-compute@developer.gserviceaccount.com"
 for role in roles/artifactregistry.writer roles/logging.logWriter roles/storage.objectViewer; do
-  gcloud projects add-iam-policy-binding "$project" --member="serviceAccount:$build_sa" \
+  retry gcloud projects add-iam-policy-binding "$project" --member="serviceAccount:$build_sa" \
     --role="$role" --condition=None >/dev/null
 done
-gcloud iam service-accounts add-iam-policy-binding "$build_sa" --project="$project" \
+retry gcloud iam service-accounts add-iam-policy-binding "$build_sa" --project="$project" \
   --member="serviceAccount:$deploy_sa" --role=roles/iam.serviceAccountUser >/dev/null
 
 step "container registry"
@@ -78,7 +80,7 @@ step "photo bucket gs://$bucket (private)"
 exists gcloud storage buckets describe "gs://$bucket" ||
   gcloud storage buckets create "gs://$bucket" --project="$project" --location="$region" \
     --uniform-bucket-level-access --public-access-prevention
-gcloud storage buckets add-iam-policy-binding "gs://$bucket" \
+retry gcloud storage buckets add-iam-policy-binding "gs://$bucket" \
   --member="serviceAccount:$api_sa" --role=roles/storage.objectAdmin >/dev/null
 
 step "Cloud SQL $instance (db-f1-micro, PostgreSQL 16, daily backups kept 7 days)"
@@ -150,10 +152,9 @@ app_id="$(curl -fsS -H "Authorization: Bearer $(token)" -H "x-goog-user-project:
     python3 -c '
 import json, sys
 c = json.load(sys.stdin)
-print(f"VITE_FIREBASE_API_KEY={c[\"apiKey\"]}")
-print(f"VITE_FIREBASE_AUTH_DOMAIN={c[\"authDomain\"]}")
-print(f"VITE_FIREBASE_PROJECT_ID={c[\"projectId\"]}")
-print(f"VITE_FIREBASE_APP_ID={c[\"appId\"]}")'
+for name, field in [("API_KEY", "apiKey"), ("AUTH_DOMAIN", "authDomain"),
+                    ("PROJECT_ID", "projectId"), ("APP_ID", "appId")]:
+    print("VITE_FIREBASE_" + name + "=" + c[field])'
   echo "VITE_GOOGLE_MAPS_API_KEY=$(key_string smartbell-map-tiles)"
   echo "VITE_GEOCODE_VIA_API=true"
 } | secret web-build-env
@@ -178,7 +179,7 @@ exists gcloud iam workload-identity-pools providers describe github-oidc --proje
     --attribute-mapping=google.subject=assertion.sub,attribute.repository=assertion.repository \
     --attribute-condition="assertion.sub == 'repo:$repo:environment:$env'"
 pool="projects/$number/locations/global/workloadIdentityPools/github"
-gcloud iam service-accounts add-iam-policy-binding "$deploy_sa" --project="$project" \
+retry gcloud iam service-accounts add-iam-policy-binding "$deploy_sa" --project="$project" \
   --role=roles/iam.workloadIdentityUser \
   --member="principalSet://iam.googleapis.com/$pool/attribute.repository/$repo" >/dev/null
 
