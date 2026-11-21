@@ -2,6 +2,7 @@
 id: find-and-fix-the-intermittent-api-test-failure
 title: Find and fix the intermittent API test failure
 summary: About 1 in 4 full API runs on local Postgres shows one failed test (seen on PR #26 and PR #30 heads), then passes on rerun. Run the suite repeatedly with -rf to name it, fix the cause, and prove 20 clean runs.
+verifiedAt: 2026-11-21
 ---
 
 # Find and fix the intermittent API test failure
