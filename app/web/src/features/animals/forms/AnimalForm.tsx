@@ -25,6 +25,7 @@ import {
   defaultValues,
   fieldRefusal,
   isHeifer,
+  NO_REPRO_STAGE,
   parentLabel,
   showsRepro,
   toCreateBody,
@@ -376,7 +377,7 @@ export function AnimalForm({
           <DateField
             {...field}
             maxDate="today"
-            disabled={!reproStage}
+            disabled={reproStage === NO_REPRO_STAGE}
             label={t('animalForm.fields.reproStageDate')}
             className="col-span-2"
           />

@@ -304,6 +304,10 @@ describe('detailed registration', () => {
     await user().click(screen.getByRole('button', { name: 'Tengo más datos de mi animal' }));
     expect(screen.getByRole('heading', { name: 'Información reproductiva' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Ciclo de lactancia' })).toHaveValue('1');
+    expect(screen.getByRole('combobox', { name: 'Etapa reproductiva' })).toHaveTextContent(
+      'Ninguna',
+    );
+    expect(screen.getByRole('textbox', { name: 'Fecha etapa reproductiva' })).toBeDisabled();
     await user().type(screen.getByRole('textbox', { name: 'Último parto' }), '01092026');
     await choose('Etapa reproductiva', 'Preñada');
     await user().type(

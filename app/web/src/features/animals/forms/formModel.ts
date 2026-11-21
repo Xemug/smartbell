@@ -40,6 +40,8 @@ export const MIN_CALVING_AGE_DAYS = 660;
  * says that) and RECIEN_PARIDA was dropped (§7.6).
  */
 export const REPRO_STAGES: ReproState[] = ['ABIERTA', 'SERVIDA', 'GESTANTE', 'SECA'];
+/** "Ninguna": the select can't hold an empty value. */
+export const NO_REPRO_STAGE = 'NONE';
 
 export const DAM_STATUSES: DamStatus[] = [
   'VIVA',
@@ -100,7 +102,7 @@ export function defaultValues(sex: Sex, generalGroupId = ''): AnimalValues {
     siniiga: '',
     lastCalvingDate: '',
     lactationNumber: '1',
-    reproStage: '',
+    reproStage: NO_REPRO_STAGE,
     reproStageDate: '',
     weightBirth: '',
     weightWeaning: '',
@@ -205,7 +207,8 @@ export function toCreateBody(
     body.last_calving_date = blank(values.lastCalvingDate);
     const lactation = blank(values.lactationNumber);
     body.lactation_number = lactation === null ? null : Number(lactation);
-    body.repro_stage = (values.reproStage || null) as ReproState | null;
+    body.repro_stage =
+      values.reproStage === NO_REPRO_STAGE ? null : (values.reproStage as ReproState);
     body.repro_stage_date = body.repro_stage ? blank(values.reproStageDate) : null;
   }
 
