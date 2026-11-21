@@ -63,7 +63,7 @@ const KINDS = Object.keys(LIST_KINDS) as ListKind[];
 const SEARCH_DELAY_MS = 300;
 
 /** "Vacas · 003": the counter on each list's tab. */
-function useKindLabels(): Record<ListKind, string> {
+function useKindLabels(compact: boolean): Record<ListKind, string> {
   const { t } = useTranslation();
   const counts = {
     vacas: useKindCount('vacas'),
@@ -73,7 +73,9 @@ function useKindLabels(): Record<ListKind, string> {
   const label = (kind: ListKind) => {
     const total = counts[kind].data;
     const name = t(`animals.kinds.${kind}`);
-    return total === undefined ? name : `${name} · ${String(total).padStart(3, '0')}`;
+    if (total === undefined) return name;
+    // A phone has room for the three tabs only without the separator and padding.
+    return compact ? `${name} ${total}` : `${name} · ${String(total).padStart(3, '0')}`;
   };
   return { vacas: label('vacas'), vaquillas: label('vaquillas'), toros: label('toros') };
 }
@@ -94,7 +96,7 @@ export function AnimalListPage() {
   const page = useAnimalPage(query);
   const groups = useGroups();
   const remove = useRemoveAnimals();
-  const kindLabels = useKindLabels();
+  const kindLabels = useKindLabels(!desktop);
 
   const [selected, setSelected] = useState<string[]>([]);
   const [toRemove, setToRemove] = useState<Animal[] | null>(null);
@@ -458,6 +460,7 @@ export function AnimalListPage() {
       <Tabs
         label={t('animals.kindsLabel')}
         type="solid"
+        size={desktop ? 'md' : 'sm'}
         value={state.kind}
         onChange={(value) => update({ kind: value as ListKind })}
         items={KINDS.map((kind) => ({
