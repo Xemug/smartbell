@@ -15,6 +15,7 @@ from smartbell.enums import HistoryKey, Role
 from smartbell.models import HistoryEntry, Invitation, Membership, Ranch
 from smartbell.security.permissions import Permission, preset
 from smartbell.security.ranch import RanchContext, require
+from smartbell.services import history
 from smartbell.services.invitations import hash_token
 from tests.conftest import Account, RanchPair, add_member, sign_up
 
@@ -387,12 +388,7 @@ async def test_another_ranch_cannot_revoke(
 
 
 async def _entries(db: AsyncSession, ranch_id: uuid.UUID) -> list[HistoryEntry]:
-    rows = await db.scalars(
-        select(HistoryEntry)
-        .where(HistoryEntry.ranch_id == ranch_id)
-        .order_by(HistoryEntry.created_at, HistoryEntry.id)
-    )
-    return list(rows)
+    return await history.entries(db, ranch_id)
 
 
 async def test_add_edit_and_remove_each_write_a_history_entry(

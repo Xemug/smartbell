@@ -11,6 +11,7 @@ from smartbell.routes import (
     animals,
     auth,
     events,
+    geocode,
     health,
     invitations,
     milk,
@@ -56,4 +57,5 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(milk.router, prefix="/api")
     app.include_router(users.router, prefix="/api")
     app.include_router(webhooks.router, prefix="/api")
+    app.include_router(geocode.router, prefix="/api")
     return app

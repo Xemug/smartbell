@@ -1,5 +1,8 @@
+import { api } from '../../../api/client';
 import type { Pin } from './pin';
 
+// Hosted builds set VITE_GEOCODE_VIA_API: lookups go through our API, which asks Google with a
+// server-side key. Otherwise (dev) the browser asks OpenStreetMap's free geocoder directly.
 // OpenStreetMap's free geocoder, the same data as the map tiles. Its usage policy allows one
 // request a second and no search-as-you-type, so callers look up a finished address (on blur or
 // on save) or a dropped pin, never per keystroke, and requests here are spaced out; the browser's
@@ -64,10 +67,27 @@ async function ask<T>(path: string, params: URLSearchParams, signal?: AbortSigna
   return (await response.json()) as T;
 }
 
+/** Read per call so tests can stub it. */
+const viaApi = () => import.meta.env.VITE_GEOCODE_VIA_API === 'true';
+
+async function searchApi(q: string, signal?: AbortSignal): Promise<Pin | null> {
+  const { data, error } = await api.GET('/api/geocode/search', {
+    params: { query: { q } },
+    signal,
+  });
+  if (error || !data) throw new Error('geocode');
+  return data.pin;
+}
+
 async function search(q: string, signal?: AbortSignal): Promise<Pin | null> {
   const key = q.toLowerCase();
   const known = cache.get(key);
   if (known !== undefined) return known;
+  if (viaApi()) {
+    const pin = await searchApi(q, signal);
+    cache.set(key, pin);
+    return pin;
+  }
   const params = new URLSearchParams({
     q,
     format: 'jsonv2',
@@ -141,6 +161,14 @@ interface ReverseHit {
  * or null where there is no street nearby: out in the fields, the coordinates are the address.
  */
 export async function addressAt(pin: Pin, signal?: AbortSignal): Promise<string | null> {
+  if (viaApi()) {
+    const { data, error } = await api.GET('/api/geocode/reverse', {
+      params: { query: { latitude: pin.latitude, longitude: pin.longitude } },
+      signal,
+    });
+    if (error || !data) throw new Error('geocode');
+    return data.address;
+  }
   const params = new URLSearchParams({
     lat: String(pin.latitude),
     lon: String(pin.longitude),

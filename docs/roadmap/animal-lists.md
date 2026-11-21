@@ -2,6 +2,7 @@
 id: animal-lists
 title: Animal lists with search and filters (cows, heifers, bulls)
 summary: The Vacas tab: cows / heifers / bulls lists with search by ID, Categoría→Variable filters, sort, paging, selection and row actions, on mobile and web.
+verifiedAt: 2026-11-21
 ---
 
 # Animal lists with search and filters (cows, heifers, bulls)

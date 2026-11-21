@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -36,7 +36,8 @@ class ProfileUpdate(BaseModel):
 
 
 def storage(request: Request) -> media.Storage:
-    return media.LocalStorage(request.app.state.settings.media_dir)
+    settings = request.app.state.settings
+    return media.storage_for(settings.media_bucket, settings.media_dir)
 
 
 @router.patch("/users/me", operation_id="updateMe")
@@ -113,13 +114,13 @@ async def upload_photo(
 
 
 @router.get("/media/avatars/{name}", operation_id="getAvatar", include_in_schema=False)
-async def get_avatar(name: str, files: Annotated[media.Storage, Depends(storage)]) -> FileResponse:
-    path = await run_in_threadpool(files.path, media.AVATAR_PREFIX, name)
-    if path is None:
+async def get_avatar(name: str, files: Annotated[media.Storage, Depends(storage)]) -> Response:
+    data = await run_in_threadpool(files.read, media.AVATAR_PREFIX, name)
+    if data is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="not_found")
     kind = name.rsplit(".", 1)[1]
-    return FileResponse(
-        path,
+    return Response(
+        data,
         media_type=media.CONTENT_TYPES[kind],
         # The name changes with every upload, so a copy never goes stale.
         headers={

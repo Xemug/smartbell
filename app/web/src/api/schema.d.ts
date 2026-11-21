@@ -385,6 +385,148 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/animals/{animal_id}/events': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Events
+     * @description The bitácora, newest first.
+     */
+    get: operations['listEvents'];
+    put?: never;
+    /**
+     * Record Event
+     * @description Records an event, re-projects the animal and opens or closes its alerts.
+     */
+    post: operations['recordEvent'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/animals/{animal_id}/events/{event_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete Event
+     * @description Deletes and re-projects (200). Without ANIMALS_DELETE, files a DeletionRequest (202).
+     */
+    delete: operations['deleteEvent'];
+    options?: never;
+    head?: never;
+    /**
+     * Edit Event
+     * @description Health, diet, group, vaccination and weight events; repro events by admins only. ALTA and
+     *     REMOVAL have their own flows (409).
+     */
+    patch: operations['editEvent'];
+    trace?: never;
+  };
+  '/api/milk/herd-logs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Herd Logs
+     * @description Defaults to the last 7 days, the shipped app's "Últimos 7 días".
+     */
+    get: operations['list_herd_logs_api_milk_herd_logs_get'];
+    put?: never;
+    /** Put Herd Log */
+    post: operations['put_herd_log_api_milk_herd_logs_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/milk/herd-logs/{day}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete Herd Log */
+    delete: operations['delete_herd_log_api_milk_herd_logs__day__delete'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/milk/cow-logs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Cow Logs */
+    get: operations['list_cow_logs_api_milk_cow_logs_get'];
+    put?: never;
+    /** Put Cow Logs */
+    post: operations['put_cow_logs_api_milk_cow_logs_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/milk/cows/{animal_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Cow Stats */
+    get: operations['cow_stats_api_milk_cows__animal_id__get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/milk/summary': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Summary
+     * @description Production history ending `end` (today by default), from `start` (a week before).
+     */
+    get: operations['summary_api_milk_summary_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/users/me': {
     parameters: {
       query?: never;
@@ -439,10 +581,75 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/geocode/search': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Search */
+    get: operations['geocodeSearch'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/geocode/reverse': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Reverse */
+    get: operations['geocodeReverse'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /**
+     * AbortionCause
+     * @enum {string}
+     */
+    AbortionCause:
+      | 'HORMONAL'
+      | 'REABSORCION'
+      | 'NUTRICION'
+      | 'DESCONOCIDO'
+      | 'ACCIDENTE'
+      | 'ENFERMEDAD'
+      | 'INTOXICACION_NUTRICIONAL'
+      | 'VIRUS'
+      | 'BACTERIA'
+      | 'TRATAMIENTO';
+    /**
+     * AbortionKind
+     * @enum {string}
+     */
+    AbortionKind: 'NATURAL' | 'INDUCIDO';
+    /** AbortionPayload */
+    AbortionPayload: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'ABORTION';
+      kind: components['schemas']['AbortionKind'];
+      cause: components['schemas']['AbortionCause'];
+      illness?: components['schemas']['Illness'] | null;
+    };
     /** AcceptedOut */
     AcceptedOut: {
       /**
@@ -450,6 +657,19 @@ export interface components {
        * Format: uuid
        */
       ranch_id: string;
+    };
+    /** AccidentPayload */
+    AccidentPayload: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'ACCIDENT';
+      /** Description */
+      description?: string | null;
+      treatment: components['schemas']['Treatment'];
+      diet_change?: components['schemas']['DietChangeDetails'] | null;
+      group_change?: components['schemas']['GroupChangeDetails'] | null;
     };
     /** AccountOut */
     AccountOut: {
@@ -460,6 +680,54 @@ export interface components {
       /** Is Admin */
       is_admin: boolean;
     };
+    /**
+     * AddressOut
+     * @description `address` is null where there is no street nearby: the coordinates are the address.
+     */
+    AddressOut: {
+      /** Address */
+      address: string | null;
+    };
+    /**
+     * AlertKind
+     * @enum {string}
+     */
+    AlertKind:
+      | 'HEAT'
+      | 'PREGNANCY_CHECK'
+      | 'PREG_RECHECK'
+      | 'CLOSE_UP'
+      | 'CALVING'
+      | 'HEALTH'
+      | 'VACCINE_DUE'
+      | 'TREATMENT_DUE'
+      | 'DRY_OFF'
+      | 'DIET_CHANGE';
+    /** AlertOut */
+    AlertOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      kind: components['schemas']['AlertKind'];
+      /**
+       * Window Start
+       * Format: date
+       */
+      window_start: string;
+      /**
+       * Window End
+       * Format: date
+       */
+      window_end: string;
+      status: components['schemas']['AlertStatus'];
+    };
+    /**
+     * AlertStatus
+     * @enum {string}
+     */
+    AlertStatus: 'PENDING' | 'CONFIRMED' | 'NEGATED' | 'EXPIRED';
     /**
      * AnimalCreate
      * @description "Nombre o Número interno" and the birth date are the only required fields (§7.1).
@@ -801,6 +1069,121 @@ export interface components {
       | 'SHORTHORN'
       | 'NORMANDO'
       | 'OTRA';
+    /** Bucket */
+    Bucket: {
+      /**
+       * Start
+       * Format: date
+       */
+      start: string;
+      /**
+       * End
+       * Format: date
+       */
+      end: string;
+      /** Total Liters */
+      total_liters: string;
+      /** Days Logged */
+      days_logged: number;
+      /** Avg Daily Liters */
+      avg_daily_liters: string | null;
+      /** Avg Liters Per Cow */
+      avg_liters_per_cow: string | null;
+      /** By Destination */
+      by_destination: {
+        [key: string]: string;
+      };
+    };
+    /** CalvingInput */
+    CalvingInput: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'CALVING';
+      timing?: components['schemas']['CalvingTiming'] | null;
+      /** Calf Registered */
+      calf_registered: boolean;
+      /** Calf Animal Id */
+      calf_animal_id?: string | null;
+    };
+    /**
+     * CalvingTiming
+     * @enum {string}
+     */
+    CalvingTiming: 'ESPERADO' | 'ANTICIPADO' | 'RETRASADO';
+    /**
+     * CorticoidSubtype
+     * @enum {string}
+     */
+    CorticoidSubtype:
+      'BETAMETASONA' | 'DEXAMETASONA' | 'CORTISONA' | 'PREDNISOLONA' | 'HIDROCORTISONA';
+    /** CowLogEntry */
+    CowLogEntry: {
+      /**
+       * Animal Id
+       * Format: uuid
+       */
+      animal_id: string;
+      /** @default TANQUE */
+      destination: components['schemas']['MilkDestination'];
+      /** Liters */
+      liters: number | string;
+    };
+    /** CowLogOut */
+    CowLogOut: {
+      /**
+       * Animal Id
+       * Format: uuid
+       */
+      animal_id: string;
+      /**
+       * Date
+       * Format: date
+       */
+      date: string;
+      destination: components['schemas']['MilkDestination'];
+      /** Liters */
+      liters: string;
+    };
+    /** CowLogWarning */
+    CowLogWarning: {
+      /**
+       * Animal Id
+       * Format: uuid
+       */
+      animal_id: string;
+      code: components['schemas']['MilkWarning'];
+    };
+    /** CowLogsIn */
+    CowLogsIn: {
+      /** Date */
+      date?: string | null;
+      /** Entries */
+      entries: components['schemas']['CowLogEntry'][];
+    };
+    /** CowLogsOut */
+    CowLogsOut: {
+      /** Logs */
+      logs: components['schemas']['CowLogOut'][];
+      /** Warnings */
+      warnings: components['schemas']['CowLogWarning'][];
+    };
+    /** CowMilkStats */
+    CowMilkStats: {
+      /**
+       * Animal Id
+       * Format: uuid
+       */
+      animal_id: string;
+      /** Days Logged */
+      days_logged: number;
+      /** Total Liters */
+      total_liters: string;
+      /** Avg Daily Liters */
+      avg_daily_liters: string | null;
+      peak: components['schemas']['PeakDay'] | null;
+    };
     /**
      * CrossbreedLevel
      * @enum {string}
@@ -812,6 +1195,32 @@ export interface components {
      * @enum {string}
      */
     DamStatus: 'VIVA' | 'MUERTA_DESECHO' | 'VENDIDA_OTRO_RANCHO' | 'VENDIDA_RASTRO';
+    /** DeletionRequestOut */
+    DeletionRequestOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Event Id
+       * Format: uuid
+       */
+      event_id: string;
+      /** Requested By */
+      requested_by: string | null;
+      status: components['schemas']['DeletionRequestStatus'];
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /**
+     * DeletionRequestStatus
+     * @enum {string}
+     */
+    DeletionRequestStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
     /**
      * DevelopmentStage
      * @enum {string}
@@ -829,6 +1238,181 @@ export interface components {
       | 'DESTETADO'
       | 'NOVILLO'
       | 'TORO';
+    /** DietChangeDetails */
+    DietChangeDetails: {
+      reason: components['schemas']['DietChangeReason'];
+      /** Diet */
+      diet: string;
+      /** Diet Type */
+      diet_type?: string | null;
+      /** Daily Kg */
+      daily_kg?: number | null;
+      /** Daily Cost */
+      daily_cost?: number | null;
+    };
+    /** DietChangePayload */
+    DietChangePayload: {
+      reason: components['schemas']['DietChangeReason'];
+      /** Diet */
+      diet: string;
+      /** Diet Type */
+      diet_type?: string | null;
+      /** Daily Kg */
+      daily_kg?: number | null;
+      /** Daily Cost */
+      daily_cost?: number | null;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'DIET_CHANGE';
+    };
+    /**
+     * DietChangeReason
+     * @enum {string}
+     */
+    DietChangeReason: 'ETAPA_REPRODUCTIVA' | 'ENFERMEDAD' | 'TRATAMIENTO' | 'OTRA';
+    /**
+     * DrugPresentation
+     * @enum {string}
+     */
+    DrugPresentation: 'TOPICO' | 'ORAL' | 'INYECCION';
+    /** EventCreate */
+    EventCreate: {
+      /**
+       * Occurred On
+       * Format: date
+       */
+      occurred_on: string;
+      /** Description */
+      description?: string | null;
+      /** Comments */
+      comments?: string | null;
+      /** Payload */
+      payload:
+        | components['schemas']['HeatPayload']
+        | components['schemas']['PregnancyCheckPayload']
+        | components['schemas']['CalvingInput']
+        | components['schemas']['AbortionPayload']
+        | components['schemas']['IllnessPayload']
+        | components['schemas']['AccidentPayload']
+        | components['schemas']['MedicalTreatmentPayload']
+        | components['schemas']['TreatmentFollowupPayload']
+        | components['schemas']['DietChangePayload']
+        | components['schemas']['GroupChangePayload']
+        | components['schemas']['VaccinationPayload']
+        | components['schemas']['WeightPayload'];
+    };
+    /** EventDeleted */
+    EventDeleted: {
+      animal: components['schemas']['AnimalDetail'];
+      /** Open Alerts */
+      open_alerts: components['schemas']['AlertOut'][];
+    };
+    /**
+     * EventDerived
+     * @description What the server worked out from the event, as of when it was written.
+     */
+    EventDerived: {
+      calving_timing?: components['schemas']['CalvingTiming'] | null;
+      /** Loss */
+      loss?: string | null;
+      /** Withdrawal Until */
+      withdrawal_until?: string | null;
+    };
+    /** EventOut */
+    EventOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Animal Id
+       * Format: uuid
+       */
+      animal_id: string;
+      type: components['schemas']['EventType'];
+      /**
+       * Occurred On
+       * Format: date
+       */
+      occurred_on: string;
+      /** Recorded By */
+      recorded_by: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Description */
+      description: string | null;
+      /** Comments */
+      comments: string | null;
+      /** Payload */
+      payload: {
+        [key: string]: unknown;
+      };
+      /** Deletable */
+      deletable: boolean;
+    };
+    /**
+     * EventType
+     * @enum {string}
+     */
+    EventType:
+      | 'ALTA'
+      | 'HEAT'
+      | 'PREGNANCY_CHECK'
+      | 'CALVING'
+      | 'ABORTION'
+      | 'ILLNESS'
+      | 'ACCIDENT'
+      | 'MEDICAL_TREATMENT'
+      | 'TREATMENT_FOLLOWUP'
+      | 'DIET_CHANGE'
+      | 'GROUP_CHANGE'
+      | 'VACCINATION'
+      | 'WEIGHT'
+      | 'REMOVAL';
+    /**
+     * EventUpdate
+     * @description Only the fields sent change. `payload`, when sent, replaces the whole payload and must
+     *     keep the event's type.
+     */
+    EventUpdate: {
+      /** Occurred On */
+      occurred_on?: string | null;
+      /** Description */
+      description?: string | null;
+      /** Comments */
+      comments?: string | null;
+      /** Payload */
+      payload?:
+        | (
+            | components['schemas']['HeatPayload']
+            | components['schemas']['PregnancyCheckPayload']
+            | components['schemas']['CalvingInput']
+            | components['schemas']['AbortionPayload']
+            | components['schemas']['IllnessPayload']
+            | components['schemas']['AccidentPayload']
+            | components['schemas']['MedicalTreatmentPayload']
+            | components['schemas']['TreatmentFollowupPayload']
+            | components['schemas']['DietChangePayload']
+            | components['schemas']['GroupChangePayload']
+            | components['schemas']['VaccinationPayload']
+            | components['schemas']['WeightPayload']
+          )
+        | null;
+    };
+    /** EventWritten */
+    EventWritten: {
+      event: components['schemas']['EventOut'];
+      derived: components['schemas']['EventDerived'];
+      animal: components['schemas']['AnimalDetail'];
+      /** Open Alerts */
+      open_alerts: components['schemas']['AlertOut'][];
+    };
     /** FakeDoorCount */
     FakeDoorCount: {
       feature: components['schemas']['FakeDoorFeature'];
@@ -857,6 +1441,38 @@ export interface components {
       feature: components['schemas']['FakeDoorFeature'];
     };
     /**
+     * Found
+     * @description `pin` is null when nothing matches.
+     */
+    Found: {
+      pin: components['schemas']['PointOut'] | null;
+    };
+    /** GroupChangeDetails */
+    GroupChangeDetails: {
+      /** From Group Id */
+      from_group_id?: string | null;
+      /**
+       * To Group Id
+       * Format: uuid
+       */
+      to_group_id: string;
+    };
+    /** GroupChangePayload */
+    GroupChangePayload: {
+      /** From Group Id */
+      from_group_id?: string | null;
+      /**
+       * To Group Id
+       * Format: uuid
+       */
+      to_group_id: string;
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'GROUP_CHANGE';
+    };
+    /**
      * GroupPreset
      * @enum {string}
      */
@@ -870,6 +1486,77 @@ export interface components {
     Health: {
       /** Status */
       status: string;
+    };
+    /**
+     * HeatOutcome
+     * @enum {string}
+     */
+    HeatOutcome:
+      | 'NOT_OBSERVED'
+      | 'VWP'
+      | 'NOT_INSEMINATED'
+      | 'DIRTY_MEDICATED'
+      | 'DIRTY_NOT_MEDICATED'
+      | 'INSEMINATED';
+    /** HeatPayload */
+    HeatPayload: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'HEAT';
+      outcome: components['schemas']['HeatOutcome'];
+      /** Clean */
+      clean?: boolean | null;
+      /** Bull Id */
+      bull_id?: string | null;
+      method?: components['schemas']['ServiceMethod'] | null;
+      treatment?: components['schemas']['Treatment'] | null;
+    };
+    /** HerdLogIn */
+    HerdLogIn: {
+      /** Date */
+      date?: string | null;
+      /** Total Liters */
+      total_liters: number | string;
+    };
+    /** HerdLogOut */
+    HerdLogOut: {
+      /**
+       * Date
+       * Format: date
+       */
+      date: string;
+      /** Total Liters */
+      total_liters: string;
+      /** Entered By */
+      entered_by: string | null;
+    };
+    /**
+     * Illness
+     * @enum {string}
+     */
+    Illness:
+      | 'MASTITIS'
+      | 'BRUCELOSIS'
+      | 'PULMONIA'
+      | 'CETOSIS'
+      | 'TUBERCULOSIS'
+      | 'COJERA'
+      | 'FIEBRE_AFTOSA'
+      | 'ENVENENAMIENTO'
+      | 'OTRO';
+    /** IllnessPayload */
+    IllnessPayload: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'ILLNESS';
+      illness: components['schemas']['Illness'];
+      treatment: components['schemas']['Treatment'];
+      diet_change?: components['schemas']['DietChangeDetails'] | null;
+      group_change?: components['schemas']['GroupChangeDetails'] | null;
     };
     /** InvitationCreate */
     InvitationCreate: {
@@ -962,6 +1649,34 @@ export interface components {
      * @enum {string}
      */
     LactationState: 'LACTANDO' | 'SECA';
+    /** LatestDay */
+    LatestDay: {
+      /**
+       * Date
+       * Format: date
+       */
+      date: string;
+      /** Total Liters */
+      total_liters: string;
+      /** Liters Per Cow */
+      liters_per_cow: string | null;
+    };
+    /**
+     * MedicalTreatmentKind
+     * @enum {string}
+     */
+    MedicalTreatmentKind:
+      'SINCRONIZACION_CELO' | 'HORMONAS_CRECIMIENTO' | 'REDUCCION_LECHE' | 'VACUNAS' | 'OTROS';
+    /** MedicalTreatmentPayload */
+    MedicalTreatmentPayload: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'MEDICAL_TREATMENT';
+      kind: components['schemas']['MedicalTreatmentKind'];
+      treatment: components['schemas']['Treatment'];
+    };
     /** MemberOut */
     MemberOut: {
       /**
@@ -993,6 +1708,42 @@ export interface components {
       permissions?: components['schemas']['Permission'][] | null;
     };
     /**
+     * MilkDestination
+     * @enum {string}
+     */
+    MilkDestination: 'TANQUE' | 'BECERRAS' | 'ANTIBIOTICOS';
+    /**
+     * MilkGranularity
+     * @description Bucket size of the production history. Weeks start on Monday (§7.3).
+     * @enum {string}
+     */
+    MilkGranularity: 'DAY' | 'WEEK' | 'MONTH' | 'QUARTER' | 'SEMESTER' | 'YEAR';
+    /** MilkSummary */
+    MilkSummary: {
+      granularity: components['schemas']['MilkGranularity'];
+      /**
+       * Start
+       * Format: date
+       */
+      start: string;
+      /**
+       * End
+       * Format: date
+       */
+      end: string;
+      /** Lactating Cows */
+      lactating_cows: number;
+      latest: components['schemas']['LatestDay'] | null;
+      /** Buckets */
+      buckets: components['schemas']['Bucket'][];
+    };
+    /**
+     * MilkWarning
+     * @description A cow logged against the milk-withdrawal rule (§7.3). Saved anyway; shown as a warning.
+     * @enum {string}
+     */
+    MilkWarning: 'WITHDRAWAL_TO_TANK' | 'ANTIBIOTICS_OUTSIDE_WITHDRAWAL';
+    /**
      * ParentCreate
      * @description A dam or sire registered inline. Its sex comes from the slot it fills.
      */
@@ -1017,6 +1768,18 @@ export interface components {
       development_stage: components['schemas']['DevelopmentStage'];
       /** Group Id */
       group_id?: string | null;
+    };
+    /** PeakDay */
+    PeakDay: {
+      /**
+       * Date
+       * Format: date
+       */
+      date: string;
+      /** Liters */
+      liters: string;
+      /** Dim */
+      dim: number | null;
     };
     /**
      * Permission
@@ -1050,6 +1813,35 @@ export interface components {
       /** Has Pro */
       has_pro: boolean;
     };
+    /** PointOut */
+    PointOut: {
+      /** Latitude */
+      latitude: number;
+      /** Longitude */
+      longitude: number;
+    };
+    /**
+     * PregnancyCheckMethod
+     * @enum {string}
+     */
+    PregnancyCheckMethod: 'TACTO' | 'ULTRASONIDO';
+    /** PregnancyCheckPayload */
+    PregnancyCheckPayload: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'PREGNANCY_CHECK';
+      method: components['schemas']['PregnancyCheckMethod'];
+      result: components['schemas']['PregnancyCheckResult'];
+      /** Description */
+      description?: string | null;
+    };
+    /**
+     * PregnancyCheckResult
+     * @enum {string}
+     */
+    PregnancyCheckResult: 'POSITIVE' | 'NEGATIVE';
     /**
      * ProfileUpdate
      * @description Only the fields sent change. Email is the sign-in identity, so it isn't editable here.
@@ -1182,6 +1974,11 @@ export interface components {
       /** Permissions */
       permissions: components['schemas']['Permission'][];
     };
+    /**
+     * ServiceMethod
+     * @enum {string}
+     */
+    ServiceMethod: 'IA' | 'MONTA';
     /** SessionOut */
     SessionOut: {
       user: components['schemas']['UserOut'];
@@ -1234,6 +2031,53 @@ export interface components {
       /** Community Url */
       community_url: string | null;
     };
+    /** Treatment */
+    Treatment: {
+      type: components['schemas']['TreatmentType'];
+      corticoid_subtype?: components['schemas']['CorticoidSubtype'] | null;
+      presentation: components['schemas']['DrugPresentation'];
+      /**
+       * Start Date
+       * Format: date
+       */
+      start_date: string;
+      /**
+       * Duration Days
+       * @default 5
+       */
+      duration_days: number;
+      /** Withdrawal Days */
+      withdrawal_days?: number | null;
+    };
+    /**
+     * TreatmentFollowupOutcome
+     * @enum {string}
+     */
+    TreatmentFollowupOutcome: 'SUCCESS' | 'CHANGE';
+    /** TreatmentFollowupPayload */
+    TreatmentFollowupPayload: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'TREATMENT_FOLLOWUP';
+      outcome: components['schemas']['TreatmentFollowupOutcome'];
+      new_treatment?: components['schemas']['Treatment'] | null;
+    };
+    /**
+     * TreatmentType
+     * @enum {string}
+     */
+    TreatmentType:
+      | 'ANTIBIOTICO'
+      | 'ANTISEPTICO'
+      | 'ANTIBACTERIANO'
+      | 'ANTIMICOTICO'
+      | 'QUIRURGICO'
+      | 'ANTIINFLAMATORIO'
+      | 'CORTICOIDE'
+      | 'ANTIMICROBIANO'
+      | 'ANTIPARASITARIO';
     /** UserOut */
     UserOut: {
       /**
@@ -1252,6 +2096,21 @@ export interface components {
       /** Photo Url */
       photo_url: string | null;
     };
+    /** VaccinationPayload */
+    VaccinationPayload: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'VACCINATION';
+      /**
+       * Vaccine Id
+       * Format: uuid
+       */
+      vaccine_id: string;
+      /** Dose Ml */
+      dose_ml: number;
+    };
     /** ValidationError */
     ValidationError: {
       /** Location */
@@ -1269,6 +2128,16 @@ export interface components {
     WebhookOut: {
       /** Action */
       action: string;
+    };
+    /** WeightPayload */
+    WeightPayload: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'WEIGHT';
+      /** Kg */
+      kg: number;
     };
     /** WindowOut */
     WindowOut: {
@@ -2145,6 +3014,400 @@ export interface operations {
       };
     };
   };
+  listEvents: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path: {
+        animal_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EventOut'][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  recordEvent: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path: {
+        animal_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EventCreate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EventWritten'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  deleteEvent: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path: {
+        animal_id: string;
+        event_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Deleted; the animal re-projected */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EventDeleted'];
+        };
+      };
+      /** @description Sent to an admin for approval */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DeletionRequestOut'];
+        };
+      };
+      /** @description event_not_deletable: ALTA, REMOVAL and repro events */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  editEvent: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path: {
+        animal_id: string;
+        event_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EventUpdate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EventWritten'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_herd_logs_api_milk_herd_logs_get: {
+    parameters: {
+      query?: {
+        start?: string | null;
+        end?: string | null;
+      };
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HerdLogOut'][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  put_herd_log_api_milk_herd_logs_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['HerdLogIn'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HerdLogOut'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_herd_log_api_milk_herd_logs__day__delete: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path: {
+        day: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_cow_logs_api_milk_cow_logs_get: {
+    parameters: {
+      query?: {
+        date?: string | null;
+      };
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CowLogOut'][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  put_cow_logs_api_milk_cow_logs_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CowLogsIn'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CowLogsOut'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  cow_stats_api_milk_cows__animal_id__get: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path: {
+        animal_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CowMilkStats'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  summary_api_milk_summary_get: {
+    parameters: {
+      query?: {
+        granularity?: components['schemas']['MilkGranularity'];
+        start?: string | null;
+        end?: string | null;
+      };
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MilkSummary'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   updateMe: {
     parameters: {
       query?: never;
@@ -2219,6 +3482,69 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['WebhookOut'];
+        };
+      };
+    };
+  };
+  geocodeSearch: {
+    parameters: {
+      query: {
+        q: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['Found'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  geocodeReverse: {
+    parameters: {
+      query: {
+        latitude: number;
+        longitude: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AddressOut'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
     };
