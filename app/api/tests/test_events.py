@@ -789,13 +789,30 @@ async def test_recording_needs_the_events_permission(
 async def test_the_bitacora_lists_newest_first(tenant_api: AsyncClient, owner: Account) -> None:
     animal_id = await new_cow(tenant_api, owner, "0100")
     await recorded(tenant_api, owner, animal_id, {"type": "WEIGHT", "kg": 500}, on=days(-2))
-    await recorded(tenant_api, owner, animal_id, {"type": "WEIGHT", "kg": 510})
+    await recorded(tenant_api, owner, animal_id, {"type": "WEIGHT", "kg": 510}, on=days(-1))
 
     response = await tenant_api.get(f"/api/animals/{animal_id}/events", headers=owner.headers())
 
     assert response.status_code == 200
     rows = response.json()
-    # The ALTA was recorded today, before the second weight.
-    assert [row["type"] for row in rows] == ["WEIGHT", "ALTA", "WEIGHT"]
-    assert rows[0]["payload"]["kg"] == 510
-    assert rows[1]["deletable"] is False
+    # By date: the ALTA is today's. (Same-day order is by created_at, which SQLite keeps to the
+    # second, so this test doesn't lean on it.)
+    assert [(row["type"], row["occurred_on"]) for row in rows] == [
+        ("ALTA", TODAY.isoformat()),
+        ("WEIGHT", days(-1)),
+        ("WEIGHT", days(-2)),
+    ]
+    assert rows[0]["deletable"] is False and rows[1]["deletable"] is True
+
+
+async def test_payload_text_is_capped(tenant_api: AsyncClient, owner: Account) -> None:
+    animal_id = await new_cow(tenant_api, owner, "0100")
+
+    response = await post(
+        tenant_api,
+        owner,
+        animal_id,
+        {"type": "ACCIDENT", "description": "x" * 501, "treatment": treatment()},
+    )
+
+    assert response.status_code == 422
