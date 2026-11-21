@@ -156,12 +156,15 @@ describe('AppShell', () => {
     expect(prefilled(link.getAttribute('href'))).toBe('Quiero Grupos ya.');
   });
 
-  it('avatar items route to their config placeholder', async () => {
+  it('avatar items route to their config pages', async () => {
     const { router } = renderShell({ desktop: true });
     await userEvent.click(screen.getByRole('button', { name: /Menú de cuenta/ }));
     await userEvent.click(await screen.findByRole('menuitem', { name: 'Mi perfil' }));
     expect(router.state.location.pathname).toBe('/config/perfil');
-    expect(await screen.findByRole('heading', { name: 'Mi perfil' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Menú de cuenta/ }));
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Mensajes recibidos' }));
+    expect(router.state.location.pathname).toBe('/config/mensajes');
+    expect(await screen.findByRole('heading', { name: 'Mensajes recibidos' })).toBeInTheDocument();
   });
 
   it('switches ranch from the stub context', async () => {

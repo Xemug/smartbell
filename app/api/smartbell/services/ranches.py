@@ -1,19 +1,23 @@
 """Ranches and who belongs to them. Invitations live in `services/invitations.py`."""
 
+import unicodedata
 import uuid
 from dataclasses import dataclass
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from smartbell.enums import HistoryKey, Role
-from smartbell.models import Membership, Ranch, RanchSettings, User
+from smartbell.enums import AnimalStatus, HistoryKey, Role
+from smartbell.models import Animal, Membership, Ranch, RanchSettings, User
 from smartbell.schemas.history import HistoryRefs
 from smartbell.security.permissions import ROLE_PRESETS, Permission, effective, preset
 from smartbell.security.ranch import RanchContext
 from smartbell.services import history
+from smartbell.services.plans import RanchCreation, ranch_creation
 
-MAX_OWNED_RANCHES = 20  # Keeps one account from filling the database; far above any real herd.
+# Ranch data (name, address, pin) has no §7.8 code; these roles may edit it.
+RANCH_EDITORS = frozenset({Role.DUENO, Role.ADMINISTRADOR})
+FIRST_RANCH_NAME = "Mi rancho"  # domain-model §7: auto-created at sign-up, editable later.
 
 
 class MembershipRefused(Exception):
@@ -58,14 +62,86 @@ async def create_ranch(session: AsyncSession, owner: User, name: str) -> Ranch:
 
 
 async def create_owned_ranch(session: AsyncSession, owner: User, name: str) -> Ranch:
-    owned = await session.scalar(
-        select(func.count()).select_from(Ranch).where(Ranch.owner_user_id == owner.id)
-    )
-    if (owned or 0) >= MAX_OWNED_RANCHES:
+    # Lock the owner's row so two requests at once can't both pass the Pro gate or the cap.
+    # (Postgres; SQLite has no row locks and runs one writer at a time anyway.)
+    await session.execute(select(User.id).where(User.id == owner.id).with_for_update())
+    allowed = await ranch_creation(session, owner)
+    if allowed is RanchCreation.LIMIT:
         raise MembershipRefused("ranch_limit", 409)
+    if allowed is RanchCreation.UPSELL:
+        raise MembershipRefused("pro_required", 402)
     ranch = await create_ranch(session, owner, name)
     await session.commit()
     return ranch
+
+
+async def update_ranch(
+    session: AsyncSession, ctx: RanchContext, changes: dict[str, object]
+) -> Ranch:
+    """`changes` holds only the fields the caller sent; `None` clears the address or the pin."""
+    if ctx.role not in RANCH_EDITORS:
+        raise MembershipRefused("permission_denied", 403)
+    ranch = await session.get(Ranch, ctx.ranch_id)
+    assert ranch is not None  # noqa: S101 - the caller's membership's foreign key holds it.
+    for name, value in changes.items():
+        setattr(ranch, name, value)
+    await session.commit()
+    return ranch
+
+
+async def delete_ranch(session: AsyncSession, ctx: RanchContext, typed_name: str) -> None:
+    """Only the owner, after typing the ranch's name. Everything in it goes with it (CASCADE)."""
+    ranch = await session.get(Ranch, ctx.ranch_id)
+    assert ranch is not None  # noqa: S101 - the caller's membership's foreign key holds it.
+    if ranch.owner_user_id != ctx.user.id:
+        raise MembershipRefused("owner_only", 403)
+    if not same_name(typed_name, ranch.name):
+        raise MembershipRefused("name_mismatch", 422)
+    memberships = await session.scalar(
+        select(func.count()).select_from(Membership).where(Membership.user_id == ctx.user.id)
+    )
+    if (memberships or 0) <= 1:
+        raise MembershipRefused("last_ranch", 409)
+    # Members for whom this was the only ranch get a fresh "Mi rancho", as at sign-up, so no
+    # account is left with nowhere to land.
+    member_ids = (
+        await session.scalars(
+            select(Membership.user_id).where(
+                Membership.ranch_id == ranch.id, Membership.user_id != ctx.user.id
+            )
+        )
+    ).all()
+    for member_id in member_ids:
+        elsewhere = await session.scalar(
+            select(func.count())
+            .select_from(Membership)
+            .where(Membership.user_id == member_id, Membership.ranch_id != ranch.id)
+        )
+        if not elsewhere:
+            member = await session.get(User, member_id)
+            assert member is not None  # noqa: S101 - the membership's foreign key holds it.
+            await create_ranch(session, member, FIRST_RANCH_NAME)
+    await session.delete(ranch)
+    await session.commit()
+
+
+def same_name(typed: str, name: str) -> bool:
+    """The delete confirmation: case, accents' encoding and surrounding spaces don't matter."""
+
+    def fold(text: str) -> str:
+        return unicodedata.normalize("NFC", text).strip().casefold()
+
+    return fold(typed) == fold(name)
+
+
+async def count_animals(session: AsyncSession, ranch_id: uuid.UUID) -> int:
+    """The ranch's active cows and heifers ("Vacas en Sistema")."""
+    count = await session.scalar(
+        select(func.count())
+        .select_from(Animal)
+        .where(Animal.ranch_id == ranch_id, Animal.status == AnimalStatus.ACTIVE)
+    )
+    return count or 0
 
 
 async def list_ranches(session: AsyncSession, user: User) -> list[tuple[Ranch, Membership]]:

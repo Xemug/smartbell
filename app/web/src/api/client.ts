@@ -43,3 +43,10 @@ api.use({
     return request;
   },
 });
+
+/** Our own media paths are relative to the API; Google or Apple pictures are already absolute. */
+export function mediaUrl(path: string | null | undefined): string | null {
+  if (!path) return null;
+  // Joined as strings, as openapi-fetch does, so a blank or prefixed base still works.
+  return path.startsWith('/') ? `${baseUrl.replace(/\/+$/, '')}${path}` : path;
+}

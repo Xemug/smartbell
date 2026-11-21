@@ -9,6 +9,10 @@ export interface AuthBackend {
   signUp(email: string, password: string, displayName: string): Promise<void>;
   signInWithProvider(provider: SocialProvider): Promise<void>;
   sendPasswordReset(email: string): Promise<void>;
+  /** Whether the signed-in user can sign in with a password (not only Google or Apple). */
+  hasPassword(): boolean;
+  /** Re-authenticates with `current`, then sets `next`. */
+  changePassword(current: string, next: string): Promise<void>;
   /** Emails the signed-in user a link that confirms their address. */
   sendEmailVerification(): Promise<void>;
   /** Re-reads the account and mints a fresh token, so a just-confirmed email shows in it. */

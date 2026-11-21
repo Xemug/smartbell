@@ -4,6 +4,8 @@ import { RequireAdmin } from '../features/admin/RequireAdmin';
 import { SupportAdminPage } from '../features/admin/SupportAdminPage';
 import { ADMIN_SUPPORT_PATH } from '../features/admin/useIsAdmin';
 import { FIRST_COW_PATH } from '../features/auth/guards';
+import { AccountPage } from '../features/config/account/AccountPage';
+import { RanchPage } from '../features/config/ranch/RanchPage';
 import { EditUserPage, NewUserPage } from '../features/config/users/UserFormPage';
 import { UsersPage } from '../features/config/users/UsersPage';
 import { HomePage } from '../pages/HomePage';
@@ -22,8 +24,8 @@ export const shellRoute: RouteObject = {
     { path: '/reportes', element: <PlaceholderPage titleKey="nav.reportes" /> },
     { path: '/ranchos', element: <PlaceholderPage titleKey="nav.ranchos" /> },
     { path: '/usuarios', element: <PlaceholderPage titleKey="nav.usuarios" /> },
-    { path: '/config/perfil', element: <PlaceholderPage titleKey="config.profile" /> },
-    { path: '/config/ranchos', element: <PlaceholderPage titleKey="config.ranches" /> },
+    { path: '/config/perfil', element: <AccountPage /> },
+    { path: '/config/ranchos', element: <RanchPage /> },
     { path: '/config/mensajes', element: <PlaceholderPage titleKey="config.messages" /> },
     { path: '/config/usuarios', element: <UsersPage /> },
     { path: '/config/usuarios/nuevo', element: <NewUserPage /> },

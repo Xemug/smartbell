@@ -29,6 +29,12 @@ export interface AuthApi {
   refreshIdentity(): Promise<void>;
   signOut(): Promise<void>;
   retry(): void;
+  /** Re-reads the account (profile and ranches) after an edit, so the shell shows it. */
+  refreshAccount(): Promise<void>;
+  /** Swaps in a profile the API just returned, without another round trip. */
+  setUser(user: Account['user']): void;
+  canChangePassword(): boolean;
+  changePassword(current: string, next: string): Promise<void>;
 }
 
 export const AuthContext = createContext<AuthApi | null>(null);

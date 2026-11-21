@@ -12,7 +12,7 @@ import {
 } from '../ui/icons/glyphs';
 import type { Glyph } from '../ui/icons/glyphs';
 import { Icon } from '../ui/icons/Icon';
-import { Illustration } from '../ui/icons/Illustration';
+import { Avatar } from './Avatar';
 import { focusRingOnDark } from './shellStyles';
 import { CountBadge } from './CountBadge';
 import { menuContent, menuItem } from './menuStyles';
@@ -37,13 +37,14 @@ export function AvatarMenu({ showCount = false }: { showCount?: boolean }) {
   const links = useSupportLinks();
   const isAdmin = useIsAdmin();
   const count = showCount ? unreadCount : 0;
+  const photoUrl = auth?.state.status === 'signedIn' ? auth.state.account.user.photo_url : null;
   return (
     <Menu.Root>
       <Menu.Trigger
         aria-label={count > 0 ? t('shell.accountMenuCount', { count }) : t('shell.accountMenu')}
         className={cx('relative size-10 shrink-0 rounded-full', focusRingOnDark)}
       >
-        <Illustration name="avatar" alt="" className="size-10 rounded-full" />
+        <Avatar photoUrl={photoUrl} className="size-10" />
         <CountBadge count={count} />
       </Menu.Trigger>
       <Menu.Portal>
