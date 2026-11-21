@@ -645,3 +645,91 @@ async def test_a_dropped_reminder_task_reopens_when_asked_for_again(
 
     tasks = (await tenant_db.scalars(select(Task).where(Task.animal_id == cow_id))).all()
     assert [(t.kind, t.status) for t in tasks] == [(TaskKind.HEIFER_TO_REGISTER, TaskStatus.OPEN)]
+
+
+@pytest.mark.parametrize("correction", ["deleted", "other_vaccine"])
+async def test_a_vaccine_alert_reopens_when_its_confirming_dose_is_corrected(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account, correction: str
+) -> None:
+    vaccine = await approved_plan(tenant_db, owner)
+    cow = await new_cow(tenant_api, owner, "0100")
+    dose = {"type": "VACCINATION", "vaccine_id": str(vaccine.id), "dose_ml": 2}
+    tenant_db.add(
+        Event(
+            ranch_id=owner.ranch_id,
+            animal_id=cow,
+            type=EventType.VACCINATION,
+            occurred_on=day(-30),
+            payload=dose,
+        )
+    )
+    await tenant_db.commit()
+    upcoming = day(-30).replace(year=2027)
+    early = Event(
+        ranch_id=owner.ranch_id,
+        animal_id=cow,
+        type=EventType.VACCINATION,
+        occurred_on=upcoming - dt.timedelta(days=10),
+        payload=dose,
+    )
+    tenant_db.add(early)
+    await tenant_db.commit()
+    await run(tenant_db, owner, upcoming - dt.timedelta(days=20))  # Before the early dose.
+    await run(tenant_db, owner, upcoming - dt.timedelta(days=9))
+    statuses = {
+        a.window_start: a.status for a in await alerts_of(tenant_db, cow, AlertKind.VACCINE_DUE)
+    }
+    assert statuses[upcoming] is AlertStatus.CONFIRMED
+
+    if correction == "deleted":
+        await tenant_db.delete(early)
+    else:
+        early.payload = dose | {"vaccine_id": str(uuid.uuid4())}
+    await tenant_db.commit()
+    await run(tenant_db, owner, upcoming - dt.timedelta(days=8))
+
+    [row] = [
+        a
+        for a in await alerts_of(tenant_db, cow, AlertKind.VACCINE_DUE)
+        if a.window_start == upcoming
+    ]
+    assert (row.status, row.resulting_event_id, row.resolved_at) == (
+        AlertStatus.PENDING,
+        None,
+        None,
+    )
+
+
+async def test_resolve_waits_for_the_daily_job_on_the_same_animal(
+    tenant_api: AsyncClient,
+    tenant_db: AsyncSession,
+    schema: AsyncEngine,
+    owner: Account,
+    db_backend: str,
+) -> None:
+    if db_backend == "sqlite":
+        pytest.skip("SQLite has no row locks")
+    import asyncio
+
+    cow = await new_cow(tenant_api, owner, "0100")
+    [heat] = await alerts_of(tenant_db, cow, AlertKind.HEAT)
+    url = f"/api/alerts/{heat.id}/resolve"
+
+    async with make_sessionmaker(schema)() as job:
+        # The job holds her lock and is expiring the alert, uncommitted.
+        await job.execute(select(Animal.id).where(Animal.id == cow).with_for_update())
+        row = await job.get_one(Alert, heat.id)
+        row.status = AlertStatus.EXPIRED
+        await job.flush()
+        request = asyncio.create_task(
+            tenant_api.post(url, headers=owner.headers(), json={"status": "NEGATED"})
+        )
+        await asyncio.sleep(0.5)
+        assert not request.done()
+        await job.commit()
+
+    response = await request
+    assert response.status_code == 409
+    assert (await tenant_db.get_one(Alert, heat.id, populate_existing=True)).status is (
+        AlertStatus.EXPIRED
+    )

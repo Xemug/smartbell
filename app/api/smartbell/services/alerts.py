@@ -146,6 +146,29 @@ async def sync_vaccines(
             select(Alert).where(Alert.animal_id == animal.id, Alert.kind == AlertKind.VACCINE_DUE)
         )
     ).all()
+    plan_ids = {str(key) for rule in rules for key in (rule.id, *rule.aliases)}
+    doses = sorted(
+        (
+            fact
+            for fact in facts
+            if fact.type is EventType.VACCINATION
+            and fact.occurred_on <= today
+            and str(fact.payload.get("vaccine_id")) in plan_ids
+        ),
+        key=lambda fact: fact.occurred_on,
+    )
+    dose_ids = {fact.id for fact in doses}
+    for row in rows:
+        # Confirmed by the job with a dose that has since been deleted or moved to a vaccine
+        # outside the plan: pending again, and closed below if it is no longer due.
+        if (
+            row.status is AlertStatus.CONFIRMED
+            and row.resolved_by is None
+            and row.resulting_event_id not in dose_ids
+        ):
+            row.status = AlertStatus.PENDING
+            row.resolved_at = None
+            row.resulting_event_id = None
     by_start = {row.window_start: row for row in rows}
     wanted: set[dt.date] = set()
     for due in dates:
@@ -170,14 +193,6 @@ async def sync_vaccines(
             )
             session.add(row)
             by_start[start] = row
-    doses = sorted(
-        (
-            fact
-            for fact in facts
-            if fact.type is EventType.VACCINATION and fact.occurred_on <= today
-        ),
-        key=lambda fact: fact.occurred_on,
-    )
     now = dt.datetime.now(dt.UTC)
     closed: list[Alert] = []
     for start, row in by_start.items():
@@ -254,8 +269,16 @@ async def resolve(
     or NEGATED ("No entró"). Its open task closes with it. The caller commits."""
     if status not in (AlertStatus.CONFIRMED, AlertStatus.NEGATED):
         raise ValueError(status)
+    animal_id = await session.scalar(
+        select(Alert.animal_id).where(Alert.id == alert_id, Alert.ranch_id == ranch_id)
+    )
+    if animal_id is None:
+        raise AlertNotFound
+    # The animal row lock the events API and the daily job take: whichever of them touched
+    # this alert has committed by the time its status is read below.
+    await session.execute(select(Animal.id).where(Animal.id == animal_id).with_for_update())
     row = await session.scalar(
-        select(Alert).where(Alert.id == alert_id, Alert.ranch_id == ranch_id)
+        select(Alert).where(Alert.id == alert_id).execution_options(populate_existing=True)
     )
     if row is None:
         raise AlertNotFound
