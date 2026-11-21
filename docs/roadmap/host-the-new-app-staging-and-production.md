@@ -2,6 +2,7 @@
 id: host-the-new-app-staging-and-production
 title: "Host the new app: staging and production"
 summary: Nothing deploys the new web app, API and Postgres yet. Pick hosting, deploy staging from main, then production, with uploaded photos in cloud storage and the launch settings (Firebase domains, Apple web sign-in, ADMIN_EMAILS, RevenueCat webhook).
+verifiedAt: 2026-11-21
 ---
 
 # Host the new app: staging and production
