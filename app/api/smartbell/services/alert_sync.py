@@ -195,9 +195,10 @@ async def sync_reminders(
 ) -> None:
     """Turn the projection's reminders into automatic Tasks, idempotent by (animal, kind, due).
 
-    A task is never made twice for the same key, whatever its status, so one the user completed
-    or deleted stays that way. An open one the projection no longer asks for (the withdrawal was
-    edited, the calf was registered) is deleted.
+    A task is never made twice for the same key, so one the user completed stays done. An open
+    one the projection no longer asks for (the withdrawal was edited, the calf was registered) is
+    deleted, and reopened if the projection asks for it again (that edit was undone). There is
+    no way for a person to delete these tasks yet; `tasks-engine` decides what that means.
     """
     wanted: dict[tuple[TaskKind, dt.date], ReminderSpec] = {}
     for spec in reminders:
@@ -214,8 +215,11 @@ async def sync_reminders(
     ).all()
     existing = {(task.kind, task.due_date) for task in tasks}
     for task in tasks:
-        if task.status is TaskStatus.OPEN and (task.kind, task.due_date) not in wanted:
+        key = (task.kind, task.due_date)
+        if task.status is TaskStatus.OPEN and key not in wanted:
             task.status = TaskStatus.DELETED
+        elif task.status is TaskStatus.DELETED and key in wanted:
+            task.status = TaskStatus.OPEN
     for (kind, due), spec in sorted(wanted.items()):
         if (kind, due) in existing:
             continue

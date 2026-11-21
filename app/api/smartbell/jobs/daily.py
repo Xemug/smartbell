@@ -57,18 +57,33 @@ async def run_ranch(session: AsyncSession, ranch_id: uuid.UUID, today: dt.date) 
     """The job for one ranch. The caller commits."""
     settings = await session.get_one(RanchSettings, ranch_id)
     engine_settings = repro_settings(settings)
-    animals = (await session.scalars(select(Animal).where(Animal.ranch_id == ranch_id))).all()
-    events: dict[uuid.UUID, list[EventFact]] = {animal.id: [] for animal in animals}
-    for event in await session.scalars(select(Event).where(Event.ranch_id == ranch_id)):
-        events.setdefault(event.animal_id, []).append(event_fact(event))
+    animal_ids = list(
+        await session.scalars(
+            select(Animal.id).where(Animal.ranch_id == ranch_id).order_by(Animal.id)
+        )
+    )
     vaccines = await alerts.approved_vaccines(session, ranch_id)
-    for animal in animals:
-        projection = project(animal_facts(animal), events[animal.id], engine_settings, today)
+    for animal_id in animal_ids:
+        # The same row lock the events API takes, then her events read under it, so an event
+        # recorded meanwhile is either in this projection or waits for it.
+        animal = await session.scalar(
+            select(Animal)
+            .where(Animal.id == animal_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        if animal is None:
+            continue  # Deleted since the list was read.
+        events: list[EventFact] = [
+            event_fact(event)
+            for event in await session.scalars(select(Event).where(Event.animal_id == animal_id))
+        ]
+        projection = project(animal_facts(animal), events, engine_settings, today)
         write_projection(animal, projection)
         await alert_sync.sync_animal(session, animal, projection, today)
-        await alerts.sync_vaccines(session, animal, projection, vaccines, events[animal.id], today)
+        await alerts.sync_vaccines(session, animal, projection, vaccines, events, today)
     expired = await alerts.advance(session, ranch_id, today)
-    return RanchRun(ranch_id=ranch_id, today=today, animals=len(animals), expired=len(expired))
+    return RanchRun(ranch_id=ranch_id, today=today, animals=len(animal_ids), expired=len(expired))
 
 
 async def run_all(

@@ -561,3 +561,87 @@ async def test_resolve_refuses_bad_input_other_ranches_and_missing_permission(
     assert (
         await tenant_db.get_one(Alert, heat.id, populate_existing=True)
     ).status is AlertStatus.PENDING
+
+
+# --- Review regressions --------------------------------------------------------------------------
+
+
+def test_a_vaccine_without_a_start_value_is_never_due() -> None:
+    rule = VaccineRule(uuid.uuid4(), VaccineStartBy.AGE_MONTHS, VaccineFrequency.ANUAL)
+    assert first_dose_date(rule, dt.date(2020, 1, 1), [], None) is None
+    assert due_dates([rule], dt.date(2020, 1, 1), [], None, dt.date(2026, 1, 1)) == set()
+
+
+def test_a_dose_under_an_older_plan_version_counts() -> None:
+    old, new = uuid.uuid4(), uuid.uuid4()
+    rule = VaccineRule(
+        new,
+        VaccineStartBy.AGE_MONTHS,
+        VaccineFrequency.ANUAL,
+        Decimal(3),
+        aliases=frozenset({old, new}),
+    )
+    dose = EventFact(EventType.VACCINATION, dt.date(2026, 3, 1), {"vaccine_id": str(old)})
+    assert due_dates([rule], dt.date(2025, 1, 1), [dose], None, dt.date(2026, 4, 1)) == {
+        dt.date(2027, 3, 1)
+    }
+
+
+async def test_an_early_dose_confirms_the_upcoming_vaccine_alert(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
+) -> None:
+    vaccine = await approved_plan(tenant_db, owner)
+    cow = await new_cow(tenant_api, owner, "0100")
+    await run(tenant_db, owner, TODAY)  # Overdue dose surfaced today.
+    given = await tenant_api.post(
+        f"/api/animals/{cow}/events",
+        headers=owner.headers(),
+        json={
+            "occurred_on": TODAY.isoformat(),
+            "payload": {"type": "VACCINATION", "vaccine_id": str(vaccine.id), "dose_ml": 2},
+        },
+    )
+    assert given.status_code == 201
+    await run(tenant_db, owner, day(1))
+    upcoming = dt.date(2027, 11, 3)
+
+    # The yearly booster is given 10 days early.
+    early = upcoming - dt.timedelta(days=10)
+    tenant_db.add(
+        Event(
+            ranch_id=owner.ranch_id,
+            animal_id=cow,
+            type=EventType.VACCINATION,
+            occurred_on=early,
+            payload={"type": "VACCINATION", "vaccine_id": str(vaccine.id), "dose_ml": 2},
+        )
+    )
+    await tenant_db.commit()
+    await run(tenant_db, owner, early + dt.timedelta(days=1))
+
+    by_day = {
+        a.window_start: a.status for a in await alerts_of(tenant_db, cow, AlertKind.VACCINE_DUE)
+    }
+    assert by_day[upcoming] is AlertStatus.CONFIRMED
+    assert by_day[dt.date(2028, 10, 24)] is AlertStatus.PENDING
+
+
+async def test_a_dropped_reminder_task_reopens_when_asked_for_again(
+    tenant_db: AsyncSession, tenant_api: AsyncClient, owner: Account
+) -> None:
+    from smartbell.domain.repro import ReminderKind, ReminderSpec
+    from smartbell.services.alert_sync import sync_reminders
+
+    cow_id = await new_cow(tenant_api, owner, "0100")
+    cow = await tenant_db.get_one(Animal, cow_id)
+    spec = ReminderSpec(ReminderKind.HEIFER_TO_REGISTER, dt.date(2026, 6, 1))
+
+    await sync_reminders(tenant_db, cow, [spec])
+    await tenant_db.flush()
+    await sync_reminders(tenant_db, cow, [])
+    await tenant_db.flush()
+    await sync_reminders(tenant_db, cow, [spec])
+    await tenant_db.flush()
+
+    tasks = (await tenant_db.scalars(select(Task).where(Task.animal_id == cow_id))).all()
+    assert [(t.kind, t.status) for t in tasks] == [(TaskKind.HEIFER_TO_REGISTER, TaskStatus.OPEN)]

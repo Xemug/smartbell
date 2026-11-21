@@ -29,6 +29,8 @@ from smartbell.models import Alert, Animal, Event, PlanVaccine, VaccinationPlan
 from smartbell.services.alert_sync import close_tasks
 
 FOLLOW_UP_DAYS = 5
+# A dose given up to this many days before a VACCINE_DUE date still answers that alert.
+EARLY_DOSE_DAYS = 30
 
 
 def follow_up_day(alert: Alert, today: dt.date) -> int:
@@ -51,7 +53,9 @@ async def advance(session: AsyncSession, ranch_id: uuid.UUID, today: dt.date) ->
     latest: dict[tuple[uuid.UUID, AlertKind], dt.date] = {}
     for row in pending:
         key = (row.animal_id, row.kind)
-        if row.window_start <= today:  # Only an alert that has opened takes over.
+        # Only an alert that has opened takes over. VACCINE_DUE alerts of different vaccines
+        # share the kind, so one never stands in for another.
+        if row.window_start <= today and row.kind is not AlertKind.VACCINE_DUE:
             latest[key] = max(latest.get(key, row.window_start), row.window_start)
     now = dt.datetime.now(dt.UTC)
     expired: list[Alert] = []
@@ -86,10 +90,21 @@ async def approved_vaccines(session: AsyncSession, ranch_id: uuid.UUID) -> list[
     )
     if plan is None:
         return []
+    # A dose names the PlanVaccine of the version it was given under; the same vaccine in another
+    # version of the ranch's plan (same name) is the same vaccine.
+    every = await session.execute(
+        select(PlanVaccine.id, PlanVaccine.name)
+        .join(VaccinationPlan, VaccinationPlan.id == PlanVaccine.plan_id)
+        .where(VaccinationPlan.ranch_id == ranch_id)
+    )
+    ids_by_name: dict[str, set[uuid.UUID]] = {}
+    for vaccine_id, name in every:
+        ids_by_name.setdefault(name.strip().casefold(), set()).add(vaccine_id)
     rows = await session.scalars(select(PlanVaccine).where(PlanVaccine.plan_id == plan.id))
     return [
         VaccineRule(
             id=row.id,
+            aliases=frozenset(ids_by_name.get(row.name.strip().casefold(), set())),
             start_by=row.start_by,
             frequency=row.frequency,
             start_value=row.start_value,
@@ -112,10 +127,12 @@ async def sync_vaccines(
     """Open one VACCINE_DUE alert per animal per due date, and close the ones no longer due.
 
     A dose already overdue (the plan was approved after it fell due) is surfaced today, once:
-    an alert that opened on or after its due date, in any status, already covers it, so the job
-    doesn't open a new one every morning. A pending alert that is no longer due was answered by a
-    VACCINATION on or after its window (CONFIRMED), or made moot (EXPIRED: the plan changed, the
-    animal was removed).
+    a pending or expired alert that opened on or after its due date already covers it, so the job
+    doesn't open a new one every morning. A confirmed one doesn't: that dose was for another
+    vaccine, or its VACCINATION was since deleted. A pending alert that is no longer due was
+    answered by a VACCINATION from `EARLY_DOSE_DAYS` before its date on (CONFIRMED), or made moot
+    (EXPIRED: the plan changed, the animal was removed). Alerts carry no vaccine, so a dose of
+    any vaccine counts: one alert per animal per date stands for every vaccine due that day.
     """
     facts = list(events)
     active = animal.status is AnimalStatus.ACTIVE and not projection.removed
@@ -135,7 +152,11 @@ async def sync_vaccines(
         if due >= today:
             wanted.add(due)
             continue
-        covering = [start for start in by_start if due <= start <= today]
+        covering = [
+            start
+            for start, row in by_start.items()
+            if due <= start <= today and row.status is not AlertStatus.CONFIRMED
+        ]
         wanted.add(min(covering) if covering else today)
     for start in sorted(wanted):
         if start not in by_start:
@@ -162,7 +183,8 @@ async def sync_vaccines(
     for start, row in by_start.items():
         if start in wanted or row.status is not AlertStatus.PENDING:
             continue
-        dose = next((fact for fact in doses if fact.occurred_on >= start), None)
+        earliest = start - dt.timedelta(days=EARLY_DOSE_DAYS)
+        dose = next((fact for fact in reversed(doses) if fact.occurred_on >= earliest), None)
         row.status = AlertStatus.CONFIRMED if dose is not None else AlertStatus.EXPIRED
         row.resulting_event_id = dose.id if dose is not None else None
         row.resolved_at = now

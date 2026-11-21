@@ -35,6 +35,8 @@ class VaccineRule:
     start_event: VaccineStartEvent | None = None
     booster_count: int | None = None
     booster_every_months: int | None = None
+    # The ids this vaccine has in every version of the ranch's plan: a dose names one of them.
+    aliases: frozenset[uuid.UUID] = frozenset()
 
 
 def _payload_value(event: EventFact, key: str) -> object:
@@ -50,6 +52,8 @@ def first_dose_date(
     """When the first dose falls due, or None while the animal hasn't reached the start."""
     ordered = sorted(events, key=lambda event: event.occurred_on)
     match rule.start_by:
+        case VaccineStartBy.AGE_MONTHS | VaccineStartBy.WEIGHT_KG if rule.start_value is None:
+            return None  # An incomplete plan row: never due, rather than due at birth.
         case VaccineStartBy.AGE_MONTHS:
             return add_months(birth_date, int(rule.start_value or 0))
         case VaccineStartBy.WEIGHT_KG:
@@ -124,7 +128,7 @@ def due_dates(
         due = next_due(
             rule,
             first_dose_date(rule, birth_date, known, dry_off_date),
-            doses.get(str(rule.id), ()),
+            [day for key in {rule.id, *rule.aliases} for day in doses.get(str(key), ())],
         )
         if due is not None:
             dates.add(due)
