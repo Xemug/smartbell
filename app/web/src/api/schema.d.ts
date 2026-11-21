@@ -79,6 +79,31 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/ranch': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Ranch
+     * @description The active ranch (Datos Rancho). Every member may read it.
+     */
+    get: operations['getRanch'];
+    put?: never;
+    post?: never;
+    /**
+     * Delete Ranch
+     * @description Owner only, irreversible: its cows, events and members go with it.
+     */
+    delete: operations['deleteRanch'];
+    options?: never;
+    head?: never;
+    /** Update Ranch */
+    patch: operations['updateRanch'];
+    trace?: never;
+  };
   '/api/ranch/members': {
     parameters: {
       query?: never;
@@ -360,6 +385,60 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/users/me': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Update Me */
+    patch: operations['updateMe'];
+    trace?: never;
+  };
+  '/api/users/me/photo': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Upload Photo
+     * @description The raw JPG or PNG as the body, at most 2MB.
+     */
+    put: operations['uploadMyPhoto'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/webhooks/revenuecat': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Revenuecat Webhook */
+    post: operations['revenueCatWebhook'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -377,6 +456,7 @@ export interface components {
       user: components['schemas']['UserOut'];
       /** Ranches */
       ranches: components['schemas']['RanchOut'][];
+      ranch_creation: components['schemas']['RanchCreation'];
       /** Is Admin */
       is_admin: boolean;
     };
@@ -971,6 +1051,18 @@ export interface components {
       has_pro: boolean;
     };
     /**
+     * ProfileUpdate
+     * @description Only the fields sent change. Email is the sign-in identity, so it isn't editable here.
+     */
+    ProfileUpdate: {
+      /** First Name */
+      first_name?: string | null;
+      /** Last Name */
+      last_name?: string | null;
+      /** Phone */
+      phone?: string | null;
+    };
+    /**
      * ProjectionOut
      * @description The engine's view of the animal today: what the list columns don't hold.
      */
@@ -997,6 +1089,41 @@ export interface components {
       /** Name */
       name: string;
     };
+    /**
+     * RanchCreation
+     * @enum {string}
+     */
+    RanchCreation: 'allowed' | 'upsell' | 'limit';
+    /** RanchDelete */
+    RanchDelete: {
+      /** Confirm Name */
+      confirm_name: string;
+    };
+    /** RanchDetail */
+    RanchDetail: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Name */
+      name: string;
+      /** Address */
+      address: string | null;
+      /** Latitude */
+      latitude: number | null;
+      /** Longitude */
+      longitude: number | null;
+      role: components['schemas']['Role'];
+      /** Permissions */
+      permissions: components['schemas']['Permission'][];
+      /** Is Owner */
+      is_owner: boolean;
+      /** Can Edit */
+      can_edit: boolean;
+      /** Animal Count */
+      animal_count: number;
+    };
     /** RanchOut */
     RanchOut: {
       /**
@@ -1006,9 +1133,33 @@ export interface components {
       id: string;
       /** Name */
       name: string;
+      /** Address */
+      address: string | null;
+      /** Latitude */
+      latitude: number | null;
+      /** Longitude */
+      longitude: number | null;
       role: components['schemas']['Role'];
       /** Permissions */
       permissions: components['schemas']['Permission'][];
+      /** Is Owner */
+      is_owner: boolean;
+      /** Can Edit */
+      can_edit: boolean;
+    };
+    /**
+     * RanchUpdate
+     * @description Only the fields sent change. The pin moves as a pair: both coordinates, or both null.
+     */
+    RanchUpdate: {
+      /** Name */
+      name?: string | null;
+      /** Address */
+      address?: string | null;
+      /** Latitude */
+      latitude?: number | null;
+      /** Longitude */
+      longitude?: number | null;
     };
     /**
      * RemovalReason
@@ -1036,6 +1187,7 @@ export interface components {
       user: components['schemas']['UserOut'];
       /** Ranches */
       ranches: components['schemas']['RanchOut'][];
+      ranch_creation: components['schemas']['RanchCreation'];
       /** Is Admin */
       is_admin: boolean;
       /** Created */
@@ -1112,6 +1264,11 @@ export interface components {
       input?: unknown;
       /** Context */
       ctx?: Record<string, never>;
+    };
+    /** WebhookOut */
+    WebhookOut: {
+      /** Action */
+      action: string;
     };
     /** WindowOut */
     WindowOut: {
@@ -1248,6 +1405,105 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['RanchOut'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  getRanch: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RanchDetail'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  deleteRanch: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RanchDelete'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  updateRanch: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RanchUpdate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RanchDetail'];
         };
       };
       /** @description Validation Error */
@@ -1885,6 +2141,84 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  updateMe: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProfileUpdate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserOut'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  uploadMyPhoto: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'image/jpeg': string;
+        'image/png': string;
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserOut'];
+        };
+      };
+    };
+  };
+  revenueCatWebhook: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['WebhookOut'];
         };
       };
     };

@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
-import { StrictMode } from 'react';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { StrictMode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { api } from '../api/client';
@@ -10,12 +10,24 @@ import { ActiveRanchProvider } from './ActiveRanchProvider';
 import { RanchSwitcher } from './RanchSwitcher';
 import { activeRanchKey, useActiveRanch } from './useActiveRanch';
 
-const ranchA = { id: 'ranch-a', name: 'Rancho A', role: 'DUENO' as const, permissions: [] };
+const place = { address: null, latitude: null, longitude: null };
+const ranchA = {
+  id: 'ranch-a',
+  name: 'Rancho A',
+  role: 'DUENO' as const,
+  permissions: [],
+  is_owner: true,
+  can_edit: true,
+  ...place,
+};
 const ranchB = {
   id: 'ranch-b',
   name: 'Rancho B',
   role: 'TECNICO_CAMPO' as const,
   permissions: ['ANIMALS_VIEW' as const],
+  is_owner: false,
+  can_edit: false,
+  ...place,
 };
 
 function authFor(ranches = [ranchA, ranchB]): AuthApi {
@@ -29,7 +41,11 @@ function authFor(ranches = [ranchA, ranchB]): AuthApi {
   };
   const noop = vi.fn(async () => {});
   return {
-    state: { status: 'signedIn', account: { user, ranches, is_admin: false }, created: false },
+    state: {
+      status: 'signedIn',
+      account: { user, ranches, ranch_creation: 'upsell', is_admin: false },
+      created: false,
+    },
     signIn: noop,
     signUp: noop,
     signInWith: noop,
@@ -38,6 +54,10 @@ function authFor(ranches = [ranchA, ranchB]): AuthApi {
     refreshIdentity: noop,
     signOut: noop,
     retry: vi.fn(),
+    refreshAccount: noop,
+    setUser: vi.fn(),
+    canChangePassword: () => true,
+    changePassword: noop,
   };
 }
 
@@ -194,6 +214,28 @@ describe('ActiveRanchProvider', () => {
     await api.GET('/api/ranches');
 
     expect(calls).toEqual([{ path: '/api/ranches', ranch: null }]);
+  });
+
+  it('keeps sending the ranch after StrictMode remounts its effects (dev)', async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <StrictMode>
+        <QueryClientProvider client={queryClient}>
+          <AuthContext.Provider value={authFor()}>
+            <ActiveRanchProvider>
+              <Probe />
+            </ActiveRanchProvider>
+          </AuthContext.Provider>
+        </QueryClientProvider>
+      </StrictMode>,
+    );
+    await screen.findByText('loaded');
+    calls = [];
+
+    // A later call, such as a form's save, must still carry it.
+    await api.PATCH('/api/ranch', { body: { name: 'B' } });
+
+    expect(calls).toEqual([{ path: '/api/ranch', ranch: 'ranch-a' }]);
   });
 
   it('answers can() from the active ranch permissions', async () => {

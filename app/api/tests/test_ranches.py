@@ -13,8 +13,8 @@ from smartbell.enums import Role
 from smartbell.models import Membership, Ranch, RanchSettings
 from smartbell.security.permissions import ROLE_PRESETS, Permission, preset
 from smartbell.security.ranch import RanchContext, require
-from smartbell.services import ranches
-from tests.conftest import Account, RanchPair, add_member, sign_up
+from smartbell.services import plans
+from tests.conftest import Account, RanchPair, add_member, give_pro, sign_up
 
 
 @pytest.fixture
@@ -200,6 +200,7 @@ async def test_create_ranch_makes_the_caller_its_dueno(
     tenant_api: AsyncClient, tenant_db: AsyncSession
 ) -> None:
     owner = await sign_up(tenant_api, "owner")
+    await give_pro(tenant_db, owner)
 
     response = await tenant_api.post(
         "/api/ranches", headers=owner.headers(), json={"name": "  El Bigotes  "}
@@ -230,10 +231,11 @@ async def test_create_ranch_validates_the_name(
 
 
 async def test_ranch_creation_is_capped(
-    tenant_api: AsyncClient, monkeypatch: pytest.MonkeyPatch
+    tenant_api: AsyncClient, tenant_db: AsyncSession, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(ranches, "MAX_OWNED_RANCHES", 2)
+    monkeypatch.setattr(plans, "MAX_OWNED_RANCHES", 2)
     owner = await sign_up(tenant_api, "owner")  # Mi rancho is the first.
+    await give_pro(tenant_db, owner)
 
     second = await tenant_api.post("/api/ranches", headers=owner.headers(), json={"name": "B"})
     third = await tenant_api.post("/api/ranches", headers=owner.headers(), json={"name": "C"})
