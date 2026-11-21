@@ -2,6 +2,7 @@
 id: events-api
 title: Events API: record, edit, delete events with re-projection
 summary: One API for all bitácora event types with typed payloads, deletability rules, deletion requests, re-projection of the cow and alert/reminder sync.
+verifiedAt: 2026-11-21
 ---
 
 # Events API: record, edit, delete events with re-projection
