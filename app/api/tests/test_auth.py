@@ -307,6 +307,39 @@ async def test_two_sessions_at_once_make_one_account(
         assert await session.scalar(select(func.count()).select_from(Membership)) == 1
 
 
+async def test_a_session_that_loses_the_race_after_the_winner_commits_gets_its_account(
+    schema: AsyncEngine, enforced_fks: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The interleaving `asyncio.gather` above only hits under load: the loser looks its uid up
+    before the winner commits and its email up after, so it finds a row already tied to it."""
+    claims = TokenClaims("race-uid", "race@example.com", True, None, None)
+    sessions = make_sessionmaker(schema)
+    link_or_create = accounts._link_or_create
+
+    async def open_one() -> tuple[User, bool]:
+        async with sessions() as session:
+            return await accounts.open_session(session, claims, accounts.Profile())
+
+    winner: list[tuple[User, bool]] = []
+
+    async def after_the_winner_commits(
+        session: AsyncSession, claims: TokenClaims, email: str, profile: accounts.Profile
+    ) -> tuple[User, bool]:
+        monkeypatch.setattr(accounts, "_link_or_create", link_or_create)
+        winner.append(await open_one())  # the whole account, committed in its own session
+        return await link_or_create(session, claims, email, profile)
+
+    monkeypatch.setattr(accounts, "_link_or_create", after_the_winner_commits)
+
+    user, created = await open_one()
+
+    assert winner[0][1] is True
+    assert (user.id, created) == (winner[0][0].id, False)
+    async with sessions() as session:
+        assert await session.scalar(select(func.count()).select_from(User)) == 1
+        assert await session.scalar(select(func.count()).select_from(Ranch)) == 1
+
+
 # --- Emulator safety ------------------------------------------------------------------------
 
 
