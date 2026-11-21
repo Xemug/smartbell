@@ -110,11 +110,30 @@ The database moves to a dedicated 1 vCPU size (about $55), Cloud Run costs about
 - **MapTiler or Stadia free tiers:** non-commercial use only, so they can't be used here. Their paid plans start around $30 a month.
 - **Dallas (`us-south1`) instead of Querétaro:** about 15% cheaper, but slightly farther from users. It's the fallback if any service is missing in Querétaro.
 
+### Google Cloud access review (2026-11-21, read-only)
+
+- The agent can reach the founder's Google Cloud account through the local `gcloud` login. Only listing commands were run. Nothing was enabled, created or changed.
+- `smartbell-app-2025` is the live Firebase project (sign-in, Firestore, Hosting, Functions). It is **not** used for this card.
+- Older projects from 2021, `smartbell-frontend-prod` and `smartbell-frontend-stg`, still have App Engine apps serving in `us-central` and are billed to the open "Pago de Firebase" account. `smartbell-backend-*` have no billing. Shutting these down is a separate decision for the founder, not part of this card.
+- **Plan:** one **new** project (for example `smartbell-app-hosting`) holding staging and production, linked to the open "Pago de Firebase" billing account.
+
+### Lower-cost option (the founder asked for one)
+
+Most of the cost is the production database size and the Querétaro surcharge. Two cheaper layouts:
+
+| Layout | What changes | Per month | Per year | Trade-off |
+|---|---|---|---|---|
+| Recommended above | Querétaro, small production database | ~$50 | ~$630 | Closest to users, most headroom |
+| **Lean (new recommendation)** | Iowa (`us-central1`), the smallest database (db-f1-micro) for both staging and production, backups kept | **~$22** | **~$265** | About 40 ms farther from Mexico, which users won't notice in a forms app. Production moves to a bigger size in minutes when needed. Cloud Run domain mapping works in Iowa |
+| Leanest | Lean, plus staging as a second database on the production server | ~$13 | ~$160 | A staging mistake can slow production. Not recommended |
+
+Cheaper again would mean leaving Google Cloud (Neon free tier, $0 to $19) or running our own Postgres on a free virtual machine, which means doing our own backups. Neither is worth the extra vendor or the risk at ~$22 a month.
+
 ### What the founder decides
 
-1. Approve Google Cloud and Querétaro.
+1. Pick a layout: Lean in Iowa (~$22 a month, recommended) or Querétaro (~$50 a month).
 2. Approve Google for address lookup and map tiles.
-3. Create the Google Cloud project with billing turned on (or say who creates it), and set a **budget alert at $75 a month**.
+3. Approve creating a new project `smartbell-app-hosting` on the "Pago de Firebase" billing account (the agent can do it with the founder's login once approved), with a **budget alert at $40 a month** (Lean) or $75 (Querétaro).
 4. Choose the web addresses for staging and production (for example `staging.app.smartbell.mx` and `app.smartbell.mx`).
 
 **Live Firebase project:** nothing changes except the authorized domains, which the founder adds through the checklist. Nothing that creates cloud resources or costs money is built before this approval.
