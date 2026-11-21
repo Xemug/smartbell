@@ -29,6 +29,9 @@ describe('list state in the URL', () => {
     expect(parse('tipo=vaquillas&filtro=repro&valor=ABIERTA').filter).toBeNull();
     expect(parse('tipo=caballos').kind).toBe('vacas');
     expect(parse('orden=raza:asc').sort).toBeNull();
+    // Bulls have no DIM column, cows no Edad one.
+    expect(parse('tipo=toros&orden=dim:asc').sort).toBeNull();
+    expect(parse('orden=edad:asc').sort).toBeNull();
     expect(parse('pagina=-2').page).toBe(1);
   });
 

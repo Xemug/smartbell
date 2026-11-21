@@ -119,8 +119,11 @@ export function AnimalListPage() {
       next.sort = null;
       next.q = '';
     }
-    latestParams.current = listStateParams(next);
-    setParams(latestParams.current, { replace: options.replace });
+    const out = listStateParams(next);
+    // The table follows a sort with "page 1"; the same URL twice would need two Backs.
+    if (out.toString() === latestParams.current.toString()) return;
+    latestParams.current = out;
+    setParams(out, { replace: options.replace });
   };
 
   // The box answers each keystroke; the URL (and the request) follow once typing pauses.
@@ -282,11 +285,17 @@ export function AnimalListPage() {
       ]
     : undefined;
 
-  const rows = page.data?.items ?? [];
-  const selectedRows = (ids: string[]) => {
-    const known = new Map(rows.map((row) => [row.id, row]));
-    return ids.map((id) => known.get(id) ?? ({ id, control_id: id } as Animal));
-  };
+  const rows = useMemo(() => page.data?.items ?? [], [page.data]);
+  // Selection survives paging, so the dialog names animals from pages no longer on screen.
+  const seenRows = useRef(new Map<string, Animal>());
+  useEffect(() => {
+    for (const row of rows) seenRows.current.set(row.id, row);
+  }, [rows]);
+  const selectedRows = (ids: string[]) =>
+    ids.flatMap((id) => {
+      const row = seenRows.current.get(id) ?? rows.find((r) => r.id === id);
+      return row ? [row] : [];
+    });
 
   const confirmRemove = (reason: RemovalReason) => {
     if (!toRemove) return;
@@ -378,9 +387,12 @@ export function AnimalListPage() {
         <p className="text-secondary-text type-body-sm">
           {t('animals.filterInForce', {
             category: categories[state.filter.category]?.label,
-            variable: categories[state.filter.category]?.variables.find(
-              (v) => v.value === state.filter?.variable,
-            )?.label,
+            variable:
+              categories[state.filter.category]?.variables.find(
+                (v) => v.value === state.filter?.variable,
+              )?.label ??
+              groupNames.get(state.filter.variable) ??
+              t('animals.unknownGroup'),
           })}
         </p>
       )}
@@ -441,7 +453,11 @@ export function AnimalListPage() {
           sort={sort}
           onSortChange={(next) => update({ sort: next, page: 1 })}
           page={state.page}
-          onPageChange={(next) => update({ page: next })}
+          onPageChange={(next) =>
+            // Replaced, not pushed: the table also moves a stale page back in range, and a
+            // pushed correction would bring Back to the bad page again.
+            update({ page: next }, { replace: true })
+          }
           loading={page.isFetching && !page.data}
           empty={empty}
         />

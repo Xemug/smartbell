@@ -620,6 +620,7 @@
       "failed_one": "No pudimos dar de baja a {{ids}}.",
       "failed_other": "No pudimos dar de baja a {{count}} animales: {{ids}}.",
       "error": "No pudimos dar de baja. Intenta de nuevo."
-    }
+    },
+    "unknownGroup": "un potrero que ya no existe"
   }
 }

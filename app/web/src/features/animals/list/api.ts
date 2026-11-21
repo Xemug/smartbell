@@ -86,10 +86,18 @@ export function useRemoveAnimals() {
     }): Promise<RemovalResult> => {
       const result: RemovalResult = { removed: [], failed: [] };
       for (const id of ids) {
-        const { error, response } = await api.POST('/api/animals/{animal_id}/removal', {
-          params: { path: { animal_id: id } },
-          body: { reason },
-        });
+        let outcome;
+        try {
+          outcome = await api.POST('/api/animals/{animal_id}/removal', {
+            params: { path: { animal_id: id } },
+            body: { reason },
+          });
+        } catch {
+          // A dropped connection: keep going, so the result still says what went through.
+          result.failed.push({ id, code: 'network' });
+          continue;
+        }
+        const { error, response } = outcome;
         if (response.ok) {
           result.removed.push(id);
         } else {

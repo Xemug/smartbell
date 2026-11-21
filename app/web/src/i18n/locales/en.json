@@ -620,6 +620,7 @@
       "failed_one": "We couldn't remove {{ids}}.",
       "failed_other": "We couldn't remove {{count}} animals: {{ids}}.",
       "error": "We couldn't remove them. Try again."
-    }
+    },
+    "unknownGroup": "a group that no longer exists"
   }
 }

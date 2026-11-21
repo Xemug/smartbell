@@ -122,7 +122,9 @@ export function parseListState(params: URLSearchParams): ListState {
   const filter = validVariable ? { category, variable } : null;
 
   const [column, direction] = (params.get('orden') ?? '').split(':');
-  const sortable = column !== undefined && Object.hasOwn(SORT_KEYS, column);
+  // Only the columns this list draws: cows have DIM, heifers and bulls have Edad.
+  const columns: SortColumn[] = kind === 'vacas' ? ['id', 'dim'] : ['id', 'edad'];
+  const sortable = column !== undefined && (columns as string[]).includes(column);
   const sort =
     sortable && (direction === 'asc' || direction === 'desc')
       ? { column, direction: direction as DataTableSort['direction'] }

@@ -78,6 +78,7 @@ interface Call {
 let calls: Call[];
 let desktop: boolean;
 let listed: (query: URLSearchParams) => unknown[];
+let total: number | null;
 
 const animalCalls = () =>
   calls.filter(
@@ -165,6 +166,7 @@ beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true, toFake: ['Date'] });
   vi.setSystemTime(TODAY);
   calls = [];
+  total = null;
   desktop = true;
   listed = (query) => {
     const kind = query.get('kind');
@@ -204,7 +206,7 @@ beforeEach(() => {
         const items = listed(url.searchParams);
         return Response.json({
           items: url.searchParams.get('page_size') === '1' ? items.slice(0, 1) : items,
-          total: items.length,
+          total: total ?? items.length,
           page: Number(url.searchParams.get('page') ?? 1),
           page_size: Number(url.searchParams.get('page_size') ?? 10),
         });
@@ -328,6 +330,21 @@ describe('Vacas tab', () => {
       ]),
     );
     expect(await screen.findByText('No pudimos dar de baja a V-002.')).toBeInTheDocument();
+  });
+
+  it('names an animal selected on another page in the removal dialog', async () => {
+    const user = userEvent.setup();
+    listed = (query) => (query.get('page') === '2' ? [animal('v-011')] : herd);
+    total = 12;
+    renderAt('/vacas');
+    await screen.findByRole('link', { name: 'V-001' });
+
+    await user.click(screen.getByRole('checkbox', { name: 'Seleccionar V-001' }));
+    await user.click(screen.getByRole('button', { name: 'Ir a la página 2' }));
+    await screen.findByRole('link', { name: 'V-011' });
+    await user.click(screen.getByRole('button', { name: 'Dar de baja' }));
+
+    expect(await screen.findByRole('dialog', { name: 'Dar de baja a V-001' })).toBeInTheDocument();
   });
 
   it('hides removal and add for a user without those permissions', async () => {
