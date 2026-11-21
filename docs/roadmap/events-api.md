@@ -53,8 +53,8 @@ L.
 
 ## Acceptance
 
-- [ ] Each event type has a create test that asserts the resulting projection and open alerts.
-- [ ] Deleting a HEAT returns 409; deleting an ILLNESS without permission creates a DeletionRequest.
-- [ ] Deleting an ILLNESS re-projects and closes its HEALTH alert.
-- [ ] Posting the same event twice doesn't duplicate alerts.
+- [x] Each event type has a create test that asserts the resulting projection and open alerts.
+- [x] Deleting a HEAT returns 409; deleting an ILLNESS without permission creates a DeletionRequest.
+- [x] Deleting an ILLNESS re-projects and closes its HEALTH alert.
+- [x] Posting the same event twice doesn't duplicate alerts.
 - [ ] Tests for the new code pass in CI.
