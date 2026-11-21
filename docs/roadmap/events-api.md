@@ -57,4 +57,4 @@ L.
 - [x] Deleting a HEAT returns 409; deleting an ILLNESS without permission creates a DeletionRequest.
 - [x] Deleting an ILLNESS re-projects and closes its HEALTH alert.
 - [x] Posting the same event twice doesn't duplicate alerts.
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
