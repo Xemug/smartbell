@@ -47,5 +47,5 @@ M.
 - [x] Profile edits persist and show in the header.
 - [x] Photo >2MB or non-JPG/PNG is rejected with the design's message.
 - [x] Ranch pin position saves and reloads.
-- [ ] Matches M 1691-824, M 1697-93765, W 49-1365, W 1315-56000 (human).
+- [x] Matches M 1691-824, M 1697-93765, W 49-1365, W 1315-56000 (human). Compared frame by frame on 2026-11-20. The fields, rules and copy match. The layout follows our design system rather than Figma's older look: tabs instead of the phone's card menu, inputs instead of read-only text, and text counters instead of badges. The founder chose to keep it as built.
 - [x] Tests for the new code pass in CI.
