@@ -56,10 +56,10 @@ M.
 
 ## Acceptance
 
-- [ ] Search by ID, each filter category and sort work on the fixture herd at both widths.
-- [ ] Empty filter result shows "No encontramos animales con el filtro aplicado".
-- [ ] Filter state survives reload (URL).
+- [x] Search by ID, each filter category and sort work on the fixture herd at both widths.
+- [x] Empty filter result shows "No encontramos animales con el filtro aplicado".
+- [x] Filter state survives reload (URL).
 - [ ] Matches M 1781-99287, W 2018-878545 (human).
-- [ ] Tests for the new code pass in CI.
-- [ ] `GET /api/groups` lists only the active ranch's groups, presets first.
-- [ ] The bulls' Edad filter lists bulls whose age falls in the picked bucket.
+- [x] Tests for the new code pass in CI.
+- [x] `GET /api/groups` lists only the active ranch's groups, presets first.
+- [x] The bulls' Edad filter lists bulls whose age falls in the picked bucket.
