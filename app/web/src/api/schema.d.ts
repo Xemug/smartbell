@@ -385,6 +385,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/groups': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Groups */
+    get: operations['listGroups'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/animals/{animal_id}/events': {
     parameters: {
       query?: never;
@@ -1472,11 +1489,28 @@ export interface components {
        */
       type: 'GROUP_CHANGE';
     };
+    /** GroupOut */
+    GroupOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Name */
+      name: string;
+      type: components['schemas']['GroupType'];
+      preset: components['schemas']['GroupPreset'] | null;
+    };
     /**
      * GroupPreset
      * @enum {string}
      */
     GroupPreset: 'GENERAL' | 'ALTA_PRODUCCION' | 'SECAS_RETO' | 'RECIEN_PARIDAS' | 'ENFERMAS';
+    /**
+     * GroupType
+     * @enum {string}
+     */
+    GroupType: 'PRESET' | 'CUSTOM';
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
@@ -2821,6 +2855,10 @@ export interface operations {
         breed?: components['schemas']['Breed'] | null;
         repro?: components['schemas']['ReproState'] | null;
         health?: ('SALUDABLE' | 'ENFERMA') | null;
+        /** @description Born on or after this date (the bulls' Edad filter) */
+        born_from?: string | null;
+        /** @description Born on or before this date */
+        born_to?: string | null;
         /** @description Lists the removed animals with this reason */
         removed_reason?: components['schemas']['RemovalReason'] | null;
         sort?:
@@ -3002,6 +3040,37 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  listGroups: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GroupOut'][];
+        };
       };
       /** @description Validation Error */
       422: {

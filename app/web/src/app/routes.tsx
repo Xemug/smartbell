@@ -3,6 +3,7 @@ import { Navigate, type RouteObject } from 'react-router-dom';
 import { RequireAdmin } from '../features/admin/RequireAdmin';
 import { SupportAdminPage } from '../features/admin/SupportAdminPage';
 import { ADMIN_SUPPORT_PATH } from '../features/admin/useIsAdmin';
+import { ANIMALS_PATH, AnimalListPage } from '../features/animals/list/AnimalListPage';
 import { FIRST_COW_PATH } from '../features/auth/guards';
 import { AccountPage } from '../features/config/account/AccountPage';
 import { RanchPage } from '../features/config/ranch/RanchPage';
@@ -18,7 +19,8 @@ export const shellRoute: RouteObject = {
     { path: '/', element: <HomePage /> },
     // Held for `onboarding-hub`, which builds the first-cow form.
     { path: FIRST_COW_PATH, element: <PlaceholderPage titleKey="auth.firstCow" /> },
-    { path: '/vacas', element: <PlaceholderPage titleKey="nav.vacas" /> },
+    { path: ANIMALS_PATH, element: <AnimalListPage /> },
+    // Held for `animal-forms` (nueva) and `cow-profile` (:id).
     { path: '/vacas/:id', element: <PlaceholderPage titleKey="nav.vacas" /> },
     { path: '/grupos', element: <PlaceholderPage titleKey="nav.grupos" /> },
     { path: '/reportes', element: <PlaceholderPage titleKey="nav.reportes" /> },

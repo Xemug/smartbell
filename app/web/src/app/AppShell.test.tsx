@@ -40,6 +40,9 @@ function renderShell({ desktop, path = '/', media, supportConfig = defaultConfig
     const { pathname } = new URL(request.url);
     if (pathname === '/api/support/config') return Response.json(supportConfig);
     if (pathname === '/api/support/fake-door-taps') return new Response(null, { status: 204 });
+    if (pathname === '/api/groups') return Response.json([]);
+    if (pathname === '/api/animals')
+      return Response.json({ items: [], total: 0, page: 1, page_size: 10 });
     return Response.json({ status: 'ok' });
   });
   vi.stubGlobal('fetch', fetch);
@@ -190,7 +193,7 @@ describe('AppShell', () => {
       removeEventListener: vi.fn(),
     };
     renderShell({ desktop: false, path: '/vacas', media });
-    const heading = screen.getByRole('heading', { name: 'Vacas' });
+    const heading = screen.getByRole('heading', { name: 'Administra tus vacas' });
     expect(screen.queryByRole('link', { name: 'Usuarios' })).toBeNull();
 
     media.matches = true;
@@ -198,7 +201,7 @@ describe('AppShell', () => {
 
     expect(await screen.findByRole('button', { name: 'Usuarios' })).toBeInTheDocument();
     expect(heading).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Vacas' })).toBe(heading);
+    expect(screen.getByRole('heading', { name: 'Administra tus vacas' })).toBe(heading);
   });
 
   it('lifts snackbars over the tab bar only while it is on screen', () => {

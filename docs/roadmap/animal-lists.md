@@ -19,7 +19,7 @@ Entry to the cow profile and every event flow.
 
 ## What it touches
 
-`app/web/src/features/animals/list/*`.
+`app/web/src/features/animals/list/*`, plus a read-only `GET /api/groups` (`app/api/smartbell/routes/groups.py`) and `born_from`/`born_to` on `GET /api/animals`.
 
 **Figma:** [M 1781-99287](https://www.figma.com/design/gv5ugNqVKPF8N2Ol5cQCyV/x?node-id=1781-99287), [M 1781-99585](https://www.figma.com/design/gv5ugNqVKPF8N2Ol5cQCyV/x?node-id=1781-99585), [M 1803-96981](https://www.figma.com/design/gv5ugNqVKPF8N2Ol5cQCyV/x?node-id=1803-96981), [M 1635-93922](https://www.figma.com/design/gv5ugNqVKPF8N2Ol5cQCyV/x?node-id=1635-93922), [W 2018-878545](https://www.figma.com/design/6UCRP77ZAdWb1ut1A91yJX/x?node-id=2018-878545), [W 2018-878629](https://www.figma.com/design/6UCRP77ZAdWb1ut1A91yJX/x?node-id=2018-878629), [W 49-1514](https://www.figma.com/design/6UCRP77ZAdWb1ut1A91yJX/x?node-id=49-1514)
 **Inventory:** mobile-core.md A10, B1; web-onboarding-registry.md 1.8, 1.14 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.
@@ -29,14 +29,39 @@ Entry to the cow profile and every event flow.
 Before building, open every linked frame with the Figma MCP (`get_screenshot`; load the figma:figma-design-to-code skill before `get_design_context`). Use only components from `app/web/src/ui` and tokens from the design-system cards; Spanish copy goes in the es-MX i18n catalog. Build the mobile layout (<960px) and the web layout (≥960px) in the same route.
 Columns per web 1.14 (Vacas: ID, Raza, Estado, DIM, Grupo, Acciones; Vaquillas: ID, Raza, Estado, edad, Grupo; Toros: ID, Raza, Nombre, edad, SINIIGA). Heifer "DIM" column shows age (open question; label it Edad). Mobile list cards per B1/A10. Filters via FilterPanel, state in the URL query. Bulk actions: move to group (opens the groups card's picker when available) and remove.
 
+## Audit (2026-11-21)
+
+- Premise holds: `GET /api/animals` (animal-api) already offers kind, `q`, group, breed, repro, health, removed_reason, sort and pages of 10; `FilterPanel`, `DataTable`, `Pagination`, `Tabs`, `Modal` exist in `app/web/src/ui`. `/vacas` was a placeholder and `features/animals` did not exist yet.
+- Gap: the list returns only `group_id` and there was no groups endpoint, so the Grupo column could not name a potrero. Added read-only `GET /api/groups` (id, name, type, preset; ANIMALS_VIEW, ranch-scoped) for the `groups` card to extend (orchestrator agreed).
+- Gap: bulls' Edad filter (B1, `Bull_Age`) had no API support. Added `born_from`/`born_to` to `GET /api/animals`; the web maps each bucket (Menos de un año, 1…8 años, 9+) to a birth-date range.
+- URL state: `/vacas?tipo=vaquillas&q=…&filtro=repro&valor=GESTANTE&orden=dim:desc&pagina=2`; defaults stay out of the URL, and values a list doesn't offer fall back to none.
+
+### Assumptions
+
+- Estado: cows show the reproductive state (Recién parida / Vacía / Servida / Preñada / Seca), so it matches the Reproducción filter; DEL shows whether she milks. The founder rejected showing the lactation state (every milking cow read "Lactando") on 2026-11-21. Heifers show the repro state with VAQUILLA labelled "En desarrollo". Reproducción "Vacía" = ABIERTA.
+- DIM (days in milk) is a cow-only column, labelled **DEL** (Días en leche) in es-MX per the founder (2026-11-21). Heifers and bulls show "Edad" in months instead (the open question above).
+- Sorting is server-side, so only ID, DIM (by last calving) and Edad (by birth date) sort; Raza/Estado/Grupo headers do not, as the API has no such sort keys. DIM sorts by last calving date, so a dry cow (DIM "—") sorts among the milking cows by her calving date; a lactation-aware sort key is a follow-up if that matters.
+- A cow with no group shows "General" (domain-model §7).
+- Bajas asks for a reason (sale to another ranch, sale to slaughter, death, registration error). Bulk baja sends one request per animal and reports the ones the API refuses.
+- "Agregar Vaca/Vaquilla/Toro" goes to `/vacas/nueva?tipo=…`, still a placeholder until `animal-forms` lands.
+
+### Deferred
+
+- Bulls: whether a bull is physically on the ranch or available only as semen (for IA). The founder asked for it on 2026-11-21. It needs a new field on the animal, so it goes to a new card; a column and filter here follow once the field exists.
+
+- Bulk and row "move to group" (⇄): waits for the `groups` card's picker.
+- The "10 vacas por hoja" page-size select: `DataTable` is fixed at 10 rows per page.
+
 ## Effort
 
 M.
 
 ## Acceptance
 
-- [ ] Search by ID, each filter category and sort work on the fixture herd at both widths.
-- [ ] Empty filter result shows "No encontramos animales con el filtro aplicado".
-- [ ] Filter state survives reload (URL).
+- [x] Search by ID, each filter category and sort work on the fixture herd at both widths.
+- [x] Empty filter result shows "No encontramos animales con el filtro aplicado".
+- [x] Filter state survives reload (URL).
 - [ ] Matches M 1781-99287, W 2018-878545 (human).
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
+- [x] `GET /api/groups` lists only the active ranch's groups, presets first.
+- [x] The bulls' Edad filter lists bulls whose age falls in the picked bucket.

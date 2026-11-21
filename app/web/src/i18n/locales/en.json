@@ -480,5 +480,147 @@
       "emptyTitle": "No taps since that date",
       "emptyBody": "Nobody has tapped a feature under construction. Try an earlier date."
     }
+  },
+  "animals": {
+    "title": {
+      "vacas": "Manage your <b>cows</b>",
+      "vaquillas": "Manage your <b>heifers</b>",
+      "toros": "Manage your <b>bulls</b>"
+    },
+    "kindsLabel": "Animal type",
+    "kinds": {
+      "vacas": "Cows",
+      "vaquillas": "Heifers",
+      "toros": "Bulls"
+    },
+    "nouns": {
+      "vacas": "cow",
+      "vaquillas": "heifer",
+      "toros": "bull"
+    },
+    "add": {
+      "vacas": "Add cow",
+      "vaquillas": "Add heifer",
+      "toros": "Add bull"
+    },
+    "search": {
+      "label": "Search {{noun}} by ID",
+      "placeholder": "ID"
+    },
+    "filterInForce": "Filter: {{category}} · {{variable}}",
+    "columns": {
+      "id": {
+        "vacas": "Cow ID",
+        "vaquillas": "Heifer ID",
+        "toros": "Bull ID"
+      },
+      "raza": "Breed",
+      "estado": "Status",
+      "dim": "DIM",
+      "edad": "Age",
+      "grupo": "Group",
+      "nombre": "Name",
+      "siniiga": "SINIIGA"
+    },
+    "none": "—",
+    "months_one": "{{count}} month",
+    "months_other": "{{count}} months",
+    "lactation": {
+      "LACTANDO": "Milking",
+      "SECA": "Dry"
+    },
+    "filters": {
+      "grupo": "Group",
+      "raza": "Breed",
+      "repro": "Reproduction",
+      "salud": "Health",
+      "bajas": "Removed",
+      "edad": "Age"
+    },
+    "values": {
+      "grupo": {
+        "GENERAL": "General",
+        "ALTA_PRODUCCION": "High production",
+        "SECAS_RETO": "Dry or transition",
+        "RECIEN_PARIDAS": "Fresh",
+        "ENFERMAS": "Sick"
+      },
+      "raza": {
+        "HOLSTEIN": "Holstein",
+        "JERSEY": "Jersey",
+        "SIMMENTAL": "Simmental",
+        "PARDO_SUIZO": "Brown Swiss",
+        "GUERNSEY": "Guernsey",
+        "AYRSHIRE": "Ayrshire",
+        "SHORTHORN": "Shorthorn",
+        "NORMANDO": "Normande",
+        "OTRA": "Other"
+      },
+      "repro": {
+        "VAQUILLA": "Growing",
+        "RECIEN_PARIDA": "Fresh",
+        "ABIERTA": "Open",
+        "SERVIDA": "Bred",
+        "GESTANTE": "Pregnant",
+        "SECA": "Dry"
+      },
+      "salud": {
+        "SALUDABLE": "Healthy",
+        "ENFERMA": "Sick"
+      },
+      "bajas": {
+        "VENTA_OTRO_RANCHO": "Sold to another ranch",
+        "VENTA_RASTRO": "Sold to slaughter",
+        "MUERTE": "Death"
+      },
+      "edad": {
+        "0": "Under a year",
+        "1": "1 year",
+        "2": "2 years",
+        "3": "3 years",
+        "4": "4 years",
+        "5": "5 years",
+        "6": "6 years",
+        "7": "7 years",
+        "8": "8 years",
+        "9+": "9 years or more"
+      }
+    },
+    "emptyList": {
+      "vacas": "No cows registered yet.",
+      "vaquillas": "No heifers registered yet.",
+      "toros": "No bulls registered yet."
+    },
+    "loadError": "We couldn't load the list.",
+    "retry": "Retry",
+    "bulk": {
+      "label": "Actions for the selected",
+      "selected_one": "{{count}} selected",
+      "selected_other": "{{count}} selected",
+      "remove": "Remove",
+      "clear": "Clear selection"
+    },
+    "remove": {
+      "one": "Remove",
+      "titleOne": "Remove {{id}}",
+      "titleMany_one": "Remove {{count}} {{noun}}",
+      "titleMany_other": "Remove {{count}} animals",
+      "body": "Choose why it leaves the herd.",
+      "reason": "Reason",
+      "confirm": "Remove",
+      "reasons": {
+        "VENTA_OTRO_RANCHO": "Sold to another ranch",
+        "VENTA_RASTRO": "Sold to slaughter",
+        "MUERTE": "Death",
+        "ERROR_REGISTRO": "Registration error"
+      },
+      "errorRegistroHint": "Deletes the animal and all its history.",
+      "done_one": "1 animal removed",
+      "done_other": "{{count}} animals removed",
+      "failed_one": "We couldn't remove {{ids}}.",
+      "failed_other": "We couldn't remove {{count}} animals: {{ids}}.",
+      "error": "We couldn't remove them. Try again."
+    },
+    "unknownGroup": "a group that no longer exists"
   }
 }

@@ -147,6 +147,10 @@ async def list_animals(
     breed: Breed | None = None,
     repro: ReproState | None = None,
     health: Health | None = None,
+    born_from: Annotated[
+        dt.date | None, Query(description="Born on or after this date (the bulls' Edad filter)")
+    ] = None,
+    born_to: Annotated[dt.date | None, Query(description="Born on or before this date")] = None,
     removed_reason: Annotated[
         RemovalReason | None, Query(description="Lists the removed animals with this reason")
     ] = None,
@@ -161,6 +165,8 @@ async def list_animals(
         breed=breed,
         repro=repro,
         health=health,
+        born_from=born_from,
+        born_to=born_to,
         removed_reason=removed_reason,
         sort=sort,
         page=page,

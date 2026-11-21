@@ -715,6 +715,20 @@ async def test_health_and_breed_filters(tenant_api: AsyncClient, owner: Account)
     assert sick["total"] == 0
 
 
+async def test_birth_date_range_filter(tenant_api: AsyncClient, owner: Account) -> None:
+    await created(tenant_api, owner, **cow("Vieja", birth_date="2020-01-01"))
+    await created(tenant_api, owner, **cow("Media", birth_date="2022-01-15"))
+    await created(tenant_api, owner, control_id="Joven", birth_date="2026-01-10")
+
+    between = await listing(tenant_api, owner, born_from="2021-01-01", born_to="2022-01-15")
+    since = await listing(tenant_api, owner, born_from="2022-01-16")
+    until = await listing(tenant_api, owner, born_to="2020-01-01")
+
+    assert ids(between) == ["Media"]
+    assert ids(since) == ["Joven"]
+    assert ids(until) == ["Vieja"]
+
+
 async def test_detail_has_the_projection(tenant_api: AsyncClient, owner: Account) -> None:
     body = await created(tenant_api, owner, **cow("1"))
 

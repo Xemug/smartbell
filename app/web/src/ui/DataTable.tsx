@@ -209,7 +209,7 @@ export function DataTable<Row>({
                       active === 'asc' ? 'ascending' : active === 'desc' ? 'descending' : undefined
                     }
                     className={cx(
-                      'h-10 whitespace-nowrap px-3 type-label-md',
+                      'h-10 whitespace-nowrap px-2 md:px-3 type-label-md',
                       align,
                       onMobile(column.hideOnMobile),
                     )}
@@ -233,7 +233,7 @@ export function DataTable<Row>({
                 <th
                   scope="col"
                   className={cx(
-                    'px-3 text-left type-label-md',
+                    'px-2 md:px-3 text-left type-label-md',
                     !hasMobileActions && 'hidden md:table-cell',
                   )}
                 >
@@ -277,7 +277,7 @@ export function DataTable<Row>({
                       <td
                         key={column.key}
                         className={cx(
-                          'px-3 type-body-md',
+                          'px-2 md:px-3 type-body-md',
                           column.align === 'right' && 'text-right',
                           onMobile(column.hideOnMobile),
                         )}
@@ -286,7 +286,9 @@ export function DataTable<Row>({
                       </td>
                     ))}
                     {rowActions && rowActions.length > 0 && (
-                      <td className={cx('px-3', !hasMobileActions && 'hidden md:table-cell')}>
+                      <td
+                        className={cx('px-2 md:px-3', !hasMobileActions && 'hidden md:table-cell')}
+                      >
                         <div className="flex gap-1">
                           {rowActions.map((action) => (
                             <IconButton

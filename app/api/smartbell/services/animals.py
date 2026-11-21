@@ -661,6 +661,8 @@ class AnimalFilters:
     breed: Breed | None = None
     repro: ReproState | None = None
     health: Health | None = None
+    born_from: dt.date | None = None
+    born_to: dt.date | None = None
     removed_reason: RemovalReason | None = None
     sort: SortKey = "control_id"
     page: int = 1
@@ -706,6 +708,10 @@ def _filters(ranch_id: uuid.UUID, filters: AnimalFilters) -> list[ColumnElement[
         conditions.append(Animal.repro_state == filters.repro)
     if filters.health is not None:
         conditions.append(Animal.is_sick.is_(filters.health == "ENFERMA"))
+    if filters.born_from is not None:
+        conditions.append(Animal.birth_date >= filters.born_from)
+    if filters.born_to is not None:
+        conditions.append(Animal.birth_date <= filters.born_to)
     return conditions
 
 
