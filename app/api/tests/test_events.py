@@ -956,3 +956,58 @@ async def test_repro_events_are_refused_on_a_male(tenant_api: AsyncClient, owner
 
     assert response.status_code == 422
     assert response.json()["detail"][0]["type"] == "not_female"
+
+
+async def test_deleting_an_extension_brings_back_the_health_alert_it_replaced(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
+) -> None:
+    animal_id = await new_cow(tenant_api, owner, "0100")
+    await recorded(tenant_api, owner, animal_id, ILLNESS)
+    longer = ILLNESS | {"treatment": treatment(type="CORTICOIDE")}
+    second = await recorded(tenant_api, owner, animal_id, longer)
+    assert open_kinds(second)["HEALTH"] == (TODAY.isoformat(), days(26))
+
+    response = await tenant_api.delete(
+        f"/api/animals/{animal_id}/events/{second['event']['id']}", headers=owner.headers()
+    )
+
+    assert response.status_code == 200, response.text
+    assert open_kinds(response.json())["HEALTH"] == (TODAY.isoformat(), ILLNESS_UNTIL)
+    pending = [
+        row
+        for row in await alerts_of(tenant_db, animal_id)
+        if row.kind is AlertKind.HEALTH and row.status is AlertStatus.PENDING
+    ]
+    assert len(pending) == 1
+
+
+async def test_a_followup_withdrawal_follows_the_treatment_it_changes(
+    tenant_api: AsyncClient, owner: Account
+) -> None:
+    animal_id = await new_cow(tenant_api, owner, "0100")
+    await recorded(
+        tenant_api,
+        owner,
+        animal_id,
+        {
+            "type": "MEDICAL_TREATMENT",
+            "kind": "SINCRONIZACION_CELO",
+            "treatment": treatment(type="ANTIINFLAMATORIO", start_date=days(-2)),
+        },
+        on=days(-2),
+    )
+
+    body = await recorded(
+        tenant_api,
+        owner,
+        animal_id,
+        {
+            "type": "TREATMENT_FOLLOWUP",
+            "outcome": "CHANGE",
+            "new_treatment": treatment(type="CORTICOIDE"),
+        },
+    )
+
+    # Heat sync keeps its 2 days (§3.14), not the corticoid's 21: 5 + 2 from today.
+    assert body["derived"]["withdrawal_until"] == days(7)
+    assert body["animal"]["milk_withdrawal_until"] == days(7)

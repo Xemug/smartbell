@@ -71,7 +71,8 @@ async def sync_animal(
     """Upsert the projection's alerts and close the ones it dropped. Returns the open alerts.
 
     `event_id` and `event_type` name the event just written, so an alert it answers is closed as
-    CONFIRMED (NEGATED when `negative`: a heat not observed) and linked to it. Without them (a
+    CONFIRMED (NEGATED when `negative`: a heat not observed), and one it supersedes as EXPIRED;
+    either way it is linked to the event. Without them (a
     deletion) a dropped alert is closed as EXPIRED. A removed animal has every alert closed.
     `reopen` lists closed alerts whose resolving event was just edited or deleted (`linked_to`):
     if the projection asks for one again, it is pending again. No other closed alert reopens,
@@ -116,8 +117,9 @@ async def sync_animal(
         else:
             row.status = AlertStatus.EXPIRED
         row.resolved_at = now
-        if answered:
-            row.resulting_event_id = event_id
+        # Linked even when only superseded (an extended HEALTH window, say), so editing or
+        # deleting that event can bring this alert back through `linked_to`.
+        row.resulting_event_id = event_id
         closed.append(row)
     await session.flush()
     await _close_tasks(session, closed)

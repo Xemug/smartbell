@@ -249,11 +249,45 @@ def _treatment(payload: EventPayload) -> Treatment | None:
             return None
 
 
-def _withdrawal(event_type: EventType, payload: EventPayload) -> dt.date | None:
+TREATING_TYPES = (EventType.ILLNESS, EventType.ACCIDENT, EventType.MEDICAL_TREATMENT)
+
+
+async def _withdrawal(
+    session: AsyncSession,
+    animal: Animal,
+    payload: EventInput | EventPayload,
+    on: dt.date,
+    exclude: uuid.UUID | None,
+) -> dt.date | None:
+    """The event's own withdrawal end. A follow-up's new treatment is judged as what it follows
+    (§3.14), as the fold does: the latest illness, accident or medical treatment before it."""
     treatment = _treatment(payload)
     if treatment is None:
         return None
+    event_type: EventType = payload.type
     kind = payload.kind if isinstance(payload, MedicalTreatmentPayload) else None
+    if isinstance(payload, TreatmentFollowupPayload):
+        event_type, kind = EventType.ILLNESS, None  # The fold's default, with nothing before.
+        query = (
+            select(Event)
+            .where(
+                Event.animal_id == animal.id,
+                Event.type.in_(TREATING_TYPES),
+                Event.occurred_on <= on,
+            )
+            .order_by(Event.occurred_on.desc(), Event.created_at.desc(), Event.id.desc())
+        )
+        if exclude is not None:
+            query = query.where(Event.id != exclude)
+        for row in await session.scalars(query):
+            try:
+                parsed = validate_event_payload(row.type, row.payload)
+            except ValueError:
+                continue  # The fold skips it too.
+            event_type = row.type
+            if isinstance(parsed, MedicalTreatmentPayload):
+                kind = parsed.kind
+            break
     if not separates_milk(event_type, treatment, kind):
         return None
     return withdrawal_until(treatment, kind)
@@ -268,7 +302,9 @@ async def _derive(
     exclude: uuid.UUID | None,
 ) -> EventDerived:
     """Fills CALVING timing on `payload` and works out the rest for the response."""
-    derived = EventDerived(withdrawal_until=_withdrawal(payload.type, payload))
+    derived = EventDerived(
+        withdrawal_until=await _withdrawal(session, animal, payload, on, exclude)
+    )
     if isinstance(payload, CalvingPayload | AbortionPayload):
         prior = await _prior_projection(session, animal, settings, on, exclude)
         if isinstance(payload, CalvingPayload):
@@ -526,7 +562,8 @@ async def edit_event(
         stored = validate_event_payload(payload.type, payload.model_dump(mode="json"))
         event.payload = stored.model_dump(mode="json", exclude_none=True)
     elif old is not None:
-        derived = EventDerived(withdrawal_until=_withdrawal(event.type, old))
+        until = await _withdrawal(session, animal, old, event.occurred_on, event.id)
+        derived = EventDerived(withdrawal_until=until)
     if "occurred_on" in changes:
         event.occurred_on = on
     if "description" in changes:
