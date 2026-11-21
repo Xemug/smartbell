@@ -22,7 +22,7 @@ jobs:
       url: https://smartbell-2026-staging.web.app
     concurrency: deploy-staging
     env:
-      GITHUB_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -47,7 +47,7 @@ jobs:
       url: https://smartbell.app
     concurrency: deploy-production
     env:
-      GITHUB_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:

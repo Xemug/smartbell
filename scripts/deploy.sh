@@ -18,7 +18,12 @@ esac
 root="$(cd "$(dirname "$0")/.." && pwd)"
 region=us-central1
 live_firebase=smartbell-app-2025 # Sign-in only: the API checks tokens against its public keys.
-sha="${GITHUB_SHA:-$(git -C "$root" rev-parse HEAD)}"
+# The commit checked out, so the image tag always matches the code it was built from.
+sha="$(git -C "$root" rev-parse HEAD)"
+if [[ -n "${DEPLOY_SHA:-}" && "$DEPLOY_SHA" != "$sha" ]]; then
+  echo "deploy: checkout is $sha but DEPLOY_SHA is $DEPLOY_SHA" >&2
+  exit 1
+fi
 image="$region-docker.pkg.dev/$project/smartbell/api:$sha"
 api_sa="smartbell-api@$project.iam.gserviceaccount.com"
 sql="$project:$region:smartbell-db"
@@ -27,7 +32,8 @@ has_secret() { gcloud secrets describe "$1" --project="$project" >/dev/null 2>&1
 
 # Production must never fall back to OpenStreetMap's free servers or the local disk.
 for name in database-url secret-key maps-server-key web-build-env; do
-  has_secret "$name" || { echo "deploy: secret $name is missing; run scripts/gcp-setup.sh $env" >&2; exit 1; }
+  size="$(gcloud secrets versions access latest --secret="$name" --project="$project" 2>/dev/null | wc -c | tr -d ' ')"
+  [[ "${size:-0}" -gt 0 ]] || { echo "deploy: secret $name is missing or empty; run scripts/gcp-setup.sh $env" >&2; exit 1; }
 done
 
 step "API image $sha"
@@ -74,8 +80,9 @@ step "web app (Firebase Hosting)"
   cd "$root/app/web"
   npm ci --no-audit --no-fund
   # Read line by line (macOS's bash 3.2 can't `source <(...)`); values are never printed.
-  while IFS='=' read -r name value; do
-    [[ "$name" =~ ^VITE_[A-Z_]+$ ]] && export "$name=$value"
+  while IFS= read -r line; do
+    name="${line%%=*}"
+    [[ "$name" =~ ^VITE_[A-Z_]+$ ]] && export "$name=${line#*=}"
   done < <(gcloud secrets versions access latest --secret=web-build-env --project="$project")
   [[ -n "${VITE_GOOGLE_MAPS_API_KEY:-}" && "${VITE_GEOCODE_VIA_API:-}" == true ]] || {
     echo "deploy: web-build-env must set the Google maps key and VITE_GEOCODE_VIA_API=true" >&2
@@ -89,7 +96,8 @@ step "web app (Firebase Hosting)"
 step "health"
 url="https://$project.web.app/api/health"
 for _ in 1 2 3 4 5 6; do
-  if curl -fsS "$url" | grep -q '"ok"'; then
+  body="$(curl -fsS "$url" 2>/dev/null || true)"
+  if [[ "$body" == *'"ok"'* ]]; then
     echo "$url answers ok"
     exit 0
   fi

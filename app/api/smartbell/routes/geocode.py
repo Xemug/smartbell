@@ -23,7 +23,8 @@ PER_MINUTE = 30
 
 
 class Limiter:
-    """Per-user sliding window, kept in this process. Enough to stop a runaway loop."""
+    """Per-user sliding window, kept in each API instance (up to 3), so it bounds a runaway loop
+    rather than metering exactly."""
 
     def __init__(self, per_minute: int) -> None:
         self.per_minute = per_minute
@@ -34,6 +35,10 @@ class Limiter:
         calls = self._calls[user_id]
         while calls and now - calls[0] >= 60:
             calls.popleft()
+        if not calls:
+            # Forget idle users so the table doesn't grow with everyone who ever looked up.
+            del self._calls[user_id]
+            calls = self._calls[user_id]
         if len(calls) >= self.per_minute:
             return False
         calls.append(now)
@@ -81,6 +86,8 @@ async def search(
     q: Annotated[str, Query(min_length=1, max_length=300)],
     geocoder: Annotated[geocoding.Geocoder, Depends(get_geocoder)],
 ) -> Found:
+    if not q.strip():
+        return Found(pin=None)
     try:
         point = await geocoder.search(q.strip())
     except geocoding.GeocoderUnavailable as err:

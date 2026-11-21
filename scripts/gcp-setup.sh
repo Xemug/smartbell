@@ -130,17 +130,23 @@ key_string() { # display name -> key string, or nothing
     --filter="displayName=$1" --format='value(name)' | head -1)"
   [[ -n "$name" ]] && gcloud services api-keys get-key-string "$name" --format='value(keyString)'
 }
+# Key strings are printed by `create`, so its output is dropped; errors still show.
 if [[ -z "$(key_string smartbell-geocoding)" ]]; then
   gcloud services api-keys create --project="$project" --display-name=smartbell-geocoding \
-    --api-target=service=geocoding-backend.googleapis.com >/dev/null 2>&1
+    --api-target=service=geocoding-backend.googleapis.com >/dev/null
 fi
-has_secret maps-server-key || key_string smartbell-geocoding | tr -d '\n' | secret maps-server-key
+geocoding_key="$(key_string smartbell-geocoding)"
+[[ -n "$geocoding_key" ]] || { echo "setup: the geocoding key was not created" >&2; exit 1; }
+# Re-stored on every run, so an empty or stale value is repaired.
+printf '%s' "$geocoding_key" | secret maps-server-key
+unset geocoding_key
 if [[ -z "$(key_string smartbell-map-tiles)" ]]; then
   gcloud services api-keys create --project="$project" --display-name=smartbell-map-tiles \
     --api-target=service=tile.googleapis.com \
     --allowed-referrers="https://$project.web.app/*,https://$project.firebaseapp.com/*,https://$domain/*" \
-    >/dev/null 2>&1
+    >/dev/null
 fi
+[[ -n "$(key_string smartbell-map-tiles)" ]] || { echo "setup: the map tiles key was not created" >&2; exit 1; }
 
 step "web build settings (public values) in the web-build-env secret"
 app_id="$(curl -fsS -H "Authorization: Bearer $(token)" -H "x-goog-user-project: $project" \

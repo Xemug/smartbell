@@ -249,3 +249,29 @@ async def test_each_user_is_rate_limited(tenant_app: FastAPI, tenant_api: AsyncC
 
     assert codes == [200, 200, 429]
     assert other == 200
+
+
+async def test_a_blank_search_finds_nothing(tenant_app: FastAPI, tenant_api: AsyncClient) -> None:
+    account = await sign_up(tenant_api, "owner")
+    tenant_app.dependency_overrides[get_geocoder] = fixed(Point(1, 2), None)
+    headers = {"Authorization": f"Bearer {account.uid}"}
+
+    response = await tenant_api.get("/api/geocode/search", params={"q": "   "}, headers=headers)
+
+    assert response.json() == {"pin": None}
+
+
+def test_the_limiter_forgets_idle_users(monkeypatch: pytest.MonkeyPatch) -> None:
+    import time
+    import uuid
+
+    now = [0.0]
+    monkeypatch.setattr(time, "monotonic", lambda: now[0])
+    limiter = Limiter(per_minute=1)
+    user = uuid.uuid4()
+
+    assert limiter.allow(user)
+    assert not limiter.allow(user)
+    now[0] = 61.0
+    assert limiter.allow(user)
+    assert len(limiter._calls) == 1
