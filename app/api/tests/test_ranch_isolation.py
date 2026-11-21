@@ -14,7 +14,8 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from smartbell.models import Ranch
+from smartbell.enums import GroupType
+from smartbell.models import Group, Ranch
 from tests.conftest import RanchPair
 
 Seed = Callable[[RanchPair, AsyncClient, AsyncSession], Awaitable[set[str]]]
@@ -50,9 +51,17 @@ async def _seed_invitations(pair: RanchPair, api: AsyncClient, db: AsyncSession)
     return {response.json()["id"]}
 
 
+async def _seed_groups(pair: RanchPair, api: AsyncClient, db: AsyncSession) -> set[str]:
+    group = Group(ranch_id=pair.ranch_a, name="Lote A", type=GroupType.CUSTOM)
+    db.add(group)
+    await db.commit()
+    return {str(group.id)}
+
+
 LIST_ENDPOINTS = [
     ListEndpoint("/api/ranch/members", _seed_members, id_key="user_id"),
     ListEndpoint("/api/ranch/invitations", _seed_invitations),
+    ListEndpoint("/api/groups", _seed_groups),
 ]
 
 

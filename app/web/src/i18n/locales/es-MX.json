@@ -480,5 +480,146 @@
       "emptyTitle": "Sin toques desde esa fecha",
       "emptyBody": "Nadie ha tocado una funcionalidad en construcción. Prueba con una fecha anterior."
     }
+  },
+  "animals": {
+    "title": {
+      "vacas": "Administra tus <b>vacas</b>",
+      "vaquillas": "Administra tus <b>vaquillas</b>",
+      "toros": "Administra tus <b>toros</b>"
+    },
+    "kindsLabel": "Tipo de animal",
+    "kinds": {
+      "vacas": "Vacas",
+      "vaquillas": "Vaquillas",
+      "toros": "Toros"
+    },
+    "nouns": {
+      "vacas": "vaca",
+      "vaquillas": "vaquilla",
+      "toros": "toro"
+    },
+    "add": {
+      "vacas": "Agregar Vaca",
+      "vaquillas": "Agregar Vaquilla",
+      "toros": "Agregar Toro"
+    },
+    "search": {
+      "label": "Buscar {{noun}} por ID",
+      "placeholder": "ID"
+    },
+    "filterInForce": "Filtro: {{category}} · {{variable}}",
+    "columns": {
+      "id": {
+        "vacas": "ID Vaca",
+        "vaquillas": "ID Vaquilla",
+        "toros": "ID Toro"
+      },
+      "raza": "Raza",
+      "estado": "Estado",
+      "dim": "DIM",
+      "edad": "Edad",
+      "grupo": "Grupo",
+      "nombre": "Nombre",
+      "siniiga": "SINIIGA"
+    },
+    "none": "—",
+    "months_one": "{{count}} mes",
+    "months_other": "{{count}} meses",
+    "lactation": {
+      "LACTANDO": "Lactando",
+      "SECA": "Seca"
+    },
+    "filters": {
+      "grupo": "Grupo",
+      "raza": "Raza",
+      "repro": "Reproducción",
+      "salud": "Salud",
+      "bajas": "Bajas",
+      "edad": "Edad"
+    },
+    "values": {
+      "grupo": {
+        "GENERAL": "General",
+        "ALTA_PRODUCCION": "Alta producción",
+        "SECAS_RETO": "Secas o en reto",
+        "RECIEN_PARIDAS": "Recién paridas",
+        "ENFERMAS": "Enfermas"
+      },
+      "raza": {
+        "HOLSTEIN": "Holstein",
+        "JERSEY": "Jersey",
+        "SIMMENTAL": "Simmental",
+        "PARDO_SUIZO": "Pardo Suizo",
+        "GUERNSEY": "Guernsey",
+        "AYRSHIRE": "Ayrshire",
+        "SHORTHORN": "Shorthorn",
+        "NORMANDO": "Normando",
+        "OTRA": "Otra"
+      },
+      "repro": {
+        "VAQUILLA": "En desarrollo",
+        "RECIEN_PARIDA": "Recién parida",
+        "ABIERTA": "Vacía",
+        "SERVIDA": "Servida",
+        "GESTANTE": "Preñada",
+        "SECA": "Seca"
+      },
+      "salud": {
+        "SALUDABLE": "Saludables",
+        "ENFERMA": "Enfermas"
+      },
+      "bajas": {
+        "VENTA_OTRO_RANCHO": "Venta a otro rancho",
+        "VENTA_RASTRO": "Venta a rastro",
+        "MUERTE": "Muerte"
+      },
+      "edad": {
+        "0": "Menos de un año",
+        "1": "1 año",
+        "2": "2 años",
+        "3": "3 años",
+        "4": "4 años",
+        "5": "5 años",
+        "6": "6 años",
+        "7": "7 años",
+        "8": "8 años",
+        "9+": "9 años o más"
+      }
+    },
+    "emptyList": {
+      "vacas": "Aún no tienes vacas registradas.",
+      "vaquillas": "Aún no tienes vaquillas registradas.",
+      "toros": "Aún no tienes toros registrados."
+    },
+    "loadError": "No pudimos cargar la lista.",
+    "retry": "Reintentar",
+    "bulk": {
+      "label": "Acciones para los seleccionados",
+      "selected_one": "{{count}} seleccionado",
+      "selected_other": "{{count}} seleccionados",
+      "remove": "Dar de baja",
+      "clear": "Quitar selección"
+    },
+    "remove": {
+      "one": "Dar de baja",
+      "titleOne": "Dar de baja a {{id}}",
+      "titleMany_one": "Dar de baja {{count}} {{noun}}",
+      "titleMany_other": "Dar de baja {{count}} animales",
+      "body": "Elige el motivo de la baja.",
+      "reason": "Motivo",
+      "confirm": "Dar de baja",
+      "reasons": {
+        "VENTA_OTRO_RANCHO": "Venta a otro rancho",
+        "VENTA_RASTRO": "Venta a rastro",
+        "MUERTE": "Muerte",
+        "ERROR_REGISTRO": "Error de registro"
+      },
+      "errorRegistroHint": "Se borra el animal con todo su historial.",
+      "done_one": "Se dio de baja 1 animal",
+      "done_other": "Se dieron de baja {{count}} animales",
+      "failed_one": "No pudimos dar de baja a {{ids}}.",
+      "failed_other": "No pudimos dar de baja a {{count}} animales: {{ids}}.",
+      "error": "No pudimos dar de baja. Intenta de nuevo."
+    }
   }
 }

@@ -385,6 +385,116 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/groups': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Groups */
+    get: operations['listGroups'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/milk/herd-logs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Herd Logs
+     * @description Defaults to the last 7 days, the shipped app's "Últimos 7 días".
+     */
+    get: operations['list_herd_logs_api_milk_herd_logs_get'];
+    put?: never;
+    /** Put Herd Log */
+    post: operations['put_herd_log_api_milk_herd_logs_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/milk/herd-logs/{day}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete Herd Log */
+    delete: operations['delete_herd_log_api_milk_herd_logs__day__delete'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/milk/cow-logs': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Cow Logs */
+    get: operations['list_cow_logs_api_milk_cow_logs_get'];
+    put?: never;
+    /** Put Cow Logs */
+    post: operations['put_cow_logs_api_milk_cow_logs_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/milk/cows/{animal_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Cow Stats */
+    get: operations['cow_stats_api_milk_cows__animal_id__get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/milk/summary': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Summary
+     * @description Production history ending `end` (today by default), from `start` (a week before).
+     */
+    get: operations['summary_api_milk_summary_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/users/me': {
     parameters: {
       query?: never;
@@ -801,6 +911,97 @@ export interface components {
       | 'SHORTHORN'
       | 'NORMANDO'
       | 'OTRA';
+    /** Bucket */
+    Bucket: {
+      /**
+       * Start
+       * Format: date
+       */
+      start: string;
+      /**
+       * End
+       * Format: date
+       */
+      end: string;
+      /** Total Liters */
+      total_liters: string;
+      /** Days Logged */
+      days_logged: number;
+      /** Avg Daily Liters */
+      avg_daily_liters: string | null;
+      /** Avg Liters Per Cow */
+      avg_liters_per_cow: string | null;
+      /** By Destination */
+      by_destination: {
+        [key: string]: string;
+      };
+    };
+    /** CowLogEntry */
+    CowLogEntry: {
+      /**
+       * Animal Id
+       * Format: uuid
+       */
+      animal_id: string;
+      /** @default TANQUE */
+      destination: components['schemas']['MilkDestination'];
+      /** Liters */
+      liters: number | string;
+    };
+    /** CowLogOut */
+    CowLogOut: {
+      /**
+       * Animal Id
+       * Format: uuid
+       */
+      animal_id: string;
+      /**
+       * Date
+       * Format: date
+       */
+      date: string;
+      destination: components['schemas']['MilkDestination'];
+      /** Liters */
+      liters: string;
+    };
+    /** CowLogWarning */
+    CowLogWarning: {
+      /**
+       * Animal Id
+       * Format: uuid
+       */
+      animal_id: string;
+      code: components['schemas']['MilkWarning'];
+    };
+    /** CowLogsIn */
+    CowLogsIn: {
+      /** Date */
+      date?: string | null;
+      /** Entries */
+      entries: components['schemas']['CowLogEntry'][];
+    };
+    /** CowLogsOut */
+    CowLogsOut: {
+      /** Logs */
+      logs: components['schemas']['CowLogOut'][];
+      /** Warnings */
+      warnings: components['schemas']['CowLogWarning'][];
+    };
+    /** CowMilkStats */
+    CowMilkStats: {
+      /**
+       * Animal Id
+       * Format: uuid
+       */
+      animal_id: string;
+      /** Days Logged */
+      days_logged: number;
+      /** Total Liters */
+      total_liters: string;
+      /** Avg Daily Liters */
+      avg_daily_liters: string | null;
+      peak: components['schemas']['PeakDay'] | null;
+    };
     /**
      * CrossbreedLevel
      * @enum {string}
@@ -856,11 +1057,28 @@ export interface components {
     FakeDoorTapIn: {
       feature: components['schemas']['FakeDoorFeature'];
     };
+    /** GroupOut */
+    GroupOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Name */
+      name: string;
+      type: components['schemas']['GroupType'];
+      preset: components['schemas']['GroupPreset'] | null;
+    };
     /**
      * GroupPreset
      * @enum {string}
      */
     GroupPreset: 'GENERAL' | 'ALTA_PRODUCCION' | 'SECAS_RETO' | 'RECIEN_PARIDAS' | 'ENFERMAS';
+    /**
+     * GroupType
+     * @enum {string}
+     */
+    GroupType: 'PRESET' | 'CUSTOM';
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
@@ -870,6 +1088,25 @@ export interface components {
     Health: {
       /** Status */
       status: string;
+    };
+    /** HerdLogIn */
+    HerdLogIn: {
+      /** Date */
+      date?: string | null;
+      /** Total Liters */
+      total_liters: number | string;
+    };
+    /** HerdLogOut */
+    HerdLogOut: {
+      /**
+       * Date
+       * Format: date
+       */
+      date: string;
+      /** Total Liters */
+      total_liters: string;
+      /** Entered By */
+      entered_by: string | null;
     };
     /** InvitationCreate */
     InvitationCreate: {
@@ -962,6 +1199,18 @@ export interface components {
      * @enum {string}
      */
     LactationState: 'LACTANDO' | 'SECA';
+    /** LatestDay */
+    LatestDay: {
+      /**
+       * Date
+       * Format: date
+       */
+      date: string;
+      /** Total Liters */
+      total_liters: string;
+      /** Liters Per Cow */
+      liters_per_cow: string | null;
+    };
     /** MemberOut */
     MemberOut: {
       /**
@@ -993,6 +1242,42 @@ export interface components {
       permissions?: components['schemas']['Permission'][] | null;
     };
     /**
+     * MilkDestination
+     * @enum {string}
+     */
+    MilkDestination: 'TANQUE' | 'BECERRAS' | 'ANTIBIOTICOS';
+    /**
+     * MilkGranularity
+     * @description Bucket size of the production history. Weeks start on Monday (§7.3).
+     * @enum {string}
+     */
+    MilkGranularity: 'DAY' | 'WEEK' | 'MONTH' | 'QUARTER' | 'SEMESTER' | 'YEAR';
+    /** MilkSummary */
+    MilkSummary: {
+      granularity: components['schemas']['MilkGranularity'];
+      /**
+       * Start
+       * Format: date
+       */
+      start: string;
+      /**
+       * End
+       * Format: date
+       */
+      end: string;
+      /** Lactating Cows */
+      lactating_cows: number;
+      latest: components['schemas']['LatestDay'] | null;
+      /** Buckets */
+      buckets: components['schemas']['Bucket'][];
+    };
+    /**
+     * MilkWarning
+     * @description A cow logged against the milk-withdrawal rule (§7.3). Saved anyway; shown as a warning.
+     * @enum {string}
+     */
+    MilkWarning: 'WITHDRAWAL_TO_TANK' | 'ANTIBIOTICS_OUTSIDE_WITHDRAWAL';
+    /**
      * ParentCreate
      * @description A dam or sire registered inline. Its sex comes from the slot it fills.
      */
@@ -1017,6 +1302,18 @@ export interface components {
       development_stage: components['schemas']['DevelopmentStage'];
       /** Group Id */
       group_id?: string | null;
+    };
+    /** PeakDay */
+    PeakDay: {
+      /**
+       * Date
+       * Format: date
+       */
+      date: string;
+      /** Liters */
+      liters: string;
+      /** Dim */
+      dim: number | null;
     };
     /**
      * Permission
@@ -1952,6 +2249,10 @@ export interface operations {
         breed?: components['schemas']['Breed'] | null;
         repro?: components['schemas']['ReproState'] | null;
         health?: ('SALUDABLE' | 'ENFERMA') | null;
+        /** @description Born on or after this date (the bulls' Edad filter) */
+        born_from?: string | null;
+        /** @description Born on or before this date */
+        born_to?: string | null;
         /** @description Lists the removed animals with this reason */
         removed_reason?: components['schemas']['RemovalReason'] | null;
         sort?:
@@ -2133,6 +2434,273 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  listGroups: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GroupOut'][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_herd_logs_api_milk_herd_logs_get: {
+    parameters: {
+      query?: {
+        start?: string | null;
+        end?: string | null;
+      };
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HerdLogOut'][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  put_herd_log_api_milk_herd_logs_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['HerdLogIn'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HerdLogOut'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_herd_log_api_milk_herd_logs__day__delete: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path: {
+        day: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_cow_logs_api_milk_cow_logs_get: {
+    parameters: {
+      query?: {
+        date?: string | null;
+      };
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CowLogOut'][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  put_cow_logs_api_milk_cow_logs_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CowLogsIn'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CowLogsOut'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  cow_stats_api_milk_cows__animal_id__get: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path: {
+        animal_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CowMilkStats'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  summary_api_milk_summary_get: {
+    parameters: {
+      query?: {
+        granularity?: components['schemas']['MilkGranularity'];
+        start?: string | null;
+        end?: string | null;
+      };
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MilkSummary'];
+        };
       };
       /** @description Validation Error */
       422: {
