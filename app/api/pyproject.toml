@@ -12,6 +12,7 @@ dependencies = [
     "pydantic-settings>=2.6",
     "firebase-admin>=7.7.0",
     "httpx>=0.28",
+    "google-cloud-storage>=2.18",
 ]
 
 [dependency-groups]

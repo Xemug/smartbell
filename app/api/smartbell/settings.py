@@ -27,9 +27,13 @@ class Settings(BaseSettings):
     # Matched against a token's *verified* email, so an unconfirmed sign-up can't claim one.
     # Comma-separated in the environment: ADMIN_EMAILS=ana@smartbell.mx,luis@smartbell.mx
     admin_emails: Annotated[list[str], NoDecode] = []
-    # Where uploaded profile photos are kept. Local disk for now; an S3-compatible store is a
-    # follow-up for deployment (profile-ranch-config).
+    # Where uploaded profile photos are kept: a Cloud Storage bucket when MEDIA_BUCKET is set
+    # (hosted; the deploy sets it), else this local folder (dev, tests).
     media_dir: str = "media"
+    media_bucket: str = ""
+    # Google Geocoding for Datos Rancho (`services/geocoding`). Unset means OpenStreetMap's free
+    # Nominatim, which only allows low volume, so every hosted deploy sets it.
+    google_maps_api_key: str = ""
     # RevenueCat (`services/revenuecat`). The webhook refuses every call while either secret is
     # unset. WEBHOOK_AUTH is the whole Authorization header value set in RevenueCat's dashboard.
     revenuecat_webhook_auth: str = ""

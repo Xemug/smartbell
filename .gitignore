@@ -14,3 +14,6 @@ firebase-debug.log
 # Uploaded profile photos in dev (MEDIA_DIR)
 app/api/media/
 .gstack/
+
+# Firebase CLI deploy cache
+.firebase/
