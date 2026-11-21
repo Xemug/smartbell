@@ -855,8 +855,9 @@ async def test_editing_an_event_reopens_the_alert_it_no_longer_answers(
 
     assert response.status_code == 200, response.text
     assert "DIET_CHANGE" in open_kinds(response.json())
-    await tenant_db.refresh(diet)
-    assert diet.status is AlertStatus.PENDING and diet.resulting_event_id is None
+    reopened = await tenant_db.get(Alert, diet.id, populate_existing=True)
+    assert reopened is not None
+    assert reopened.status is AlertStatus.PENDING and reopened.resulting_event_id is None
 
 
 async def test_an_expired_alert_stays_expired_after_another_write(
