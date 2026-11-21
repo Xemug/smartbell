@@ -656,6 +656,7 @@ async def remove_animal(
 @dataclass(frozen=True)
 class AnimalFilters:
     kind: AnimalKind | None = None
+    sex: Sex | None = None
     q: str | None = None
     group: GroupFilter | None = None
     breed: Breed | None = None
@@ -683,6 +684,8 @@ def _filters(ranch_id: uuid.UUID, filters: AnimalFilters) -> list[ColumnElement[
         conditions.append(Animal.removed_reason == filters.removed_reason)
     if filters.kind is not None:
         conditions.append(Animal.kind == filters.kind)
+    if filters.sex is not None:
+        conditions.append(Animal.sex == filters.sex)
     if filters.q:
         pattern = _like(filters.q.strip())
         conditions.append(

@@ -686,6 +686,17 @@ async def test_list_search_kind_sort_and_pages_of_ten(
     assert literal["total"] == 0
 
 
+async def test_list_by_sex(tenant_api: AsyncClient, owner: Account) -> None:
+    await created(tenant_api, owner, **cow("Carola"))
+    await created(tenant_api, owner, control_id="Carolo", birth_date="2020-01-01", sex="MACHO")
+
+    females = await listing(tenant_api, owner, q="carol", sex="HEMBRA")
+    males = await listing(tenant_api, owner, q="carol", sex="MACHO")
+
+    assert ids(females) == ["Carola"]
+    assert ids(males) == ["Carolo"]
+
+
 async def test_removed_animals_are_listed_only_by_reason(
     tenant_api: AsyncClient, owner: Account
 ) -> None:

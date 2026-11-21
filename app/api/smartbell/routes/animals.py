@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from smartbell.db import get_session
 from smartbell.domain.repro import Projection
-from smartbell.enums import AnimalKind, Breed, DamStatus, RemovalReason, ReproState
+from smartbell.enums import AnimalKind, Breed, DamStatus, RemovalReason, ReproState, Sex
 from smartbell.models import Animal
 from smartbell.schemas.animals import (
     AnimalCreate,
@@ -140,6 +140,7 @@ async def list_animals(
     ctx: Annotated[RanchContext, Depends(require(Permission.ANIMALS_VIEW))],
     session: Session,
     kind: AnimalKind | None = None,
+    sex: Annotated[Sex | None, Query(description="Only this sex (the parent pickers)")] = None,
     q: Annotated[str | None, Query(max_length=60, description="Search by ID or name")] = None,
     group: Annotated[
         GroupFilter | None, Query(description="A group id, or a preset such as GENERAL")
@@ -160,6 +161,7 @@ async def list_animals(
 ) -> AnimalPage:
     filters = AnimalFilters(
         kind=kind,
+        sex=sex,
         q=q,
         group=group,
         breed=breed,

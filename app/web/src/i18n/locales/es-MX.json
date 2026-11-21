@@ -724,7 +724,8 @@
     "fixErrors": "Revisa los datos marcados",
     "errors": {
       "generic": "No pudimos registrar el animal. Intenta de nuevo.",
-      "forbidden": "No tienes permiso para registrar animales."
-    }
+      "permission_denied": "No tienes permiso para registrar animales."
+    },
+    "lactationRange": "Escribe un número entero de 0 a 30"
   }
 }

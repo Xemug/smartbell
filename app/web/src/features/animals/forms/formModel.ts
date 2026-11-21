@@ -75,6 +75,15 @@ export const animalSchema = z
     if (values.crossbreedLevel !== 'FB' && !values.contributingBreed) {
       ctx.addIssue({ code: 'custom', path: ['contributingBreed'], message: 'validation.required' });
     }
+    // The API takes 0 to 30 lactations.
+    const lactation = values.lactationNumber;
+    if (lactation && !(/^\d+$/.test(lactation) && Number(lactation) <= 30)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['lactationNumber'],
+        message: 'animalForm.lactationRange',
+      });
+    }
   });
 export type AnimalValues = z.infer<typeof animalSchema>;
 
@@ -141,40 +150,56 @@ export function parentLabel(choice: ParentChoice): string {
 
 const blank = (value: string) => (value.trim() === '' ? null : value.trim());
 
-/** The create request for the form's values. Hidden sections send nothing. */
+/**
+ * Fields under "Tengo más datos de mi animal". Collapsing it only hides them: what was entered is
+ * still sent, and a refusal on one of them opens the section again.
+ */
+export const DETAILED_FIELDS: ReadonlySet<keyof AnimalValues> = new Set([
+  'crossbreedLevel',
+  'contributingBreed',
+  'developmentStage',
+  'siniiga',
+  'lastCalvingDate',
+  'lactationNumber',
+  'reproStage',
+  'reproStageDate',
+  'weightBirth',
+  'weightWeaning',
+  'weightOneYear',
+]);
+
+/**
+ * The create request for the form's values. Untouched detailed fields hold the API's defaults; the
+ * reproductive inputs go only when that section applies to the animal.
+ */
 export function toCreateBody(
   values: AnimalValues,
   options: {
-    detailed: boolean;
     dam: ParentChoice | null;
     sire: ParentChoice | null;
     damStatus: DamStatus | null;
     today?: Date;
   },
 ): AnimalCreate {
-  const { detailed, dam, sire, damStatus } = options;
+  const { dam, sire, damStatus } = options;
   const body: AnimalCreate = {
     sex: values.sex,
     control_id: values.controlId.trim(),
     birth_date: values.birthDate,
     breed: values.breed as Breed,
     group_id: values.groupId || null,
-    crossbreed_level: 'FB',
-    development_stage: 'AUTO',
+    crossbreed_level: values.crossbreedLevel as CrossbreedLevel,
+    contributing_breed:
+      values.crossbreedLevel === 'FB' ? null : ((values.contributingBreed || null) as Breed | null),
+    // A stage left over from the other sex's list isn't sent.
+    development_stage: STAGES[values.sex].includes(values.developmentStage as DevelopmentStage)
+      ? (values.developmentStage as DevelopmentStage)
+      : 'AUTO',
+    siniiga: blank(values.siniiga),
+    weight_birth_kg: blank(values.weightBirth),
+    weight_weaning_kg: blank(values.weightWeaning),
+    weight_one_year_kg: blank(values.weightOneYear),
   };
-  if (!detailed) return body;
-
-  body.crossbreed_level = values.crossbreedLevel as CrossbreedLevel;
-  body.contributing_breed =
-    values.crossbreedLevel === 'FB' ? null : ((values.contributingBreed || null) as Breed | null);
-  // A stage left over from the other sex's list isn't sent.
-  body.development_stage = STAGES[values.sex].includes(values.developmentStage as DevelopmentStage)
-    ? (values.developmentStage as DevelopmentStage)
-    : 'AUTO';
-  body.siniiga = blank(values.siniiga);
-  body.weight_birth_kg = blank(values.weightBirth);
-  body.weight_weaning_kg = blank(values.weightWeaning);
-  body.weight_one_year_kg = blank(values.weightOneYear);
 
   if (showsRepro(values.sex, body.development_stage, values.birthDate, options.today)) {
     body.last_calving_date = blank(values.lastCalvingDate);

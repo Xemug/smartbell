@@ -48,14 +48,13 @@ export function useParentSearch(q: string, sex: Sex) {
     enabled: term.length > 0,
     queryFn: async (): Promise<Animal[]> => {
       const { data, error, response } = await api.GET('/api/animals', {
-        params: { query: { q: term, page_size: 20 } },
+        params: { query: { q: term, sex, page_size: 20 } },
       });
       if (!data) {
         const detail = (error as { detail?: unknown } | undefined)?.detail;
         throw new CreateError(typeof detail === 'string' ? detail : `http_${response.status}`);
       }
-      // The list has no sex filter; a dam must be female and a sire male.
-      return data.items.filter((animal) => animal.sex === sex);
+      return data.items;
     },
   });
 }

@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
+import { useActiveRanch } from '../../../app/useActiveRanch';
 import { Banner } from '../../../ui/Banner';
 import { Button } from '../../../ui/Button';
 import { Card } from '../../../ui/Card';
@@ -20,6 +21,7 @@ import { BullSection } from './BullSection';
 import { DamStatusDialog } from './DamStatusDialog';
 import {
   animalSchema,
+  DETAILED_FIELDS,
   defaultValues,
   fieldRefusal,
   isHeifer,
@@ -57,6 +59,7 @@ export function AnimalForm({
 }) {
   const { t } = useTranslation();
   const snackbar = useSnackbar();
+  const { can } = useActiveRanch();
   const groups = useGroups();
   const create = useCreateAnimal();
   const [detailed, setDetailed] = useState(false);
@@ -92,7 +95,7 @@ export function AnimalForm({
   const send = (values: AnimalValues, damStatus: DamStatus | null) => {
     setFormError(null);
     setParentErrors({ dam: null, sire: null });
-    const body = toCreateBody(values, { detailed, ...parents, damStatus });
+    const body = toCreateBody(values, { ...parents, damStatus });
     create.mutate(body, {
       onSuccess: (created) => {
         setPending(null);
@@ -116,8 +119,10 @@ export function AnimalForm({
           const where = fieldRefusal(refusal.loc, refusal.msg);
           const parent = where.parent;
           if (parent) {
+            setDetailed(true);
             setParentErrors((current) => ({ ...current, [parent]: where.message }));
           } else if (where.field) {
+            if (DETAILED_FIELDS.has(where.field)) setDetailed(true);
             setError(where.field, { message: where.message }, { shouldFocus: first });
             first = false;
           } else {
@@ -132,10 +137,16 @@ export function AnimalForm({
   const submit = handleSubmit(
     (values) => {
       // §7.1: a heifer registered with her dam says how the dam is.
-      if (detailed && parents.dam && isHeifer(values)) setPending(values);
+      if (parents.dam && isHeifer(values)) setPending(values);
       else send(values, null);
     },
-    () => snackbar.show({ kind: 'error', message: t('animalForm.fillRequired') }),
+    (errors) => {
+      // A hidden field can be the one at fault: show it.
+      if (Object.keys(errors).some((name) => DETAILED_FIELDS.has(name as keyof AnimalValues))) {
+        setDetailed(true);
+      }
+      snackbar.show({ kind: 'error', message: t('animalForm.fillRequired') });
+    },
   );
 
   const changeSex = (next: Sex) => {
@@ -205,8 +216,9 @@ export function AnimalForm({
           <Select
             {...field}
             label={t('animalForm.fields.group')}
-            placeholder={t('animalForm.choose')}
-            disabled={!groups.data}
+            // No group is the General potrero; a ranch may have no groups yet.
+            placeholder={t('animals.values.grupo.GENERAL')}
+            disabled={!groups.data?.length}
             options={(groups.data ?? []).map((group) => ({
               value: group.id,
               label: group.preset ? t(`animals.values.grupo.${group.preset}`) : group.name,
@@ -455,6 +467,8 @@ export function AnimalForm({
         open={pending !== null}
         damId={parents.dam ? parentLabel(parents.dam) : ''}
         saving={create.isPending}
+        // A baja of the dam needs the delete permission (§7.8).
+        canRemove={can('ANIMALS_DELETE')}
         onCancel={() => setPending(null)}
         onConfirm={(status) => pending && send(pending, status)}
       />

@@ -14,12 +14,15 @@ export function DamStatusDialog({
   open,
   damId,
   saving,
+  canRemove,
   onCancel,
   onConfirm,
 }: {
   open: boolean;
   damId: string;
   saving: boolean;
+  /** Without it only "Viva en producción" is offered: the other answers remove the dam. */
+  canRemove: boolean;
   onCancel: () => void;
   onConfirm: (status: DamStatus) => void;
 }) {
@@ -50,7 +53,7 @@ export function DamStatusDialog({
         label={t('animalForm.damStatus.label')}
         value={status}
         onChange={(value) => setStatus(value as DamStatus)}
-        options={DAM_STATUSES.map((value) => ({
+        options={(canRemove ? DAM_STATUSES : (['VIVA'] as DamStatus[])).map((value) => ({
           value,
           label: t(`animalForm.damStatus.values.${value}`),
         }))}

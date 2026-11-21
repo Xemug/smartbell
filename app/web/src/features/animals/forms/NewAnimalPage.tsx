@@ -9,11 +9,12 @@ import { ANIMALS_PATH } from '../list/AnimalListPage';
 import type { AnimalCreated } from './api';
 import { AnimalForm } from './AnimalForm';
 
-/** The list that shows an animal of this kind; calves and steers have none yet. */
-function listOf(created: AnimalCreated): string {
+/** The list that shows the new animal. Calves and steers have none yet: back where they came from. */
+function listOf(created: AnimalCreated, back: string): string {
+  if (created.kind === 'VACA') return ANIMALS_PATH;
   if (created.kind === 'VAQUILLA') return `${ANIMALS_PATH}?tipo=vaquillas`;
-  if (created.sex === 'MACHO') return `${ANIMALS_PATH}?tipo=toros`;
-  return ANIMALS_PATH;
+  if (created.kind === 'TORO') return `${ANIMALS_PATH}?tipo=toros`;
+  return back;
 }
 
 /** /vacas/nueva: the list's "Agregar" button opens it; `?tipo=toros` starts on Macho. */
@@ -40,7 +41,7 @@ export function NewAnimalPage() {
       <h1 className="ramp-page-title text-primary">{t('animalForm.title')}</h1>
       <AnimalForm
         initialSex={kind === 'toros' ? 'MACHO' : 'HEMBRA'}
-        onCreated={(created) => navigate(listOf(created))}
+        onCreated={(created) => navigate(listOf(created, back))}
       />
     </div>
   );

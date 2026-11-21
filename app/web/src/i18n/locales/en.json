@@ -724,7 +724,8 @@
     "fixErrors": "Check the marked fields",
     "errors": {
       "generic": "We couldn't register the animal. Try again.",
-      "forbidden": "You don't have permission to register animals."
-    }
+      "permission_denied": "You don't have permission to register animals."
+    },
+    "lactationRange": "Enter a whole number from 0 to 30"
   }
 }

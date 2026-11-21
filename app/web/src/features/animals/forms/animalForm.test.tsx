@@ -14,6 +14,24 @@ import { NewAnimalPage } from './NewAnimalPage';
 const TODAY = new Date(2026, 10, 21, 9);
 const GENERAL = 'a1a1a1a1-0000-4000-8000-00000000000a';
 const CAROLA = 'c4c4c4c4-0000-4000-8000-000000000004';
+const searchable = [
+  {
+    id: CAROLA,
+    sex: 'HEMBRA',
+    control_id: 'Carola 004',
+    name: null,
+    breed: 'HOLSTEIN',
+    birth_date: '2016-05-23',
+  },
+  {
+    id: 't-1',
+    sex: 'MACHO',
+    control_id: 'Carolo',
+    name: null,
+    breed: 'HOLSTEIN',
+    birth_date: '2018-01-01',
+  },
+];
 
 interface Call {
   method: string;
@@ -144,25 +162,8 @@ beforeEach(() => {
         ]);
       if (key === 'GET /api/animals')
         return Response.json({
-          items: [
-            {
-              id: CAROLA,
-              sex: 'HEMBRA',
-              control_id: 'Carola 004',
-              name: null,
-              breed: 'HOLSTEIN',
-              birth_date: '2016-05-23',
-            },
-            {
-              id: 't-1',
-              sex: 'MACHO',
-              control_id: 'Carolo',
-              name: null,
-              breed: 'HOLSTEIN',
-              birth_date: '2018-01-01',
-            },
-          ],
-          total: 2,
+          items: searchable.filter((a) => a.sex === url.searchParams.get('sex')),
+          total: 1,
           page: 1,
           page_size: 20,
         });
@@ -204,14 +205,19 @@ describe('quick registration', () => {
     await user().click(screen.getByRole('button', { name: 'Registrar' }));
 
     await waitFor(() => expect(posts()).toHaveLength(1));
-    expect(sent()).toEqual({
+    expect(sent()).toMatchObject({
       sex: 'HEMBRA',
       control_id: 'V-100',
       birth_date: '2022-01-15',
       breed: 'HOLSTEIN',
       group_id: GENERAL,
       crossbreed_level: 'FB',
+      contributing_breed: null,
       development_stage: 'AUTO',
+      siniiga: null,
+      // An adult female: the domain's default lactation goes with her.
+      lactation_number: 1,
+      repro_stage: null,
     });
     await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent(/^\/vacas$/));
   });
@@ -330,7 +336,7 @@ describe('parents', () => {
       Response.json(created({ kind: 'VAQUILLA', control_id: 'VQ-1', created_ids: ['d', 'n-1'] }), {
         status: 201,
       });
-    renderAt('/vacas/nueva');
+    renderAt('/vacas/nueva', ['ANIMALS_VIEW', 'ANIMALS_CREATE', 'ANIMALS_DELETE']);
     await fillRequired('VQ-1', '15012026');
     await user().click(screen.getByRole('button', { name: 'Tengo más datos de mi animal' }));
     await user().click(screen.getByRole('button', { name: 'Madre' }));
@@ -382,6 +388,7 @@ describe('parents', () => {
     await user().click(within(dialog).getByRole('button', { name: 'Buscar' }));
     const hit = await within(dialog).findByRole('button', { name: /Carola 004/ });
     expect(within(dialog).queryByRole('button', { name: /Carolo/ })).not.toBeInTheDocument();
+    expect(calls.find((c) => c.path === '/api/animals')?.query.get('sex')).toBe('HEMBRA');
     await user().click(hit);
 
     // An adult cow: no dam-status question.
@@ -389,6 +396,84 @@ describe('parents', () => {
     await waitFor(() => expect(posts()).toHaveLength(1));
     expect(sent()).toMatchObject({ dam_id: CAROLA });
     expect(sent()).not.toHaveProperty('dam_status');
+  });
+});
+
+describe('review cases', () => {
+  it('keeps a typed dam and a cross when the extra data is collapsed', async () => {
+    renderAt('/vacas/nueva');
+    await fillRequired('VQ-2', '15012026');
+    await user().click(screen.getByRole('button', { name: 'Tengo más datos de mi animal' }));
+    await choose('Nivel de cruza', /F1/);
+    await user().click(screen.getByRole('button', { name: 'Madre' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Datos de la vaca madre' });
+    await user().type(
+      within(dialog).getByRole('textbox', { name: /Nombre o Número interno/ }),
+      'M-1',
+    );
+    await user().type(
+      within(dialog).getByRole('textbox', { name: /Fecha nacimiento/ }),
+      '01012018',
+    );
+    await user().click(within(dialog).getByRole('button', { name: 'Registrar' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    await user().click(screen.getByRole('button', { name: 'Tengo menos datos de mi animal' }));
+
+    // The cross still needs its breed: the section opens again to show why.
+    await user().click(screen.getByRole('button', { name: 'Registrar' }));
+    expect(await screen.findByRole('combobox', { name: /Raza de aporte/ })).toBeInTheDocument();
+    expect(screen.getByText('Este campo es obligatorio')).toBeInTheDocument();
+    await choose(/Raza de aporte/, 'Jersey');
+    await user().click(screen.getByRole('button', { name: 'Tengo menos datos de mi animal' }));
+    await user().click(screen.getByRole('button', { name: 'Registrar' }));
+    const status = await screen.findByRole('dialog', { name: 'Estatus vaca madre' });
+    await user().click(within(status).getByRole('button', { name: 'Registrar' }));
+    await waitFor(() => expect(posts()).toHaveLength(1));
+    expect(sent()).toMatchObject({
+      crossbreed_level: 'F1',
+      contributing_breed: 'JERSEY',
+      dam: { control_id: 'M-1' },
+      dam_status: 'VIVA',
+    });
+  });
+
+  it('offers only "Viva en producción" to someone who cannot remove animals', async () => {
+    renderAt('/vacas/nueva', ['ANIMALS_VIEW', 'ANIMALS_CREATE']);
+    await fillRequired('VQ-3', '15012026');
+    await user().click(screen.getByRole('button', { name: 'Tengo más datos de mi animal' }));
+    await user().click(screen.getByRole('button', { name: 'Madre' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Datos de la vaca madre' });
+    await user().type(within(dialog).getByRole('searchbox', { name: 'Buscar' }), 'Carol');
+    await user().click(within(dialog).getByRole('button', { name: 'Buscar' }));
+    await user().click(await within(dialog).findByRole('button', { name: /Carola 004/ }));
+    await user().click(screen.getByRole('button', { name: 'Registrar' }));
+    const status = await screen.findByRole('dialog', { name: 'Estatus vaca madre' });
+    await user().click(within(status).getByRole('combobox', { name: 'Estatus' }));
+    expect(await screen.findAllByRole('option')).toHaveLength(1);
+  });
+
+  it('returns a calf to the list it came from', async () => {
+    createResponse = () =>
+      Response.json(created({ sex: 'MACHO', kind: 'BECERRO', control_id: 'B-1' }), { status: 201 });
+    renderAt('/vacas/nueva?tipo=vaquillas');
+    await user().click(screen.getByRole('radio', { name: 'Macho' }));
+    await fillRequired('B-1', '01112026');
+    await user().click(screen.getByRole('button', { name: 'Registrar' }));
+    await waitFor(() =>
+      expect(screen.getByTestId('where')).toHaveTextContent('/vacas?tipo=vaquillas'),
+    );
+  });
+
+  it('checks the lactation number', async () => {
+    renderAt('/vacas/nueva');
+    await fillRequired('V-9', '15012020');
+    await user().click(screen.getByRole('button', { name: 'Tengo más datos de mi animal' }));
+    const lactation = screen.getByRole('textbox', { name: 'Ciclo de lactancia' });
+    await user().clear(lactation);
+    await user().type(lactation, '45');
+    await user().click(screen.getByRole('button', { name: 'Registrar' }));
+    expect(await screen.findByText('Escribe un número entero de 0 a 30')).toBeInTheDocument();
+    expect(posts()).toHaveLength(0);
   });
 });
 
@@ -402,7 +487,7 @@ describe('form model', () => {
     expect(isHeifer({ sex: 'HEMBRA', developmentStage: 'TERNERA', birthDate: '' })).toBe(true);
   });
 
-  it('sends nothing from the hidden sections', () => {
+  it('sends a male no reproductive data, no stage from the female list, and no dam status without a dam', () => {
     const values = {
       ...defaultValues('MACHO'),
       controlId: ' T-1 ',
@@ -411,18 +496,14 @@ describe('form model', () => {
       lastCalvingDate: '2024-01-01',
       siniiga: '1012345678',
     };
-    const quick = toCreateBody(values, { detailed: false, dam: null, sire: null, damStatus: null });
-    expect(quick).not.toHaveProperty('siniiga');
-    expect(quick.control_id).toBe('T-1');
-    const full = toCreateBody(values, {
-      detailed: true,
-      dam: null,
-      sire: null,
-      damStatus: 'VIVA',
-      today: TODAY,
+    const body = toCreateBody(values, { dam: null, sire: null, damStatus: 'VIVA', today: TODAY });
+    expect(body).toMatchObject({
+      control_id: 'T-1',
+      development_stage: 'AUTO',
+      siniiga: '1012345678',
     });
-    expect(full).toMatchObject({ development_stage: 'AUTO', siniiga: '1012345678' });
-    expect(full).not.toHaveProperty('last_calving_date');
-    expect(full).not.toHaveProperty('dam_status');
+    expect(body).not.toHaveProperty('last_calving_date');
+    expect(body).not.toHaveProperty('lactation_number');
+    expect(body).not.toHaveProperty('dam_status');
   });
 });

@@ -31,14 +31,15 @@ Per v4-animal-registration-profile.md §1.1, §1.4–1.10 and flows F1–F5. Qui
 
 ### Audit (2026-11-21) and decisions
 
-- The API (`animal-api`) already takes every field: `sex`, `development_stage`, `crossbreed_level` + `contributing_breed`, inline `dam`/`sire` (`ParentCreate`) or `dam_id`/`sire_id`, and `dam_status`. This card is web only; no migration.
+- The API (`animal-api`) already takes every field: `sex`, `development_stage`, `crossbreed_level` + `contributing_breed`, inline `dam`/`sire` (`ParentCreate`) or `dam_id`/`sire_id`, and `dam_status`. No migration. The only API change: `GET /api/animals` gains a `sex` filter for the parent search.
 - Files: `app/web/src/features/animals/forms/` (new), route `/vacas/nueva` (the list's "Agregar" button already points there; `?tipo=toros` starts on Macho). `AnimalForm` is reusable for `onboarding-hub`'s first-cow step.
-- **Dam status:** the modal opens when Registrar is pressed for a heifer with a dam (new or found), and the heifer, the inline dam and `dam_status` go in **one request**, so a non-alive answer and the dam's baja are atomic. The V4 frame draws it over the saved summary; the copy is the same. Asked for heifers only (§7.1): a female whose reproductive section is hidden.
+- **Dam status:** the modal opens when Registrar is pressed for a heifer with a dam (new or found), and the heifer, the inline dam and `dam_status` go in **one request**, so a non-alive answer and the dam's baja are atomic. The V4 frame draws it over the saved summary; the copy is the same. Asked for heifers only (§7.1): a female whose reproductive section is hidden. Without `ANIMALS_DELETE` only "Viva en producción" is offered, since the other answers remove the dam (§7.8).
 - **Reproductive section:** Hembra only, hidden for stages Ternera/Destetada/Novilla, and for AUTO when the birth date gives under 660 days (the API's minimum calving age). Repro stages offered: Vacía, Servida, Preñada, Seca (+ Ninguna).
 - **Inline parents** take what `ParentCreate` takes: ID, birth date, breed, crossbreed level + contributing breed, SINIIGA. The V4 dam form's lactation, last calving and repro stage are not accepted by the API for a parent; they're entered on her profile later.
-- **Parent search** uses `GET /api/animals?q=` and keeps the right sex client-side (the list has no sex filter).
+- **Parent search** uses `GET /api/animals?q=…&sex=…`.
 - **Stage labels** use the bands the user confirmed (§7.6), not the Figma ones: Ternera <6 m, Destetada 6–12, Novilla 12–27, adult >27; Becerro <3, Destetado 3–9, Novillo 9–24, Toro ≥24.
-- **Quick mode sends only the four fields;** a collapsed section sends nothing.
+- **Collapsing "Tengo menos datos" only hides fields:** what was entered (cross, stage, parents, weights) is still sent, and a refusal on a hidden field opens the section again. Untouched fields hold the API defaults (FB, AUTO). The reproductive inputs go only when the section applies (lactation 1 is the adult-female default).
+- **After saving** the app goes to the list that shows the animal (Vacas, Vaquillas, Toros); a calf or steer has no list yet, so it goes back to the list it came from.
 - **Bull seam:** `BullSection.tsx` renders in the detailed form for Macho and is empty; `mark-each-bull-as-on-the-ranch-semen-only-or-both` fills it.
 - Layout: one route; sections are cards in one column under 960px and two columns from 960px.
 
