@@ -816,3 +816,142 @@ async def test_payload_text_is_capped(tenant_api: AsyncClient, owner: Account) -
     )
 
     assert response.status_code == 422
+
+
+# --- Review regressions ------------------------------------------------------------------------
+
+
+DIET = {"type": "DIET_CHANGE", "reason": "ETAPA_REPRODUCTIVA", "diet": "Alta producción"}
+
+
+async def test_a_heat_not_observed_negates_the_heat_alert(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
+) -> None:
+    animal_id = await new_cow(tenant_api, owner, "0100")
+    (heat,) = [row for row in await alerts_of(tenant_db, animal_id) if row.kind is AlertKind.HEAT]
+    on = min(TODAY, heat.window_end).isoformat()
+
+    await recorded(tenant_api, owner, animal_id, {"type": "HEAT", "outcome": "NOT_OBSERVED"}, on=on)
+
+    await tenant_db.refresh(heat)
+    assert heat.status is AlertStatus.NEGATED
+
+
+async def test_editing_an_event_reopens_the_alert_it_no_longer_answers(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
+) -> None:
+    animal_id = await new_cow(tenant_api, owner, "0100")
+    body = await recorded(tenant_api, owner, animal_id, DIET)
+    (diet,) = [
+        row for row in await alerts_of(tenant_db, animal_id) if row.kind is AlertKind.DIET_CHANGE
+    ]
+    assert diet.status is AlertStatus.CONFIRMED
+
+    response = await tenant_api.patch(
+        f"/api/animals/{animal_id}/events/{body['event']['id']}",
+        headers=owner.headers(),
+        json={"occurred_on": "2026-07-01"},  # Before the diet was due: it is due again.
+    )
+
+    assert response.status_code == 200, response.text
+    assert "DIET_CHANGE" in open_kinds(response.json())
+    await tenant_db.refresh(diet)
+    assert diet.status is AlertStatus.PENDING and diet.resulting_event_id is None
+
+
+async def test_an_expired_alert_stays_expired_after_another_write(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
+) -> None:
+    animal_id = await new_cow(tenant_api, owner, "0100")
+    (diet,) = [
+        row for row in await alerts_of(tenant_db, animal_id) if row.kind is AlertKind.DIET_CHANGE
+    ]
+    diet.status = AlertStatus.EXPIRED  # As the alert engine would, once its window passed.
+    await tenant_db.commit()
+
+    body = await recorded(tenant_api, owner, animal_id, {"type": "WEIGHT", "kg": 500})
+
+    assert "DIET_CHANGE" not in open_kinds(body)
+    await tenant_db.refresh(diet)
+    assert diet.status is AlertStatus.EXPIRED
+
+
+async def test_removal_closes_alerts_of_every_kind(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
+) -> None:
+    animal_id = await new_cow(tenant_api, owner, "0100")
+    vaccine = Alert(
+        ranch_id=owner.ranch_id,
+        animal_id=uuid.UUID(animal_id),
+        kind=AlertKind.VACCINE_DUE,
+        window_start=TODAY,
+        window_end=TODAY,
+    )
+    tenant_db.add(vaccine)
+    await tenant_db.commit()
+
+    await tenant_api.post(
+        f"/api/animals/{animal_id}/removal",
+        headers=owner.headers(),
+        json={"reason": "VENTA_RASTRO"},
+    )
+
+    await tenant_db.refresh(vaccine)
+    assert vaccine.status is AlertStatus.EXPIRED
+
+
+async def test_editing_an_illness_keeps_her_in_enfermas(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
+) -> None:
+    sick_group = await preset_group(tenant_db, owner, GroupPreset.ENFERMAS)
+    animal_id = await new_cow(tenant_api, owner, "0100")
+    body = await recorded(tenant_api, owner, animal_id, ILLNESS)
+
+    response = await tenant_api.patch(
+        f"/api/animals/{animal_id}/events/{body['event']['id']}",
+        headers=owner.headers(),
+        json={"payload": ILLNESS | {"illness": "COJERA"}},
+    )
+
+    assert response.status_code == 200, response.text
+    edited = response.json()
+    assert edited["animal"]["group_id"] == str(sick_group)
+    assert edited["event"]["payload"]["group_change"] == {"to_group_id": str(sick_group)}
+
+
+async def test_correcting_an_old_move_leaves_her_where_she_is_now(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
+) -> None:
+    y = await preset_group(tenant_db, owner, GroupPreset.GENERAL)
+    z = await preset_group(tenant_db, owner, GroupPreset.ALTA_PRODUCCION)
+    w = await preset_group(tenant_db, owner, GroupPreset.SECAS_RETO)
+    animal_id = await new_cow(tenant_api, owner, "0100")
+    first = await recorded(
+        tenant_api, owner, animal_id, {"type": "GROUP_CHANGE", "to_group_id": str(y)}, on=days(-5)
+    )
+    await recorded(tenant_api, owner, animal_id, {"type": "GROUP_CHANGE", "to_group_id": str(z)})
+
+    response = await tenant_api.patch(
+        f"/api/animals/{animal_id}/events/{first['event']['id']}",
+        headers=owner.headers(),
+        json={"payload": {"type": "GROUP_CHANGE", "to_group_id": str(w)}},
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["animal"]["group_id"] == str(z)
+    assert response.json()["event"]["payload"] == {"type": "GROUP_CHANGE", "to_group_id": str(w)}
+
+
+async def test_repro_events_are_refused_on_a_male(tenant_api: AsyncClient, owner: Account) -> None:
+    bull = await tenant_api.post(
+        "/api/animals",
+        headers=owner.headers(),
+        json={"control_id": "T1", "name": "Toro", "sex": "MACHO", "birth_date": "2020-01-01"},
+    )
+
+    response = await post(
+        tenant_api, owner, bull.json()["id"], {"type": "CALVING", "calf_registered": False}
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["type"] == "not_female"

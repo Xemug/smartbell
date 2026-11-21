@@ -6,6 +6,7 @@ Every write re-runs the repro fold, writes the projection onto the animal, syncs
 
 import datetime as dt
 import uuid
+from collections.abc import Collection
 from dataclasses import dataclass
 
 from sqlalchemy import select
@@ -59,7 +60,7 @@ from smartbell.schemas.history import HistoryRefs
 from smartbell.security.permissions import Permission
 from smartbell.security.ranch import RanchContext
 from smartbell.services import alert_sync, history
-from smartbell.services.animals import AnimalRemoved, FieldError, get_animal
+from smartbell.services.animals import AnimalNotFound, AnimalRemoved, FieldError, get_animal
 from smartbell.services.projection import (
     animal_facts,
     event_fact,
@@ -71,6 +72,10 @@ from smartbell.services.projection import (
 OWN_FLOW_TYPES = frozenset({EventType.ALTA, EventType.REMOVAL})
 # §6 Q4: repro events are never deleted, but an admin may correct one.
 ADMIN_ROLES = frozenset({Role.DUENO, Role.ADMINISTRADOR})
+# Only a female has these (the fold ignores them on a male).
+REPRO_TYPES = frozenset(
+    {EventType.HEAT, EventType.PREGNANCY_CHECK, EventType.CALVING, EventType.ABORTION}
+)
 
 
 class EventNotFound(Exception):
@@ -148,6 +153,11 @@ def _check_date(on: dt.date, animal: Animal, today: dt.date) -> None:
         raise _invalid(
             ("occurred_on",), "before_birth", "La fecha no puede ser anterior al nacimiento"
         )
+
+
+def _check_female(animal: Animal, event_type: EventType) -> None:
+    if event_type in REPRO_TYPES and animal.sex is not Sex.HEMBRA:
+        raise _invalid(("payload", "type"), "not_female", "Este registro es solo para hembras")
 
 
 async def _check_animal_ref(
@@ -319,12 +329,24 @@ async def _move_again(
     old: EventPayload | None,
     new: EventInput | EventPayload,
 ) -> None:
-    """An edit: a move to the same group stays as recorded, even if she has moved on since.
-    Otherwise the old move is undone and the new one made. No automatic move to ENFERMAS."""
+    """An edit corrects the recorded move; the animal moves only if she is still where the old
+    move put her. A health payload sent without a move keeps the stored one (undoing a move is a
+    GROUP_CHANGE of its own). No automatic move to ENFERMAS here."""
     before, after = (_group_change(old) if old else None), _group_change(new)
-    if before is not None and after is not None and before.to_group_id == after.to_group_id:
-        after.from_group_id = before.from_group_id
+    if before is not None and after is None and isinstance(new, IllnessPayload | AccidentPayload):
+        new.group_change = before
         return
+    if before is not None and after is not None:
+        after.from_group_id = before.from_group_id
+        if before.to_group_id == after.to_group_id:
+            return
+        if animal.group_id != before.to_group_id:  # Moved on since: only the record changes.
+            await _check_group(session, ranch_id, after.to_group_id)
+            if after.to_group_id == after.from_group_id:
+                raise _invalid(
+                    ("payload", "to_group_id"), "same_group", "La vaca ya está en ese potrero"
+                )
+            return
     if old is not None:
         _revert_group_change(animal, old)
     if after is not None:
@@ -387,7 +409,16 @@ async def _record_history(
 async def _writable_animal(
     session: AsyncSession, ranch_id: uuid.UUID, animal_id: uuid.UUID
 ) -> Animal:
-    animal = await get_animal(session, ranch_id, animal_id)
+    """The animal, locked until the commit: two writes to one animal run one after the other, so
+    neither inserts an alert or a deletion request the other just did."""
+    animal = await session.scalar(
+        select(Animal)
+        .where(Animal.id == animal_id, Animal.ranch_id == ranch_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    if animal is None:
+        raise AnimalNotFound
     if animal.status is AnimalStatus.REMOVED:
         raise AnimalRemoved
     return animal
@@ -399,8 +430,11 @@ async def _after_write(
     settings: RanchSettings,
     today: dt.date,
     event: Event | None,
+    payload: EventPayload | None = None,
+    reopen: Collection[uuid.UUID] = (),
 ) -> tuple[Projection, list[Alert]]:
     projection = await reproject_animal(session, animal, settings, today)
+    not_observed = isinstance(payload, HeatPayload) and payload.outcome is HeatOutcome.NOT_OBSERVED
     alerts = await alert_sync.sync_animal(
         session,
         animal,
@@ -408,6 +442,8 @@ async def _after_write(
         today,
         event_id=event.id if event else None,
         event_type=event.type if event else None,
+        negative=not_observed,
+        reopen=reopen,
     )
     return projection, alerts
 
@@ -422,6 +458,7 @@ async def record_event(
     animal = await _writable_animal(session, ctx.ranch_id, animal_id)
     settings = await session.get_one(RanchSettings, ctx.ranch_id)
     payload = body.payload
+    _check_female(animal, payload.type)
     _check_date(body.occurred_on, animal, today)
     await _check_refs(session, ctx.ranch_id, animal, payload)
     derived = await _derive(session, animal, settings, payload, body.occurred_on, None)
@@ -441,7 +478,7 @@ async def record_event(
     session.add(event)
     await session.flush()
     await session.refresh(event)
-    projection, alerts = await _after_write(session, animal, settings, today, event)
+    projection, alerts = await _after_write(session, animal, settings, today, event, stored)
     await _record_history(session, ctx, animal, stored)
     return Written(event, derived, animal, projection, alerts)
 
@@ -470,28 +507,35 @@ async def edit_event(
     try:
         old: EventPayload | None = validate_event_payload(event.type, event.payload)
     except ValueError:
-        old = None  # A payload that no longer parses: a new one must be sent to replace it.
-    if body.payload is not None:
-        payload: EventInput | EventPayload = body.payload
-        if payload.type is not event.type:
-            raise _invalid(("payload", "type"), "type_changed", "No se puede cambiar el tipo")
-        await _check_refs(session, ctx.ranch_id, animal, body.payload)
+        old = None  # Stored under an older schema: only a full payload can replace it.
+    stored = old
+    derived = EventDerived()
+    # A payload is re-derived when sent, or when the date moves (CALVING timing depends on it).
+    if body.payload is not None or "occurred_on" in changes:
+        if body.payload is not None:
+            payload: EventInput | EventPayload = body.payload
+            if payload.type is not event.type:
+                raise _invalid(("payload", "type"), "type_changed", "No se puede cambiar el tipo")
+            await _check_refs(session, ctx.ranch_id, animal, body.payload)
+        elif old is not None:
+            payload = old
+        else:
+            raise _invalid(("payload",), "required", "Envía el registro completo")
+        derived = await _derive(session, animal, settings, payload, on, event.id)
+        await _move_again(session, ctx.ranch_id, animal, old, payload)
+        stored = validate_event_payload(payload.type, payload.model_dump(mode="json"))
+        event.payload = stored.model_dump(mode="json", exclude_none=True)
     elif old is not None:
-        payload = old
-    else:
-        raise _invalid(("payload",), "required", "Envía el registro completo")
-    derived = await _derive(session, animal, settings, payload, on, event.id)
-    await _move_again(session, ctx.ranch_id, animal, old, payload)
-    stored = validate_event_payload(payload.type, payload.model_dump(mode="json"))
-    event.payload = stored.model_dump(mode="json", exclude_none=True)
+        derived = EventDerived(withdrawal_until=_withdrawal(event.type, old))
     if "occurred_on" in changes:
         event.occurred_on = on
     if "description" in changes:
         event.description = body.description
     if "comments" in changes:
         event.comments = body.comments
+    reopen = await alert_sync.linked_to(session, event.id)
     await session.flush()
-    projection, alerts = await _after_write(session, animal, settings, today, event)
+    projection, alerts = await _after_write(session, animal, settings, today, event, stored, reopen)
     await history.record(
         session,
         ctx.ranch_id,
@@ -533,10 +577,11 @@ async def delete_event(
         _revert_group_change(animal, validate_event_payload(event.type, event.payload))
     except ValueError:
         pass  # A payload that no longer parses moved nobody we can tell.
+    reopen = await alert_sync.linked_to(session, event.id)
     await alert_sync.detach_event(session, event.id)
     await session.delete(event)
     await session.flush()
-    projection, alerts = await _after_write(session, animal, settings, today, None)
+    projection, alerts = await _after_write(session, animal, settings, today, None, reopen=reopen)
     await history.record(
         session,
         ctx.ranch_id,
