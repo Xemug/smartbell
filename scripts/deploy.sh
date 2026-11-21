@@ -73,10 +73,10 @@ step "web app (Firebase Hosting)"
 (
   cd "$root/app/web"
   npm ci --no-audit --no-fund
-  set -a
-  # shellcheck disable=SC1090
-  source <(gcloud secrets versions access latest --secret=web-build-env --project="$project")
-  set +a
+  # Read line by line (macOS's bash 3.2 can't `source <(...)`); values are never printed.
+  while IFS='=' read -r name value; do
+    [[ "$name" =~ ^VITE_[A-Z_]+$ ]] && export "$name=$value"
+  done < <(gcloud secrets versions access latest --secret=web-build-env --project="$project")
   [[ -n "${VITE_GOOGLE_MAPS_API_KEY:-}" && "${VITE_GEOCODE_VIA_API:-}" == true ]] || {
     echo "deploy: web-build-env must set the Google maps key and VITE_GEOCODE_VIA_API=true" >&2
     exit 1
