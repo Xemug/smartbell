@@ -1,5 +1,8 @@
 import { Navigate, type RouteObject } from 'react-router-dom';
 
+import { RequireAdmin } from '../features/admin/RequireAdmin';
+import { SupportAdminPage } from '../features/admin/SupportAdminPage';
+import { ADMIN_SUPPORT_PATH } from '../features/admin/useIsAdmin';
 import { FIRST_COW_PATH } from '../features/auth/guards';
 import { EditUserPage, NewUserPage } from '../features/config/users/UserFormPage';
 import { UsersPage } from '../features/config/users/UsersPage';
@@ -26,6 +29,15 @@ export const shellRoute: RouteObject = {
     { path: '/config/usuarios/nuevo', element: <NewUserPage /> },
     { path: '/config/usuarios/:userId', element: <EditUserPage /> },
     { path: '/config/*', element: <PlaceholderPage titleKey="config.title" /> },
+    // Smartbell staff only; a rancher who types the address is sent home.
+    {
+      path: ADMIN_SUPPORT_PATH,
+      element: (
+        <RequireAdmin>
+          <SupportAdminPage />
+        </RequireAdmin>
+      ),
+    },
     { path: '*', element: <Navigate to="/" replace /> },
   ],
 };

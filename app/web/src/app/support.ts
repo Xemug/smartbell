@@ -13,16 +13,17 @@ export type FakeDoorFeature = components['schemas']['FakeDoorFeature'];
 const FEATURE_PLACEHOLDER = '{nombre}';
 
 /** The number and copy live behind the api, so support can change them without a deploy. */
+export const supportConfigQuery = {
+  queryKey: ['support-config'],
+  queryFn: async (): Promise<SupportConfig> => {
+    const { data, error } = await api.GET('/api/support/config');
+    if (error || !data) throw new Error('support config failed');
+    return data;
+  },
+};
+
 export function useSupportConfig() {
-  return useQuery({
-    queryKey: ['support-config'],
-    queryFn: async (): Promise<SupportConfig> => {
-      const { data, error } = await api.GET('/api/support/config');
-      if (error || !data) throw new Error('support config failed');
-      return data;
-    },
-    staleTime: 10 * 60 * 1000,
-  });
+  return useQuery({ ...supportConfigQuery, staleTime: 10 * 60 * 1000 });
 }
 
 /**
