@@ -51,4 +51,4 @@ M.
 - [x] A pregnant cow becomes SECA at expected calving −60 d after the job runs.
 - [x] Running the job twice in a day creates no duplicates.
 - [x] Unconfirmed HEAT alert expires after day 5+.
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
