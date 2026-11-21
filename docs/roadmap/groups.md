@@ -28,6 +28,11 @@ The Grupos tab, stall-change events and dashboard group KPIs depend on it.
 Before building, open every linked frame with the Figma MCP (`get_screenshot`; load the figma:figma-design-to-code skill before `get_design_context`). Use only components from `app/web/src/ui` and tokens from the design-system cards; Spanish copy goes in the es-MX i18n catalog. Build the mobile layout (<960px) and the web layout (≥960px) in the same route.
 Per mobile-core A11, C1–C7 and web 1.10–1.13. Name ≤60, description ≤120, preset or custom, AUTO (filter by age/breed/# lactations, re-evaluated on demand) or MANUAL (two-table picker; drag on web, checkboxes on mobile). KPI indicator optional, only after ≥1 cow. Delete moves cows to General (history: "Se eliminó X potrero y las vacas se enviaron a potrero Y"). Heifer groups are computed from age/state, read-only. Moving cows writes GROUP_CHANGE events through the events API.
 
+## Notes from animal-lists
+
+- `animal-lists` adds a read-only `GET /api/groups` (id, name, preset). Extend it here; don't replace it.
+- The bulk "move to group" action in the animal lists stays hidden until this card's group picker exists. Wire it up here.
+
 ## Effort
 
 L.
