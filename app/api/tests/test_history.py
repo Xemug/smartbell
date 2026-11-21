@@ -9,7 +9,7 @@ from smartbell.enums import HistoryCard, HistoryCategory, HistoryKey
 from smartbell.i18n.history_es import TEMPLATES
 from smartbell.models import HistoryEntry, Ranch, User
 from smartbell.schemas.history import HistoryRefs
-from smartbell.services.history import record, render
+from smartbell.services.history import entries, record, render
 
 DUPLICATE = uuid.uuid4()
 NAMES = {"group": "General", "to_group": "Secas", "ranch": "El Roble"}
@@ -200,6 +200,20 @@ async def test_rollback_leaves_no_entry(session: AsyncSession, ranch: Ranch, use
     assert await session.scalar(select(func.count()).select_from(HistoryEntry)) == 0
 
 
+async def test_entries_written_in_one_transaction_list_in_written_order(
+    session: AsyncSession, ranch: Ranch, user: User
+) -> None:
+    # One transaction shares `now()` on Postgres and one second on SQLite, so they all tie.
+    names = [f"Rancho {i}" for i in range(10)]
+    for name in names:
+        await record(session, ranch.id, user.id, HistoryKey.RANCH_EDITED, HistoryRefs(ranch=name))
+    await session.commit()
+
+    listed = await entries(session, ranch.id)
+
+    assert [entry.refs["ranch"] for entry in listed] == names
+
+
 async def test_commit_is_the_callers(session: AsyncSession, ranch: Ranch, user: User) -> None:
     await session.commit()
 
@@ -309,3 +323,11 @@ def test_refs_refuse_blank_names(name: str) -> None:
 def test_refs_refuse_unknown_fields() -> None:
     with pytest.raises(ValidationError):
         HistoryRefs(cow_ids=[])  # type: ignore[call-arg]
+
+
+async def test_record_returns_entries_numbered_in_written_order(
+    session: AsyncSession, ranch: Ranch, user: User
+) -> None:
+    a = await record(session, ranch.id, user.id, HistoryKey.RANCH_EDITED, HistoryRefs(ranch="a"))
+    b = await record(session, ranch.id, user.id, HistoryKey.RANCH_EDITED, HistoryRefs(ranch="b"))
+    assert isinstance(a.seq, int) and b.seq > a.seq, (a.seq, b.seq)

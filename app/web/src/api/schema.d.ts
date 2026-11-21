@@ -549,6 +549,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/geocode/search': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Search */
+    get: operations['geocodeSearch'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/geocode/reverse': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Reverse */
+    get: operations['geocodeReverse'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -569,6 +603,14 @@ export interface components {
       ranch_creation: components['schemas']['RanchCreation'];
       /** Is Admin */
       is_admin: boolean;
+    };
+    /**
+     * AddressOut
+     * @description `address` is null where there is no street nearby: the coordinates are the address.
+     */
+    AddressOut: {
+      /** Address */
+      address: string | null;
     };
     /**
      * AnimalCreate
@@ -1057,6 +1099,13 @@ export interface components {
     FakeDoorTapIn: {
       feature: components['schemas']['FakeDoorFeature'];
     };
+    /**
+     * Found
+     * @description `pin` is null when nothing matches.
+     */
+    Found: {
+      pin: components['schemas']['PointOut'] | null;
+    };
     /** GroupOut */
     GroupOut: {
       /**
@@ -1346,6 +1395,13 @@ export interface components {
     PlanOut: {
       /** Has Pro */
       has_pro: boolean;
+    };
+    /** PointOut */
+    PointOut: {
+      /** Latitude */
+      latitude: number;
+      /** Longitude */
+      longitude: number;
     };
     /**
      * ProfileUpdate
@@ -2787,6 +2843,69 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['WebhookOut'];
+        };
+      };
+    };
+  };
+  geocodeSearch: {
+    parameters: {
+      query: {
+        q: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['Found'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  geocodeReverse: {
+    parameters: {
+      query: {
+        latitude: number;
+        longitude: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AddressOut'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
     };

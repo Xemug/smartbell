@@ -3,8 +3,12 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect, useRef } from 'react';
 
+import { createTileSession, GOOGLE_LOGO } from './googleTiles';
 import type { Pin } from './pin';
 import { DEFAULT_CENTER } from './pin';
+
+// Hosted builds set a browser key for Google's tiles; dev uses OpenStreetMap's free server.
+const GOOGLE_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 // A drawn pin instead of Leaflet's PNG marker, whose image paths break under a bundler.
 const pinIcon = L.divIcon({
@@ -22,7 +26,7 @@ interface RanchMapProps {
   label: string;
 }
 
-/** OSM tiles and a draggable pin (no Google key). Loaded on demand: Leaflet stays out of main. */
+/** Map tiles and a draggable pin. Loaded on demand: Leaflet stays out of main. */
 export default function RanchMap({ pin, editable, onMove, label }: RanchMapProps) {
   const element = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
@@ -36,12 +40,16 @@ export default function RanchMap({ pin, editable, onMove, label }: RanchMapProps
       pin ? [pin.latitude, pin.longitude] : DEFAULT_CENTER,
       pin ? 14 : 6,
     );
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(instance);
+    const stop = new AbortController();
+    if (GOOGLE_KEY) addGoogleTiles(instance, GOOGLE_KEY, stop.signal);
+    else
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }).addTo(instance);
     map.current = instance;
     return () => {
+      stop.abort();
       instance.remove();
       map.current = null;
       marker.current = null;
@@ -97,4 +105,48 @@ export default function RanchMap({ pin, editable, onMove, label }: RanchMapProps
       className="z-0 h-64 w-full overflow-hidden rounded-moon-i-sm border lg:h-80"
     />
   );
+}
+
+/** Google's tiles with its logo, and the copyright for the visible area kept up to date. */
+function addGoogleTiles(instance: L.Map, key: string, signal: AbortSignal) {
+  const Logo = L.Control.extend({
+    onAdd: () => {
+      const logo = L.DomUtil.create('img');
+      logo.src = GOOGLE_LOGO;
+      logo.alt = 'Google';
+      logo.style.height = '18px';
+      return logo;
+    },
+  });
+  new Logo({ position: 'bottomleft' }).addTo(instance);
+  instance.attributionControl.setPrefix(false);
+  createTileSession(key, signal)
+    .then((session) => {
+      if (signal.aborted) return;
+      const layer = L.tileLayer(session.url, { maxZoom: session.maxZoom }).addTo(instance);
+      let shown = '';
+      const credit = () => {
+        const bounds = instance.getBounds();
+        session
+          .copyright({
+            zoom: instance.getZoom(),
+            north: bounds.getNorth(),
+            south: bounds.getSouth(),
+            east: bounds.getEast(),
+            west: bounds.getWest(),
+          })
+          .then((text) => {
+            if (signal.aborted || text === shown) return;
+            if (shown) instance.attributionControl.removeAttribution(shown);
+            instance.attributionControl.addAttribution(text);
+            shown = text;
+          })
+          .catch(() => undefined);
+      };
+      instance.on('moveend', credit);
+      layer.on('remove', () => instance.off('moveend', credit));
+      credit();
+    })
+    // No tiles is better than OSM's server in production: the pin and address still work.
+    .catch(() => undefined);
 }

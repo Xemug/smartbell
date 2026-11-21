@@ -6,8 +6,9 @@ keep them from being listed or guessed.
 
 import re
 import secrets
+from functools import lru_cache
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 
 MAX_PHOTO_BYTES = 2 * 1024 * 1024  # Web 1.4: "Tamaño máximo de archivo 2MB".
 AVATAR_PREFIX = "avatars"
@@ -40,7 +41,7 @@ def is_media_name(name: str) -> bool:
 
 class Storage(Protocol):
     def save(self, prefix: str, name: str, data: bytes) -> None: ...
-    def path(self, prefix: str, name: str) -> Path | None: ...
+    def read(self, prefix: str, name: str) -> bytes | None: ...
     def delete(self, prefix: str, name: str) -> None: ...
 
 
@@ -53,15 +54,57 @@ class LocalStorage:
         folder.mkdir(parents=True, exist_ok=True)
         (folder / name).write_bytes(data)
 
-    def path(self, prefix: str, name: str) -> Path | None:
+    def read(self, prefix: str, name: str) -> bytes | None:
         if not is_media_name(name):
             return None
         file = self._root / prefix / name
-        return file if file.is_file() else None
+        return file.read_bytes() if file.is_file() else None
 
     def delete(self, prefix: str, name: str) -> None:
         if is_media_name(name):
             (self._root / prefix / name).unlink(missing_ok=True)
+
+
+class BucketStorage:
+    """A private Cloud Storage bucket, for hosted runs: local disk is lost on every redeploy.
+
+    The API reads objects with its own service account and serves them itself, so the bucket
+    never needs public access and photo URLs don't change.
+    """
+
+    def __init__(self, bucket: Any) -> None:
+        self._bucket = bucket
+
+    def save(self, prefix: str, name: str, data: bytes) -> None:
+        kind = name.rsplit(".", 1)[1]
+        blob = self._bucket.blob(f"{prefix}/{name}")
+        blob.upload_from_string(data, content_type=CONTENT_TYPES[kind])
+
+    def read(self, prefix: str, name: str) -> bytes | None:
+        if not is_media_name(name):
+            return None
+        blob = self._bucket.get_blob(f"{prefix}/{name}")
+        return None if blob is None else bytes(blob.download_as_bytes())
+
+    def delete(self, prefix: str, name: str) -> None:
+        if not is_media_name(name):
+            return
+        blob = self._bucket.get_blob(f"{prefix}/{name}")
+        if blob is not None:
+            blob.delete()
+
+
+@lru_cache
+def _bucket(name: str) -> Any:
+    # Imported here: dev and tests never touch the cloud.
+    from google.cloud import storage  # type: ignore[import-untyped]
+
+    return storage.Client().bucket(name)
+
+
+def storage_for(media_bucket: str, media_dir: str) -> Storage:
+    """The bucket when one is configured (hosted), else the local folder (dev, tests)."""
+    return BucketStorage(_bucket(media_bucket)) if media_bucket else LocalStorage(media_dir)
 
 
 def new_name(kind: str) -> str:
