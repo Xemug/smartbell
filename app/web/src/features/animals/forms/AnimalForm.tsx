@@ -353,6 +353,7 @@ export function AnimalForm({
           <NumberField
             {...field}
             maxLength={2}
+            placeholder="1"
             label={t('animalForm.fields.lactation')}
             className="col-span-2"
           />

@@ -215,10 +215,10 @@ describe('quick registration', () => {
       contributing_breed: null,
       development_stage: 'AUTO',
       siniiga: null,
-      // An adult female: the domain's default lactation goes with her.
-      lactation_number: 1,
       repro_stage: null,
     });
+    // Untouched: the API's age-based default applies.
+    expect(sent()).toHaveProperty('lactation_number', null);
     await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent(/^\/vacas$/));
   });
 
@@ -303,7 +303,10 @@ describe('detailed registration', () => {
     await fillRequired('V-3', '15012020');
     await user().click(screen.getByRole('button', { name: 'Tengo más datos de mi animal' }));
     expect(screen.getByRole('heading', { name: 'Información reproductiva' })).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: 'Ciclo de lactancia' })).toHaveValue('1');
+    const lactation = screen.getByRole('textbox', { name: 'Ciclo de lactancia' });
+    expect(lactation).toHaveValue('');
+    expect(lactation).toHaveAttribute('placeholder', '1');
+    await user().type(lactation, '2');
     expect(screen.getByRole('combobox', { name: 'Etapa reproductiva' })).toHaveTextContent(
       'Ninguna',
     );
@@ -318,7 +321,7 @@ describe('detailed registration', () => {
     await waitFor(() => expect(posts()).toHaveLength(1));
     expect(sent()).toMatchObject({
       last_calving_date: '2026-09-01',
-      lactation_number: 1,
+      lactation_number: 2,
       repro_stage: 'GESTANTE',
       repro_stage_date: '2026-11-01',
     });
@@ -478,6 +481,18 @@ describe('review cases', () => {
     await user().click(screen.getByRole('button', { name: 'Registrar' }));
     expect(await screen.findByText('Escribe un número entero de 0 a 30')).toBeInTheDocument();
     expect(posts()).toHaveLength(0);
+  });
+
+  it('ignores a bad lactation number once the reproductive section no longer applies', async () => {
+    renderAt('/vacas/nueva');
+    await fillRequired('V-10', '15012020');
+    await user().click(screen.getByRole('button', { name: 'Tengo más datos de mi animal' }));
+    await user().type(screen.getByRole('textbox', { name: 'Ciclo de lactancia' }), '45');
+    await user().click(screen.getByRole('radio', { name: 'Macho' }));
+    await user().click(screen.getByRole('button', { name: 'Registrar' }));
+    await waitFor(() => expect(posts()).toHaveLength(1));
+    expect(sent()).toMatchObject({ sex: 'MACHO' });
+    expect(sent()).not.toHaveProperty('lactation_number');
   });
 });
 

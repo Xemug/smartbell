@@ -38,7 +38,7 @@ Per v4-animal-registration-profile.md §1.1, §1.4–1.10 and flows F1–F5. Qui
 - **Inline parents** take what `ParentCreate` takes: ID, birth date, breed, crossbreed level + contributing breed, SINIIGA. The V4 dam form's lactation, last calving and repro stage are not accepted by the API for a parent; they're entered on her profile later.
 - **Parent search** uses `GET /api/animals?q=…&sex=…`.
 - **Stage labels** use the bands the user confirmed (§7.6), not the Figma ones: Ternera <6 m, Destetada 6–12, Novilla 12–27, adult >27; Becerro <3, Destetado 3–9, Novillo 9–24, Toro ≥24.
-- **Collapsing "Tengo menos datos" only hides fields:** what was entered (cross, stage, parents, weights) is still sent, and a refusal on a hidden field opens the section again. Untouched fields hold the API defaults (FB, AUTO). The reproductive inputs go only when the section applies (lactation 1 is the adult-female default).
+- **Collapsing "Tengo menos datos" only hides fields:** what was entered (cross, stage, parents, weights) is still sent, and a refusal on a hidden field opens the section again. Untouched fields hold the API defaults (FB, AUTO). The reproductive inputs go only when the section applies, and are validated only then. "Ciclo de lactancia" shows 1 as a placeholder and is sent only when typed, so the API's age-based default applies otherwise.
 - **After saving** the app goes to the list that shows the animal (Vacas, Vaquillas, Toros); a calf or steer has no list yet, so it goes back to the list it came from.
 - **Bull seam:** `BullSection.tsx` renders in the detailed form for Macho and is empty; `mark-each-bull-as-on-the-ranch-semen-only-or-both` fills it.
 - Layout: one route; sections are cards in one column under 960px and two columns from 960px.
@@ -49,8 +49,8 @@ M.
 
 ## Acceptance
 
-- [ ] A female and a male can be registered with only name/ID + birth date.
-- [ ] An F2 crossbreed requires a contributing breed.
-- [ ] A heifer with a newly typed dam creates both animals; choosing 'Vendida a rastro' removes the dam.
+- [x] A female and a male can be registered with only name/ID + birth date. (`animalForm.test.tsx` "quick registration"; browser: male T-001 at 1280px.)
+- [x] An F2 crossbreed requires a contributing breed. (`animalForm.test.tsx` "requires a contributing breed for an F2 cross".)
+- [x] A heifer with a newly typed dam creates both animals; choosing 'Vendida a rastro' removes the dam. (`animalForm.test.tsx` "registers a heifer with a newly typed dam, sold for slaughter"; browser at 375px: VQ-001 in Vaquillas, dam Vacalactica only under Bajas → Venta a rastro.)
 - [ ] Matches V 2955-9420 and V 734-6074 (human).
 - [ ] Tests for the new code pass in CI.

@@ -77,9 +77,11 @@ export const animalSchema = z
     if (values.crossbreedLevel !== 'FB' && !values.contributingBreed) {
       ctx.addIssue({ code: 'custom', path: ['contributingBreed'], message: 'validation.required' });
     }
-    // The API takes 0 to 30 lactations.
+    // The API takes 0 to 30 lactations. Only checked when the section applies: it isn't sent
+    // otherwise.
     const lactation = values.lactationNumber;
-    if (lactation && !(/^\d+$/.test(lactation) && Number(lactation) <= 30)) {
+    const applies = showsRepro(values.sex, values.developmentStage, values.birthDate);
+    if (applies && lactation && !(/^\d+$/.test(lactation) && Number(lactation) <= 30)) {
       ctx.addIssue({
         code: 'custom',
         path: ['lactationNumber'],
@@ -101,7 +103,8 @@ export function defaultValues(sex: Sex, generalGroupId = ''): AnimalValues {
     developmentStage: 'AUTO',
     siniiga: '',
     lastCalvingDate: '',
-    lactationNumber: '1',
+    // Empty: the API sets the default from her age ("1" is the field's placeholder).
+    lactationNumber: '',
     reproStage: NO_REPRO_STAGE,
     reproStageDate: '',
     weightBirth: '',
