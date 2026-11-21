@@ -2,6 +2,7 @@
 id: alert-engine
 title: Alert engine: daily job, date-driven transitions, alert lifecycle
 summary: Scheduled job that re-projects every cow daily, applies date-driven transitions (VWP end, dry-off, close-up), and opens/expires the internal alerts that tasks-engine turns into automatic tasks and the notifiers send.
+verifiedAt: 2026-11-21
 ---
 
 # Alert engine: daily job, date-driven transitions, alert lifecycle
