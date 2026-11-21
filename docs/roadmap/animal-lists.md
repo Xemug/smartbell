@@ -39,7 +39,7 @@ Columns per web 1.14 (Vacas: ID, Raza, Estado, DIM, Grupo, Acciones; Vaquillas: 
 ### Assumptions
 
 - Estado: cows show the lactation state (Lactando/Seca, per the frames), falling back to the repro state; heifers show the repro state with VAQUILLA labelled "En desarrollo". Reproducción "Vacía" = ABIERTA.
-- Heifers and bulls show an "Edad" column in months, not "DIM" (the open question above).
+- DIM (days in milk) is a cow-only column, labelled **DEL** (Días en leche) in es-MX per the founder (2026-11-21). Heifers and bulls show "Edad" in months instead (the open question above).
 - Sorting is server-side, so only ID, DIM (by last calving) and Edad (by birth date) sort; Raza/Estado/Grupo headers do not, as the API has no such sort keys. DIM sorts by last calving date, so a dry cow (DIM "—") sorts among the milking cows by her calving date; a lactation-aware sort key is a follow-up if that matters.
 - A cow with no group shows "General" (domain-model §7).
 - Bajas asks for a reason (sale to another ranch, sale to slaughter, death, registration error). Bulk baja sends one request per animal and reports the ones the API refuses.

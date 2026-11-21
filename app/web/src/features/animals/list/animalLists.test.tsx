@@ -227,10 +227,12 @@ afterEach(() => {
 });
 
 describe('Vacas tab', () => {
-  it('lists the cows with breed, state, DIM and group name', async () => {
+  it('lists the cows with breed, state, DEL and group name', async () => {
     renderAt('/vacas');
 
     const table = await screen.findByRole('table', { name: 'Vacas' });
+    // Days in milk is "DEL" (Días en leche) in Spanish, and only cows have it.
+    expect(within(table).getByRole('columnheader', { name: /^DEL/ })).toBeInTheDocument();
     const first = (await within(table).findByRole('link', { name: 'V-001' })).closest(
       'tr',
     ) as HTMLElement;
@@ -287,9 +289,9 @@ describe('Vacas tab', () => {
     renderAt('/vacas');
     await screen.findByRole('link', { name: 'V-001' });
 
-    await user.click(screen.getByRole('button', { name: /DIM/ }));
+    await user.click(screen.getByRole('button', { name: /DEL/ }));
     await waitFor(() => expect(lastQuery()?.get('sort')).toBe('-last_calving_date'));
-    await user.click(screen.getByRole('button', { name: /DIM/ }));
+    await user.click(screen.getByRole('button', { name: /DEL/ }));
     await waitFor(() => expect(lastQuery()?.get('sort')).toBe('last_calving_date'));
     expect(screen.getByTestId('where')).toHaveTextContent('orden=dim%3Adesc');
   });
@@ -300,6 +302,7 @@ describe('Vacas tab', () => {
     await user.click(await screen.findByRole('tab', { name: /Toros/ }));
 
     const table = await screen.findByRole('table', { name: 'Toros' });
+    expect(within(table).queryByRole('columnheader', { name: /DEL/ })).not.toBeInTheDocument();
     expect(await within(table).findByText('Cadillac')).toBeInTheDocument();
     expect(within(table).getByText('MX-01-23-4567-8901')).toBeInTheDocument();
     expect(within(table).getByText('30 meses')).toBeInTheDocument();
