@@ -39,4 +39,4 @@ S.
 
 - [x] The test passes 20 runs in a row on local SQLite and on Postgres.
 - [x] Two history writes in one transaction list in the order they were written (test).
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
