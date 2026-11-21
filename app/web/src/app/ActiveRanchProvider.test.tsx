@@ -29,7 +29,7 @@ function authFor(ranches = [ranchA, ranchB]): AuthApi {
   };
   const noop = vi.fn(async () => {});
   return {
-    state: { status: 'signedIn', account: { user, ranches }, created: false },
+    state: { status: 'signedIn', account: { user, ranches, is_admin: false }, created: false },
     signIn: noop,
     signUp: noop,
     signInWith: noop,

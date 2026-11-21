@@ -101,12 +101,16 @@ async def get_current_user(
     return user
 
 
+def is_admin(claims: TokenClaims, settings: Settings) -> bool:
+    """Smartbell staff: a verified email listed in ADMIN_EMAILS. Not a ranch role."""
+    email = (claims.email or "").lower()
+    return bool(claims.email_verified and email and email in settings.admin_emails)
+
+
 async def get_admin_claims(
     request: Request, claims: Annotated[TokenClaims, Depends(get_token_claims)]
 ) -> TokenClaims:
-    """Smartbell staff: a verified email listed in ADMIN_EMAILS. Everyone else gets a 403."""
-    settings: Settings = request.app.state.settings
-    email = (claims.email or "").lower()
-    if not (claims.email_verified and email and email in settings.admin_emails):
+    """Admins only (see `is_admin`). Everyone else gets a 403."""
+    if not is_admin(claims, request.app.state.settings):
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="admin_only")
     return claims

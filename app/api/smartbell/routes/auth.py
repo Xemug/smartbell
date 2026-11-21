@@ -1,14 +1,14 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from smartbell.db import get_session
 from smartbell.models import User
 from smartbell.routes.ranches import RanchOut, my_ranches
-from smartbell.security import TokenClaims, get_current_user, get_token_claims
+from smartbell.security import TokenClaims, get_current_user, get_token_claims, is_admin
 from smartbell.services import accounts
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -40,18 +40,27 @@ class UserOut(BaseModel):
 class AccountOut(BaseModel):
     user: UserOut
     ranches: list[RanchOut]
+    # Smartbell staff, who see the "Soporte y demanda" page. Never the admin list itself.
+    is_admin: bool
 
 
 class SessionOut(AccountOut):
     created: bool  # True only for the call that made the account, which sends it to the first cow.
 
 
-async def _account(session: AsyncSession, user: User) -> AccountOut:
-    return AccountOut(user=UserOut.model_validate(user), ranches=await my_ranches(session, user))
+async def _account(
+    request: Request, session: AsyncSession, user: User, claims: TokenClaims
+) -> AccountOut:
+    return AccountOut(
+        user=UserOut.model_validate(user),
+        ranches=await my_ranches(session, user),
+        is_admin=is_admin(claims, request.app.state.settings),
+    )
 
 
 @router.post("/session", operation_id="openSession")
 async def open_session(
+    request: Request,
     claims: Annotated[TokenClaims, Depends(get_token_claims)],
     session: Annotated[AsyncSession, Depends(get_session)],
     body: Annotated[SessionRequest | None, Body()] = None,
@@ -63,13 +72,15 @@ async def open_session(
         user, created = await accounts.open_session(session, claims, profile)
     except accounts.AccountConflict as conflict:
         raise HTTPException(_CONFLICT_STATUS[conflict.code], detail=conflict.code) from conflict
-    account = await _account(session, user)
+    account = await _account(request, session, user, claims)
     return SessionOut(**account.model_dump(), created=created)
 
 
 @router.get("/me", operation_id="getMe")
 async def me(
+    request: Request,
+    claims: Annotated[TokenClaims, Depends(get_token_claims)],
     user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> AccountOut:
-    return await _account(session, user)
+    return await _account(request, session, user, claims)
