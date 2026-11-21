@@ -113,7 +113,7 @@ def _projection_out(projection: Projection) -> ProjectionOut:
     )
 
 
-def _detail(animal: Animal, projection: Projection) -> AnimalDetail:
+def animal_detail(animal: Animal, projection: Projection) -> AnimalDetail:
     out = AnimalOut.model_validate(animal)
     return AnimalDetail(**out.model_dump(), projection=_projection_out(projection))
 
@@ -131,7 +131,7 @@ async def create_animal(
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail="permission_denied")
     async with _writing(session):
         created = await animals.create_animal(session, ctx, body, today)
-    detail = _detail(created.animal, created.projection)
+    detail = animal_detail(created.animal, created.projection)
     return AnimalCreated(**detail.model_dump(), created_ids=[a.id for a in created.created])
 
 
@@ -192,7 +192,7 @@ async def get_animal(
         animal = await animals.get_animal(session, ctx.ranch_id, animal_id)
     except AnimalNotFound as error:
         raise _not_found() from error
-    return _detail(animal, await animals.projection_of(session, animal, today))
+    return animal_detail(animal, await animals.projection_of(session, animal, today))
 
 
 @router.patch("/animals/{animal_id}", operation_id="updateAnimal")
@@ -205,7 +205,7 @@ async def update_animal(
 ) -> AnimalDetail:
     async with _writing(session):
         animal, projection = await animals.update_animal(session, ctx, animal_id, body, today)
-    return _detail(animal, projection)
+    return animal_detail(animal, projection)
 
 
 @router.post(

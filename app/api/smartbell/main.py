@@ -10,6 +10,7 @@ from smartbell.db import make_engine, make_sessionmaker
 from smartbell.routes import (
     animals,
     auth,
+    events,
     geocode,
     groups,
     health,
@@ -54,6 +55,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(support.router, prefix="/api")
     app.include_router(animals.router, prefix="/api")
     app.include_router(groups.router, prefix="/api")
+    app.include_router(events.router, prefix="/api")
     app.include_router(milk.router, prefix="/api")
     app.include_router(users.router, prefix="/api")
     app.include_router(webhooks.router, prefix="/api")

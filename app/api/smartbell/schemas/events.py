@@ -38,6 +38,8 @@ from smartbell.enums import (
 )
 
 NonBlank = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+# Free text inside a payload: the same cap as `Event.description`, so a payload stays small.
+ShortText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]
 
 
 class _Strict(BaseModel):
@@ -62,8 +64,8 @@ class Treatment(_Strict):
 
 class DietChangeDetails(_Strict):
     reason: DietChangeReason
-    diet: NonBlank
-    diet_type: NonBlank | None = None
+    diet: ShortText
+    diet_type: ShortText | None = None
     daily_kg: float | None = Field(default=None, ge=0)
     daily_cost: float | None = Field(default=None, ge=0)
 
@@ -127,7 +129,7 @@ class PregnancyCheckPayload(_Strict):
     type: Literal[EventType.PREGNANCY_CHECK] = EventType.PREGNANCY_CHECK
     method: PregnancyCheckMethod
     result: PregnancyCheckResult
-    description: NonBlank | None = None
+    description: ShortText | None = None
 
     @model_validator(mode="after")
     def _negative_needs_description(self) -> Self:
@@ -174,7 +176,7 @@ class IllnessPayload(_Strict):
 
 class AccidentPayload(_Strict):
     type: Literal[EventType.ACCIDENT] = EventType.ACCIDENT
-    description: str | None = None
+    description: Annotated[str, StringConstraints(max_length=500)] | None = None
     treatment: Treatment
     diet_change: DietChangeDetails | None = None
     group_change: GroupChangeDetails | None = None

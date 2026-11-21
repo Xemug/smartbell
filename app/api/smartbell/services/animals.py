@@ -52,7 +52,7 @@ from smartbell.schemas.animals import (
 from smartbell.schemas.events import AltaPayload, RemovalPayload
 from smartbell.schemas.history import HistoryRefs
 from smartbell.security.ranch import RanchContext
-from smartbell.services import history
+from smartbell.services import alert_sync, history
 from smartbell.services.projection import (
     animal_facts,
     compute_projection,
@@ -370,6 +370,7 @@ async def _register(
     session.add(animal)
     session.add(event)
     await session.flush()
+    await alert_sync.sync_animal(session, animal, projection, today)
     return animal, projection
 
 
@@ -515,6 +516,7 @@ async def update_animal(
         setattr(animal, name, value)
     settings = await session.get_one(RanchSettings, ctx.ranch_id)
     projection = await reproject_animal(session, animal, settings, today)
+    await alert_sync.sync_animal(session, animal, projection, today)
     await history.record(
         session,
         ctx.ranch_id,
@@ -587,7 +589,8 @@ async def _retire(
     else:  # Midday at the ranch, so the date reads the same in any zone near it.
         animal.removed_at = dt.datetime.combine(on, dt.time(12), RANCH_TIMEZONE)
     await session.flush()
-    await reproject_animal(session, animal, settings, today)
+    projection = await reproject_animal(session, animal, settings, today)
+    await alert_sync.sync_animal(session, animal, projection, today)
     await history.record(
         session,
         ctx.ranch_id,
