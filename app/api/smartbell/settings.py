@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     # Matched against a token's *verified* email, so an unconfirmed sign-up can't claim one.
     # Comma-separated in the environment: ADMIN_EMAILS=ana@smartbell.mx,luis@smartbell.mx
     admin_emails: Annotated[list[str], NoDecode] = []
+    # Where uploaded profile photos are kept. Local disk for now; an S3-compatible store is a
+    # follow-up for deployment (profile-ranch-config).
+    media_dir: str = "media"
     # RevenueCat (`services/revenuecat`). The webhook refuses every call while either secret is
     # unset. WEBHOOK_AUTH is the whole Authorization header value set in RevenueCat's dashboard.
     revenuecat_webhook_auth: str = ""

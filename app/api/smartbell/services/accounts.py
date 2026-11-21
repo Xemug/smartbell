@@ -12,7 +12,6 @@ from smartbell.models import User
 from smartbell.security import TokenClaims
 from smartbell.services import ranches
 
-FIRST_RANCH_NAME = "Mi rancho"  # domain-model §7: auto-created at sign-up, editable later.
 MAX_PHOTO_URL = 2048
 
 
@@ -57,7 +56,7 @@ async def _link_or_create(
     )
     session.add(user)
     await session.flush()
-    await ranches.create_ranch(session, user, FIRST_RANCH_NAME)
+    await ranches.create_ranch(session, user, ranches.FIRST_RANCH_NAME)
     return user, True
 
 

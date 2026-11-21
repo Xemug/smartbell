@@ -10,6 +10,7 @@ from smartbell.models import User
 from smartbell.routes.ranches import RanchOut, my_ranches
 from smartbell.security import TokenClaims, get_current_user, get_token_claims, is_admin
 from smartbell.services import accounts
+from smartbell.services.plans import RanchCreation, ranch_creation
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -40,6 +41,8 @@ class UserOut(BaseModel):
 class AccountOut(BaseModel):
     user: UserOut
     ranches: list[RanchOut]
+    # Whether "Agregar Rancho" creates one or shows the Pro upsell (plans-billing).
+    ranch_creation: RanchCreation
     # Smartbell staff, who see the "Soporte y demanda" page. Never the admin list itself.
     is_admin: bool
 
@@ -55,6 +58,7 @@ async def _account(
         user=UserOut.model_validate(user),
         ranches=await my_ranches(session, user),
         is_admin=is_admin(claims, request.app.state.settings),
+        ranch_creation=await ranch_creation(session, user),
     )
 
 

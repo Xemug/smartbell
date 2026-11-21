@@ -47,6 +47,8 @@ class FakeBackend implements AuthBackend {
   sendEmailVerification = vi.fn(async () => {});
   refreshIdentity = vi.fn(async () => {});
   signOut = vi.fn(async () => this.set(null));
+  hasPassword = () => true;
+  changePassword = vi.fn(async () => {});
 }
 
 interface ApiCall {

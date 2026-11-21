@@ -7,7 +7,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from smartbell.db import make_engine, make_sessionmaker
-from smartbell.routes import animals, auth, health, invitations, milk, ranches, support, webhooks
+from smartbell.routes import (
+    animals,
+    auth,
+    health,
+    invitations,
+    milk,
+    ranches,
+    support,
+    users,
+    webhooks,
+)
 from smartbell.security import FirebaseTokenVerifier
 from smartbell.settings import Settings, get_settings
 
@@ -42,5 +52,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(support.router, prefix="/api")
     app.include_router(animals.router, prefix="/api")
     app.include_router(milk.router, prefix="/api")
+    app.include_router(users.router, prefix="/api")
     app.include_router(webhooks.router, prefix="/api")
     return app
