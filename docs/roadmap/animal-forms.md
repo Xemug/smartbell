@@ -53,4 +53,4 @@ M.
 - [x] An F2 crossbreed requires a contributing breed. (`animalForm.test.tsx` "requires a contributing breed for an F2 cross".)
 - [x] A heifer with a newly typed dam creates both animals; choosing 'Vendida a rastro' removes the dam. (`animalForm.test.tsx` "registers a heifer with a newly typed dam, sold for slaughter"; browser at 375px: VQ-001 in Vaquillas, dam Vacalactica only under Bajas → Venta a rastro.)
 - [ ] Matches V 2955-9420 and V 734-6074 (human).
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI. (PR #31: api, web, legacy-firebase, scripts green at 9e283e65.)
