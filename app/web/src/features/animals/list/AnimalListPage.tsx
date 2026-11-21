@@ -87,6 +87,8 @@ export function AnimalListPage() {
   const snackbar = useSnackbar();
   const [params, setParams] = useSearchParams();
   const state = useMemo(() => parseListState(params), [params]);
+  const latestParams = useRef(params);
+  latestParams.current = params;
   const today = useMemo(() => new Date(), []);
   const query = listQuery(state, today, PAGE_SIZE);
   const page = useAnimalPage(query);
@@ -101,19 +103,22 @@ export function AnimalListPage() {
   const removeFrom = useRef<HTMLElement | null>(null);
 
   const update = (patch: Partial<ListState>, options: { replace?: boolean } = {}) => {
-    const next = { ...state, ...patch };
-    // A new list, search or filter starts over: page 1, nothing selected.
-    if (patch.kind !== undefined || patch.q !== undefined || patch.filter !== undefined) {
-      next.page = 1;
-      setSelected([]);
-    }
-    if (patch.kind !== undefined && patch.kind !== state.kind) {
+    const restart = patch.kind !== undefined || patch.q !== undefined || patch.filter !== undefined;
+    // A new list, search or filter starts over with nothing selected.
+    if (restart) setSelected([]);
+    if (patch.kind !== undefined && patch.kind !== state.kind) setSearch('');
+    // From the URL last written, not this render's: the table changes sort and page in one click,
+    // and react-router's functional setter would still hand both the same params.
+    const before = parseListState(latestParams.current);
+    const next = { ...before, ...patch };
+    if (restart) next.page = 1;
+    if (patch.kind !== undefined && patch.kind !== before.kind) {
       next.filter = null;
       next.sort = null;
       next.q = '';
-      setSearch('');
     }
-    setParams(listStateParams(next), { replace: options.replace });
+    latestParams.current = listStateParams(next);
+    setParams(latestParams.current, { replace: options.replace });
   };
 
   // The box answers each keystroke; the URL (and the request) follow once typing pauses.
