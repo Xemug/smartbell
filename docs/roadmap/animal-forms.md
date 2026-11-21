@@ -2,6 +2,7 @@
 id: animal-forms
 title: Unified animal registration form (V4): sex, stage, crossbreed, parents
 summary: The V4 'Primer animal' unified form: Macho/Hembra toggle, development stage (AUTO), breed + crossbreed level + contributing breed, more/less data disclosure, parent search or inline registration, the dam-status modal, and the female reproductive section.
+verifiedAt: 2026-11-21
 ---
 
 # Unified animal registration form (V4): sex, stage, crossbreed, parents
