@@ -2,7 +2,14 @@ import * as Menu from '@radix-ui/react-dropdown-menu';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-import { iconLogOut, iconMessage, iconSettings, iconUser, iconUsers } from '../ui/icons/glyphs';
+import {
+  iconHelpCircle,
+  iconLogOut,
+  iconMessage,
+  iconSettings,
+  iconUser,
+  iconUsers,
+} from '../ui/icons/glyphs';
 import type { Glyph } from '../ui/icons/glyphs';
 import { Icon } from '../ui/icons/Icon';
 import { Avatar } from './Avatar';
@@ -10,6 +17,7 @@ import { focusRingOnDark } from './shellStyles';
 import { CountBadge } from './CountBadge';
 import { menuContent, menuItem } from './menuStyles';
 import { useActiveRanch } from './useActiveRanch';
+import { ADMIN_SUPPORT_PATH, useIsAdmin } from '../features/admin/useIsAdmin';
 import { useOptionalAuth } from '../features/auth/useAuth';
 import { useSupportLinks } from './support';
 import { cx } from '../ui/cx';
@@ -27,6 +35,7 @@ export function AvatarMenu({ showCount = false }: { showCount?: boolean }) {
   const auth = useOptionalAuth();
   const { unreadCount } = useActiveRanch();
   const links = useSupportLinks();
+  const isAdmin = useIsAdmin();
   const count = showCount ? unreadCount : 0;
   const photoUrl = auth?.state.status === 'signedIn' ? auth.state.account.user.photo_url : null;
   return (
@@ -46,6 +55,12 @@ export function AvatarMenu({ showCount = false }: { showCount?: boolean }) {
               {t(`config.${item.key}`)}
             </Menu.Item>
           ))}
+          {isAdmin && (
+            <Menu.Item className={menuItem} onSelect={() => navigate(ADMIN_SUPPORT_PATH)}>
+              <Icon icon={iconHelpCircle} size={20} />
+              {t('admin.title')}
+            </Menu.Item>
+          )}
           <Menu.Item asChild className={menuItem}>
             <a href={links.support} target="_blank" rel="noopener noreferrer">
               <Icon icon={iconMessage} size={20} />

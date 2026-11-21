@@ -442,5 +442,43 @@
       "sessionError": "No pudimos cargar tu cuenta.",
       "retry": "Reintentar"
     }
+  },
+  "admin": {
+    "title": "Soporte y demanda",
+    "loadError": "No pudimos cargar estos datos",
+    "retry": "Reintentar",
+    "support": {
+      "title": "Soporte por WhatsApp",
+      "number": "Número de WhatsApp",
+      "numberHint": "Con código de país, por ejemplo 52 1 33 3405 6398",
+      "supportMessage": "Mensaje de soporte",
+      "paymentMessage": "Mensaje de pago",
+      "featureMessage": "Mensaje de interés en una funcionalidad",
+      "featureHint": "Vacío usa el texto de la app. Incluye {{placeholder}}: ahí va el nombre de la funcionalidad.",
+      "defaultHint": "Vacío usa el texto de la app",
+      "communityUrl": "Enlace a la comunidad",
+      "communityHint": "La invitación a la comunidad de WhatsApp, empieza con https://",
+      "save": "Guardar",
+      "saved": "Cambios guardados",
+      "saveError": "No pudimos guardar. Intenta de nuevo.",
+      "tryIt": "Probar en WhatsApp",
+      "errors": {
+        "number": "Escribe solo el número con código de país, de 8 a 15 dígitos",
+        "tooLong": "Usa como máximo 500 caracteres",
+        "placeholder": "Incluye {nombre} donde va el nombre de la funcionalidad",
+        "url": "Escribe un enlace que empiece con https://",
+        "refused": "El servidor no aceptó este valor"
+      }
+    },
+    "demand": {
+      "title": "Demanda de funcionalidades",
+      "since": "Desde",
+      "feature": "Funcionalidad",
+      "taps": "Toques",
+      "users": "Usuarios",
+      "lastTap": "Último toque",
+      "emptyTitle": "Sin toques desde esa fecha",
+      "emptyBody": "Nadie ha tocado una funcionalidad en construcción. Prueba con una fecha anterior."
+    }
   }
 }

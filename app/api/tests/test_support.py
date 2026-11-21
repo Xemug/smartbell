@@ -155,6 +155,23 @@ async def test_admin_routes_refuse_everyone_else(api: AsyncClient, method: str, 
     assert unverified.status_code == 403
 
 
+async def test_me_says_who_is_an_admin(api: AsyncClient, settings: Settings) -> None:
+    settings.admin_emails.append("new@smartbell.mx")
+    rancher = await _sign_in(api, "ana")
+    impostor = bearer(make_token("impostor", email="new@smartbell.mx", email_verified=False))
+    assert (await api.post("/api/auth/session", headers=impostor)).status_code == 200
+    staff = _admin()
+    session = await api.post("/api/auth/session", headers=staff)
+
+    assert session.json()["is_admin"] is True
+    assert (await api.get("/api/auth/me", headers=staff)).json()["is_admin"] is True
+    assert (await api.get("/api/auth/me", headers=rancher)).json()["is_admin"] is False
+    # A listed address, unconfirmed: the admin endpoints refuse it, so the page must not show.
+    assert (await api.get("/api/auth/me", headers=impostor)).json()["is_admin"] is False
+    # Only the flag: the admin list itself never reaches a client.
+    assert ADMIN not in (await api.get("/api/auth/me", headers=rancher)).text
+
+
 async def test_a_tap_needs_an_account(api: AsyncClient) -> None:
     assert await _tap(api, {}, "GRUPOS") == 401
     # A valid token whose session was never opened has no user row yet.

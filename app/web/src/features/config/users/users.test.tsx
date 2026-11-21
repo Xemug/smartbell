@@ -135,6 +135,7 @@ function authFor(role: Role, permissions: Permission[], userId = 'u-owner'): Aut
           },
         ],
         ranch_creation: 'upsell',
+        is_admin: false,
       },
       created: false,
     },

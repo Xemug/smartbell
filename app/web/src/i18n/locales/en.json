@@ -442,5 +442,43 @@
       "sessionError": "We couldn't load your account.",
       "retry": "Try again"
     }
+  },
+  "admin": {
+    "title": "Support and demand",
+    "loadError": "We couldn't load this data",
+    "retry": "Retry",
+    "support": {
+      "title": "WhatsApp support",
+      "number": "WhatsApp number",
+      "numberHint": "With the country code, for example 52 1 33 3405 6398",
+      "supportMessage": "Support message",
+      "paymentMessage": "Payment message",
+      "featureMessage": "Feature interest message",
+      "featureHint": "Empty uses the app's text. Include {{placeholder}}: the feature's name goes there.",
+      "defaultHint": "Empty uses the app's text",
+      "communityUrl": "Community link",
+      "communityHint": "The WhatsApp community invite, starting with https://",
+      "save": "Save",
+      "saved": "Changes saved",
+      "saveError": "We couldn't save. Try again.",
+      "tryIt": "Try it in WhatsApp",
+      "errors": {
+        "number": "Enter just the number with its country code, 8 to 15 digits",
+        "tooLong": "Use at most 500 characters",
+        "placeholder": "Include {nombre} where the feature's name goes",
+        "url": "Enter a link starting with https://",
+        "refused": "The server didn't accept this value"
+      }
+    },
+    "demand": {
+      "title": "Feature demand",
+      "since": "Since",
+      "feature": "Feature",
+      "taps": "Taps",
+      "users": "Users",
+      "lastTap": "Last tap",
+      "emptyTitle": "No taps since that date",
+      "emptyBody": "Nobody has tapped a feature under construction. Try an earlier date."
+    }
   }
 }

@@ -43,7 +43,7 @@ function authFor(ranches = [ranchA, ranchB]): AuthApi {
   return {
     state: {
       status: 'signedIn',
-      account: { user, ranches, ranch_creation: 'upsell' },
+      account: { user, ranches, ranch_creation: 'upsell', is_admin: false },
       created: false,
     },
     signIn: noop,
