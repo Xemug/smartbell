@@ -237,11 +237,11 @@ describe('Vacas tab', () => {
       'tr',
     ) as HTMLElement;
     expect(within(first).getByText('Jersey')).toBeInTheDocument();
-    expect(within(first).getByText('Lactando')).toBeInTheDocument();
+    expect(within(first).getByText('Vacía')).toBeInTheDocument(); // Open, though milking.
     expect(within(first).getByText('20')).toBeInTheDocument(); // Calved Nov 1.
     expect(await within(first).findByText('Alta producción')).toBeInTheDocument();
     const second = within(table).getByRole('link', { name: 'V-002' }).closest('tr') as HTMLElement;
-    expect(within(second).getByText('Seca')).toBeInTheDocument();
+    expect(within(second).getByText('Preñada')).toBeInTheDocument(); // Dry and pregnant.
     expect(within(second).getByText('General')).toBeInTheDocument(); // No group.
     expect(lastQuery()?.get('kind')).toBe('VACA');
     expect(await screen.findByRole('tab', { name: /Vacas · 002/ })).toBeInTheDocument();

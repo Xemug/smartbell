@@ -227,10 +227,12 @@ export function AnimalListPage() {
             key: 'estado',
             header: t('animals.columns.estado'),
             cell: (a) =>
-              a.lactation_state
-                ? t(`animals.lactation.${a.lactation_state}`)
-                : a.repro_state
-                  ? t(`animals.values.repro.${a.repro_state}`)
+              // The reproductive state, as the Reproducción filter reads it; DEL already says
+              // whether she milks. Lactation only fills in when no repro state is recorded.
+              a.repro_state
+                ? t(`animals.values.repro.${a.repro_state}`)
+                : a.lactation_state
+                  ? t(`animals.lactation.${a.lactation_state}`)
                   : dash,
           },
           {
