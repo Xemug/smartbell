@@ -7,7 +7,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from smartbell.db import make_engine, make_sessionmaker
+from smartbell.jobs.daily import start_scheduler
 from smartbell.routes import (
+    alerts,
     animals,
     auth,
     events,
@@ -33,9 +35,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         engine = make_engine(settings.database_url)
         app.state.engine = engine
         app.state.sessionmaker = make_sessionmaker(engine)
+        scheduler = start_scheduler(app.state.sessionmaker) if settings.daily_job_enabled else None
         try:
             yield
         finally:
+            if scheduler is not None:
+                scheduler.shutdown(wait=False)
             await engine.dispose()
 
     app = FastAPI(title="Smartbell API", version="0.1.0", lifespan=lifespan)
@@ -56,6 +61,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(animals.router, prefix="/api")
     app.include_router(groups.router, prefix="/api")
     app.include_router(events.router, prefix="/api")
+    app.include_router(alerts.router, prefix="/api")
     app.include_router(milk.router, prefix="/api")
     app.include_router(users.router, prefix="/api")
     app.include_router(webhooks.router, prefix="/api")
