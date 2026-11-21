@@ -138,6 +138,21 @@ Cheaper again would mean leaving Google Cloud (Neon free tier, $0 to $19) or run
 
 **Live Firebase project:** nothing changes except the authorized domains, which the founder adds through the checklist. Nothing that creates cloud resources or costs money is built before this approval.
 
+## Decisions and status (2026-11-21)
+
+- **Approved by the founder:** the Lean layout in `us-central1`, as two projects named Smartbell-2026-staging and Smartbell-2026-production. Production lives at `smartbell.app` and staging at `staging.smartbell.app`. `smartbell.com` stays for marketing.
+- **Built:**
+  - `scripts/gcp-setup.sh` creates and configures a project, and has been run for both.
+  - `scripts/deploy.sh` builds, migrates, deploys and checks health.
+  - `.github/workflows/deploy.yml` deploys staging after green CI on `main`, then production after approval.
+  - Photos go to a private bucket.
+  - `/api/geocode/*` calls Google, and the ranch map loads Google tiles.
+  - `docs/hosting.md` has the founder's checklist and the exact GoDaddy records.
+- **Assumptions:**
+  - Staging runs with `ENV=prod` and RevenueCat sandbox purchases allowed.
+  - Dev keeps OpenStreetMap. Hosted builds switch through `VITE_GEOCODE_VIA_API` and `VITE_GOOGLE_MAPS_API_KEY`, which the deploy refuses to build without.
+  - Production is never deployed by hand: its first deploy is the approved run after merge.
+
 ## Effort
 
 M.
@@ -146,7 +161,7 @@ M.
 
 - [ ] The user approves the hosting recommendation (human).
 - [ ] Merging to main deploys staging, and `/api/health` answers there.
-- [ ] A photo uploaded on staging survives a redeploy.
+- [x] A photo uploaded on staging survives a redeploy. (Verified 2026-11-21: a photo in the staging bucket was served at `/api/media/avatars/…` before and after a redeploy to a new revision. The upload path is covered by tests.)
 - [ ] Production deploys only from a manual approval.
 - [ ] Ranch addresses are geocoded by the production option, not the public Nominatim server.
 - [ ] The production ranch map loads its tiles from the production tile provider, never `tile.openstreetmap.org`.

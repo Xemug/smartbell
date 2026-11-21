@@ -43,8 +43,16 @@ These steps need your accounts. Do them in order; each one says how to check it 
 
 1. **Point the addresses at the app (GoDaddy).**
    - Sign in at godaddy.com and open **My Products**. Next to `smartbell.app`, click **DNS**.
-   - Add each record in the table below exactly as written. (The exact values are filled in after Firebase Hosting lists them; see the PR.)
-   - Wait up to a few hours. When https://staging.smartbell.app opens the app with a padlock, it worked.
+   - Add each record below exactly as written, leaving TTL at the default (1 hour). Delete any other A record on `@` if GoDaddy added one (a "Parked" record).
+
+     | Type | Name | Value | For |
+     |---|---|---|---|
+     | CNAME | `staging` | `smartbell-2026-staging.web.app` | staging.smartbell.app |
+     | A | `@` | `199.36.158.100` | smartbell.app |
+     | TXT | `@` | `hosting-site=smartbell-2026-production` | proves smartbell.app is yours |
+
+   - Wait up to a few hours. Google issues the padlock certificates by itself.
+   - Check: https://staging.smartbell.app opens the app with a padlock. smartbell.app shows a Firebase "Site not found" page until the first production deploy is approved, and that is expected.
 2. **Allow sign-in from the new addresses (live Firebase project, only this setting).**
    - Go to console.firebase.google.com and open **Smartbell 2025** (`smartbell-app-2025`).
    - Open **Authentication**, then the **Settings** tab, then **Authorized domains**.
