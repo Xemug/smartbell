@@ -2,6 +2,7 @@
 id: make-user-history-order-stable-when-timestamps-tie
 title: Make user history order stable when timestamps tie
 summary: test_user_admin::test_add_edit_and_remove_each_write_a_history_entry fails about 4 in 5 local SQLite runs because history rows written in the same second tie on created_at and then sort by random UUID. Add a tiebreak so the API's history order is deterministic, and keep the test strict.
+verifiedAt: 2026-11-21
 ---
 
 # Make user history order stable when timestamps tie
