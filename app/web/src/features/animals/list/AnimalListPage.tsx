@@ -392,7 +392,7 @@ export function AnimalListPage() {
                 (v) => v.value === state.filter?.variable,
               )?.label ??
               groupNames.get(state.filter.variable) ??
-              t('animals.unknownGroup'),
+              (groups.isPending ? '…' : t('animals.unknownGroup')),
           })}
         </p>
       )}
