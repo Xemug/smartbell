@@ -1,7 +1,7 @@
 ---
 id: host-the-new-app-staging-and-production
 title: "Host the new app: staging and production"
-summary: Nothing deploys the new web app, API and Postgres yet. Pick hosting, deploy staging from main, then production, with uploaded photos in cloud storage and the launch settings (Firebase domains, Apple web sign-in, ADMIN_EMAILS, RevenueCat webhook).
+summary: Nothing deploys the new web app, API and Postgres yet. Pick hosting, deploy staging from main, then production, with uploaded photos in cloud storage, a production geocoder and map tiles, and the launch settings (Firebase domains, Apple web sign-in, ADMIN_EMAILS, RevenueCat webhook).
 verifiedAt: 2026-11-21
 ---
 
@@ -26,6 +26,7 @@ Deploy config and CI deploy jobs, `app/api` settings for storage and secrets, th
 - **Recommendation first:** the PR opens with a short recommendation for the user to approve, covering hosting, managed Postgres with backups, object storage for media, cost per month and region (close to Mexico). Build only after the user picks. Stay in Google Cloud, next to Firebase, unless a cheaper option is clearly simpler.
 - **Staging:** deploy on every merge to main. **Production:** deploy from a manual approval.
 - **Storage:** move media from the local disk to object storage behind the same API.
+- **Map tiles:** the ranch map (`RanchMap.tsx`) moves off `tile.openstreetmap.org` to the production tile option before launch.
 - **Geocoder:** Datos Rancho uses the free public OpenStreetMap geocoder (Nominatim), which only allows low volume. Recommend a production option (a paid geocoder or a self-hosted Nominatim) in the same approval, and switch to it before launch.
 - **Secrets:** in the platform's secret store, never in git.
 - **User checklist:** a numbered list of the console steps the user does, written for a non-technical founder. It covers the Firebase authorized domains, Apple web sign-in setup, `ADMIN_EMAILS`, the RevenueCat webhook URL and secret, and the custom domain.
@@ -39,30 +40,84 @@ Checked against the code:
 - Photos: `PUT /api/users/me/photo` and `GET /api/media/avatars/{name}` live in `app/api/smartbell/routes/users.py`. `media.LocalStorage` writes under `settings.media_dir`. The `media.Storage` protocol's `path()` returns a local `Path`, so the bucket version must change how the GET route serves the file (stream it, or redirect to a short-lived signed URL). The public URL `/api/media/avatars/<name>` stays the same.
 - Settings that hosting must provide: `ENV=prod`, `DATABASE_URL`, `SECRET_KEY`, `FIREBASE_PROJECT_ID`, `CORS_ORIGINS`, `ADMIN_EMAILS`, `REVENUECAT_WEBHOOK_AUTH`, `REVENUECAT_SECRET_KEY` (`app/api/smartbell/settings.py`). On the web side, the build needs the `VITE_*` values: `VITE_API_BASE_URL`, the `VITE_FIREBASE_*` keys, `VITE_TERMS_URL` and `VITE_WHATSAPP_NUMBER`.
 - **Correction:** the browser does the geocoding, not the API. `app/web/src/features/config/ranch/geocode.ts` calls `nominatim.openstreetmap.org` directly. Switching to a paid geocoder means either a key in the browser or a new API route that proxies the request. A new route is public input, so it needs a security pass.
-- **Also found:** the ranch map loads its tiles from `tile.openstreetmap.org` (`RanchMap.tsx`), and that server has the same low-volume policy. This card does not fix that. It is flagged here as a launch risk.
+- **Also found:** the ranch map loads its tiles from `tile.openstreetmap.org` (`RanchMap.tsx`), and that server has the same low-volume policy. Added to this card: production switches to a production tile provider (see the recommendation and the acceptance list).
 
 ## Recommendation (awaiting the founder's approval)
 
-Plain language. Prices are list prices in USD as of late 2026, rounded up. Check them on the console at setup.
+Plain language. All figures are USD list prices from Google's pricing pages and recent price guides, checked 2026-11-21. Querétaro usually costs about 15% more than Google's US reference region, and that is already included. Every line still needs a check in the console's pricing calculator at setup.
 
-| Piece | Recommendation | Staging / month | Production / month |
+**Short version:** Google Cloud, in a new project next to Firebase, in Querétaro, Mexico (`northamerica-south1`). Expect about **$50 a month, or about $630 a year**, for staging and production together at launch. Budget **$750 a year** to leave room for surprises.
+
+### What we'd use
+
+| Piece | Service | Why |
+|---|---|---|
+| Web app | **Firebase Hosting** (new Google Cloud project, not the live Firebase one) | Free tier covers us; free SSL; custom domain |
+| API | **Cloud Run**, reached at `/api` through a Firebase Hosting rewrite | Scales to zero when idle. Cloud Run can't attach a custom domain in Querétaro, so the rewrite puts the API under the web address (this also removes cross-site CORS) |
+| Database | **Cloud SQL for PostgreSQL 16**, with daily backups kept 7 days, plus point-in-time recovery in production | Managed, patched and backed up by Google |
+| Photos | **Cloud Storage** private bucket, served by the API at the same `/api/media/...` address | Survives redeploys |
+| Secrets | **Secret Manager** | Keys never in git |
+| Address lookup | **Google Geocoding API**, called by a small API route so the key stays on the server | 10,000 free lookups a month; we look up an address only when a ranch is set up |
+| Map tiles | **Google Map Tiles API** (2D tiles), shown in the existing Leaflet map | 100,000 free tiles a month. One vendor for both map and address lookup, and Google's terms expect Google-geocoded points to be shown on a Google map |
+| Deploys | **GitHub Actions** with Workload Identity Federation (no key files) | Merge to `main` deploys staging; production deploys after a click to approve in GitHub |
+
+### Monthly cost breakdown (launch: a few dozen ranches)
+
+| Item | Staging | Production | Notes |
 |---|---|---|---|
-| Web app | **Firebase Hosting** on a new Google Cloud project (not the live one), with a free SSL certificate and the custom domain | $0 | $0 to $1 |
-| API | **Cloud Run** (runs the API container and scales to zero when idle) | $0 to $2 | $0 to $10 |
-| Database | **Cloud SQL for PostgreSQL 16**, with daily automatic backups kept 7 days and point-in-time recovery in production | about $10 (smallest size) | about $30 (small size, with backups) |
-| Photos | **Cloud Storage** private bucket, served through the API at the same address | under $1 | under $1 |
-| Secrets | **Secret Manager** (keys never in git) | under $1 | under $1 |
-| Geocoder | **Google Geocoding API** through a small API route, so the key stays on the server and addresses are cached | $0 | $0 up to about 10,000 lookups a month, then about $5 per 1,000 |
-| **Total** | | **about $12** | **about $35 to $45** |
+| Cloud SQL instance | $9 (db-f1-micro) | $30 (db-g1-small) | Shared-core sizes, about $0.0105/h and $0.035/h before the region uplift |
+| Cloud SQL disk and backups | $2 (10 GB) | $6 (20 GB, plus backups and recovery logs) | |
+| Cloud Run (API) | $0 | $0 to $5 | Free each month: 2 million requests and about 180,000 to 240,000 vCPU-seconds, shared across the billing account |
+| Cloud Storage (photos) | under $0.10 | under $0.50 | Photos are 2 MB at most; a few GB costs cents |
+| Secret Manager | $0.50 | $0.50 | $0.06 per active secret version, about 8 secrets |
+| Artifact Registry (API images) | $0.25 | shared | 0.5 GB free, then $0.10/GB |
+| Firebase Hosting | $0 | $0 | 10 GB storage and 10 GB transfer free each month |
+| Geocoding | $0 | $0 | Up to 10,000 a month free, then about $5 per 1,000 |
+| Map tiles | $0 | $0 | Up to 100,000 tiles a month free, about 4,000 map views |
+| Logging and uptime checks | $0 | $0 | Within the free tier |
+| GitHub Actions deploy minutes | $0 | $0 | Within the plan's monthly minutes |
+| **Total per month** | **about $12** | **about $37 to $42** | **about $50 combined** |
 
-- **Region:** `northamerica-south1` (Querétaro, Mexico) if Cloud Run, Cloud SQL and Cloud Storage are all offered there when we set up. Otherwise `us-south1` (Dallas). Both are close to Mexican users.
-- **Why Google Cloud:** sign-in already runs on Firebase, so billing, the console and permissions stay in one place. Cheaper options exist, such as Neon for the database (free to about $19) or Fly.io for the API, but they would mean a second vendor and a second bill to save about $20 a month.
-- **Deploys:** GitHub Actions signs in to Google Cloud with Workload Identity Federation, so no key file is stored anywhere. Every merge to `main` deploys staging (database migration, then API, then web). Production deploys the same build only after someone approves it in GitHub (a `production` environment with a required reviewer).
-- **Geocoder alternative:** a self-hosted Nominatim server costs about $40 to $80 a month on its own and needs maintenance. That is not worth it at this volume.
-- **Live Firebase project:** untouched apart from the authorized domains, which the founder adds themselves (checklist step).
-- **What the founder decides:** (1) approve Google Cloud and the region, (2) approve the Google geocoder, (3) create the Google Cloud project with billing, or say who creates it, and (4) the custom domain names for staging and production.
+### Annual total cost of ownership
 
-Nothing that creates cloud resources or costs money is built before this approval.
+| | Per month | Per year |
+|---|---|---|
+| Staging | $12 | $144 |
+| Production | $37 to $42 | $444 to $504 |
+| **Google Cloud total** | **$49 to $54** | **$588 to $648** |
+| Contingency (about 15%) | | about $100 |
+| **Budget** | | **about $750** |
+| Domain name | already owned? | $0 if `smartbell.mx` is already registered; about $20 to $40 a year for a new `.mx` |
+| Upkeep time | 1 to 2 hours a month | Google patches the database and servers. Our time goes on checking alerts and approving production deploys |
+
+No one-off setup fees are charged by Google.
+
+### Optional extras (not in the totals)
+
+| Option | Extra per month | When it's worth it |
+|---|---|---|
+| Keep one API instance always warm (no 1 to 2 second wake-up after idle) | about $10 to $15 | If the first tap of the day feels slow |
+| Database high availability (standby copy in another zone) | about $30 | Once paying customers depend on it all day |
+
+### If it grows (about 1,000 ranches)
+
+The database moves to a dedicated 1 vCPU size (about $55), Cloud Run costs about $10 to $20, and maps and address lookup probably stay free. That makes about **$90 to $110 a month in production (about $1,100 to $1,300 a year)**.
+
+### Alternatives considered
+
+- **Neon (Postgres) or Fly.io (API):** saves about $20 a month, but adds a second vendor and a second bill.
+- **Self-hosted Nominatim:** about $40 to $80 a month on its own, plus upkeep. Not worth it at this volume.
+- **MapTiler or Stadia free tiers:** non-commercial use only, so they can't be used here. Their paid plans start around $30 a month.
+- **Dallas (`us-south1`) instead of Querétaro:** about 15% cheaper, but slightly farther from users. It's the fallback if any service is missing in Querétaro.
+
+### What the founder decides
+
+1. Approve Google Cloud and Querétaro.
+2. Approve Google for address lookup and map tiles.
+3. Create the Google Cloud project with billing turned on (or say who creates it), and set a **budget alert at $75 a month**.
+4. Choose the web addresses for staging and production (for example `staging.app.smartbell.mx` and `app.smartbell.mx`).
+
+**Live Firebase project:** nothing changes except the authorized domains, which the founder adds through the checklist. Nothing that creates cloud resources or costs money is built before this approval.
 
 ## Effort
 
@@ -75,5 +130,6 @@ M.
 - [ ] A photo uploaded on staging survives a redeploy.
 - [ ] Production deploys only from a manual approval.
 - [ ] Ranch addresses are geocoded by the production option, not the public Nominatim server.
+- [ ] The production ranch map loads its tiles from the production tile provider, never `tile.openstreetmap.org`.
 - [ ] The user signs in on staging from their phone (human).
 - [ ] Tests for the new code pass in CI.
