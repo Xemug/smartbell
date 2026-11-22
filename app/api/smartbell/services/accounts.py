@@ -37,6 +37,9 @@ async def _link_or_create(
     # Imported rows may keep the legacy app's capitals; Firebase hands us the address lowercased.
     existing = await session.scalar(select(User).where(func.lower(User.email) == email))
     if existing is not None:
+        if existing.firebase_uid == claims.uid:
+            # A second session for this uid committed the account after our uid lookup missed.
+            return existing, False
         # Firebase lets anyone register an unconfirmed address, so an imported row is only claimed
         # with a verified one. Otherwise that sign-up would take over someone else's herd.
         if existing.firebase_uid is not None or not claims.email_verified:
