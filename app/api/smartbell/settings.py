@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     revenuecat_secret_key: str = ""
     revenuecat_api_url: str = "https://api.revenuecat.com"
     revenuecat_allow_sandbox: bool = False
+    # Run the daily alert job (`jobs/daily`) inside the API process at 05:00 ranch time. Off by
+    # default: Cloud Run scales to zero, so hosted deploys run `python -m smartbell.jobs.daily` on
+    # a schedule instead, and several instances would each run it (harmless, it is idempotent).
+    daily_job_enabled: bool = False
 
     @field_validator("admin_emails", mode="before")
     @classmethod

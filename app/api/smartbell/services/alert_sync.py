@@ -1,10 +1,11 @@
 """Keeps an animal's Alerts in step with its projection after an event write (§4).
 
-A narrow hook: `events-api` calls `sync_animal` after every create, edit or delete. The alert
-lifecycle (follow-up days, expiring a window that passed, the Tasks that surface alerts) belongs
-to `alert-engine`; this module only opens what the projection asks for and closes what an event
-made moot. It is idempotent: the same projection twice changes nothing, because an alert is keyed
-by (animal, kind, window_start, window_end).
+A narrow hook: `events-api` calls `sync_animal` after every create, edit or delete, and the
+daily job (`jobs/daily`) after re-projecting each animal. The alert lifecycle (follow-up days,
+expiring a window that passed) belongs to `services.alerts`, and the Tasks that surface alerts to
+`tasks-engine`; this module opens what the projection asks for, closes what an event made moot,
+and keeps the reminder Tasks in step. It is idempotent: the same projection twice changes
+nothing, because an alert is keyed by (animal, kind, window_start, window_end).
 """
 
 import datetime as dt
@@ -14,8 +15,16 @@ from collections.abc import Collection, Iterable
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from smartbell.domain.repro import AlertSpec, Projection, ReminderSpec
-from smartbell.enums import AlertKind, AlertStatus, EventType, TaskStatus
+from smartbell.domain.repro import AlertSpec, Projection, ReminderKind, ReminderSpec
+from smartbell.enums import (
+    AlertKind,
+    AlertStatus,
+    EventType,
+    TaskCategory,
+    TaskKind,
+    TaskSource,
+    TaskStatus,
+)
 from smartbell.models import Alert, Animal, Task
 
 # The alerts an event of each type answers. A pending alert of one of these kinds that the new
@@ -122,8 +131,8 @@ async def sync_animal(
         row.resulting_event_id = event_id
         closed.append(row)
     await session.flush()
-    await _close_tasks(session, closed)
-    sync_reminders(animal, projection.reminders)
+    await close_tasks(session, closed)
+    await sync_reminders(session, animal, projection.reminders)
     return sorted(
         (row for row in by_key.values() if row.status is AlertStatus.PENDING),
         key=lambda row: (row.window_start, row.kind),
@@ -145,7 +154,7 @@ async def detach_event(session: AsyncSession, event_id: uuid.UUID) -> None:
         row.resulting_event_id = None
 
 
-async def _close_tasks(session: AsyncSession, alerts: Iterable[Alert]) -> None:
+async def close_tasks(session: AsyncSession, alerts: Iterable[Alert]) -> None:
     """An alert's open task closes with it (§7.2)."""
     status_by_alert = {
         row.id: TaskStatus.DELETED if row.status is AlertStatus.EXPIRED else TaskStatus.DONE
@@ -163,8 +172,67 @@ async def _close_tasks(session: AsyncSession, alerts: Iterable[Alert]) -> None:
             task.completed_at = now
 
 
-def sync_reminders(animal: Animal, reminders: Iterable[ReminderSpec]) -> None:
-    """A no-op seam. §7.2 replaced Reminder with Task, and there is no table for either kind of
-    reminder yet. TODO(alert-engine): turn these specs into automatic Tasks (MILK_WITHDRAWAL,
-    HEIFER_TO_REGISTER, "Esperar al siguiente ciclo"), idempotent by (animal, kind, due_on)."""
-    del animal, reminders
+# The reminders that become automatic Tasks (§7.2), with their title and category. WAIT_NEXT_CYCLE
+# ("Esperar al siguiente ciclo") is copy for the heat form, not a task: the next HEAT alert's
+# task already asks to watch her on that day.
+REMINDER_TASKS: dict[ReminderKind, tuple[TaskKind, TaskCategory, str]] = {
+    ReminderKind.MILK_WITHDRAWAL: (
+        TaskKind.MILK_WITHDRAWAL,
+        TaskCategory.SALUD,
+        "Separar la leche de vaca {id} hasta el {date}",
+    ),
+    ReminderKind.HEIFER_TO_REGISTER: (
+        TaskKind.HEIFER_TO_REGISTER,
+        TaskCategory.REPRODUCCION,
+        "Registrar la cría de vaca {id}",
+    ),
+}
+REMINDER_TASK_KINDS = frozenset(kind for kind, _, _ in REMINDER_TASKS.values())
+
+
+async def sync_reminders(
+    session: AsyncSession, animal: Animal, reminders: Iterable[ReminderSpec]
+) -> None:
+    """Turn the projection's reminders into automatic Tasks, idempotent by (animal, kind, due).
+
+    A task is never made twice for the same key, so one the user completed stays done. An open
+    one the projection no longer asks for (the withdrawal was edited, the calf was registered) is
+    deleted, and reopened if the projection asks for it again (that edit was undone). There is
+    no way for a person to delete these tasks yet; `tasks-engine` decides what that means.
+    """
+    wanted: dict[tuple[TaskKind, dt.date], ReminderSpec] = {}
+    for spec in reminders:
+        if spec.kind in REMINDER_TASKS:
+            wanted[(REMINDER_TASKS[spec.kind][0], spec.due_on)] = spec
+    tasks = (
+        await session.scalars(
+            select(Task).where(
+                Task.animal_id == animal.id,
+                Task.kind.in_(REMINDER_TASK_KINDS),
+                Task.source == TaskSource.AUTOMATIC,
+            )
+        )
+    ).all()
+    existing = {(task.kind, task.due_date) for task in tasks}
+    for task in tasks:
+        key = (task.kind, task.due_date)
+        if task.status is TaskStatus.OPEN and key not in wanted:
+            task.status = TaskStatus.DELETED
+        elif task.status is TaskStatus.DELETED and key in wanted:
+            task.status = TaskStatus.OPEN
+    for (kind, due), spec in sorted(wanted.items()):
+        if (kind, due) in existing:
+            continue
+        _, category, title = REMINDER_TASKS[spec.kind]
+        session.add(
+            Task(
+                ranch_id=animal.ranch_id,
+                source=TaskSource.AUTOMATIC,
+                kind=kind,
+                category=category,
+                title=title.format(id=animal.control_id, date=due.strftime("%d/%m/%Y")),
+                due_date=due,
+                animal_id=animal.id,
+                status=TaskStatus.OPEN,
+            )
+        )

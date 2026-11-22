@@ -13,6 +13,7 @@ dependencies = [
     "firebase-admin>=7.7.0",
     "httpx>=0.28",
     "google-cloud-storage>=2.18",
+    "apscheduler>=3.10,<4",
 ]
 
 [dependency-groups]
@@ -75,3 +76,7 @@ python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
 files = ["smartbell", "migrations", "tests"]
+
+[[tool.mypy.overrides]]
+module = ["apscheduler.*"]
+ignore_missing_imports = true

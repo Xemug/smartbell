@@ -43,20 +43,23 @@ gcloud services enable --project="$project" \
   iamcredentials.googleapis.com sts.googleapis.com storage.googleapis.com \
   firebase.googleapis.com firebasehosting.googleapis.com apikeys.googleapis.com \
   geocoding-backend.googleapis.com tile.googleapis.com cloudresourcemanager.googleapis.com \
-  serviceusage.googleapis.com cloudbilling.googleapis.com billingbudgets.googleapis.com
+  serviceusage.googleapis.com cloudbilling.googleapis.com billingbudgets.googleapis.com \
+  cloudscheduler.googleapis.com
 
 step "service accounts"
 exists gcloud iam service-accounts describe "$api_sa" --project="$project" ||
   gcloud iam service-accounts create smartbell-api --project="$project" --display-name="Smartbell API"
 exists gcloud iam service-accounts describe "$deploy_sa" --project="$project" ||
   gcloud iam service-accounts create smartbell-deploy --project="$project" --display-name="GitHub deploys"
-for role in roles/cloudsql.client roles/secretmanager.secretAccessor; do
+# run.invoker: Cloud Scheduler starts the daily alert job as this account.
+for role in roles/cloudsql.client roles/secretmanager.secretAccessor roles/run.invoker; do
   retry gcloud projects add-iam-policy-binding "$project" --member="serviceAccount:$api_sa" \
     --role="$role" --condition=None >/dev/null
 done
 for role in roles/run.admin roles/cloudbuild.builds.editor roles/artifactregistry.writer \
   roles/firebasehosting.admin roles/secretmanager.secretAccessor roles/storage.admin \
-  roles/serviceusage.serviceUsageConsumer roles/logging.viewer roles/cloudsql.viewer; do
+  roles/serviceusage.serviceUsageConsumer roles/logging.viewer roles/cloudsql.viewer \
+  roles/cloudscheduler.admin; do
   retry gcloud projects add-iam-policy-binding "$project" --member="serviceAccount:$deploy_sa" \
     --role="$role" --condition=None >/dev/null
 done
