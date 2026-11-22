@@ -52,5 +52,5 @@ M.
 - [x] A female and a male can be registered with only name/ID + birth date. (`animalForm.test.tsx` "quick registration"; browser: male T-001 at 1280px.)
 - [x] An F2 crossbreed requires a contributing breed. (`animalForm.test.tsx` "requires a contributing breed for an F2 cross".)
 - [x] A heifer with a newly typed dam creates both animals; choosing 'Vendida a rastro' removes the dam. (`animalForm.test.tsx` "registers a heifer with a newly typed dam, sold for slaughter"; browser at 375px: VQ-001 in Vaquillas, dam Vacalactica only under Bajas → Venta a rastro.)
-- [ ] Matches V 2955-9420 and V 734-6074 (human).
+- [x] Matches V 2955-9420 and V 734-6074 (human). Founder checked it on 2026-11-21 and accepted the known differences: card-style section headers, the dam-status question shown on Registrar before saving, and "FB (100% Pura)" wrapping at phone width.
 - [x] Tests for the new code pass in CI. (PR #31: api, web, legacy-firebase, scripts green at 9e283e65.)
