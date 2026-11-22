@@ -41,5 +41,5 @@ S.
 ## Acceptance
 
 - [x] The PR names the flaky test(s) and the cause.
-- [ ] 20 full-suite runs in a row on local Postgres pass.
-- [ ] Tests for the new code pass in CI.
+- [x] 20 full-suite runs in a row on local Postgres pass (2026-11-21, native Postgres, 858 passed each).
+- [x] Tests for the new code pass in CI.
