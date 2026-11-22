@@ -2848,6 +2848,8 @@ export interface operations {
     parameters: {
       query?: {
         kind?: components['schemas']['AnimalKind'] | null;
+        /** @description Only this sex (the parent pickers) */
+        sex?: components['schemas']['Sex'] | null;
         /** @description Search by ID or name */
         q?: string | null;
         /** @description A group id, or a preset such as GENERAL */

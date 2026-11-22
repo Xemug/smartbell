@@ -622,5 +622,110 @@
       "error": "We couldn't remove them. Try again."
     },
     "unknownGroup": "a group that no longer exists"
+  },
+  "animalForm": {
+    "title": "New animal",
+    "back": "Animals",
+    "sections": {
+      "general": "General information",
+      "additional": "Additional information",
+      "reproduction": "Reproductive information",
+      "weights": "Animal weights"
+    },
+    "fields": {
+      "sex": "Sex",
+      "controlId": "Name or internal number",
+      "breed": "Breed",
+      "birthDate": "Birth date",
+      "group": "Paddock",
+      "crossbreedLevel": "Crossbreed level",
+      "contributingBreed": "Contributing breed",
+      "developmentStage": "Development stage",
+      "siniiga": "SINIIGA ID (optional)",
+      "lastCalving": "Last calving",
+      "lactation": "Lactation number",
+      "reproStage": "Reproductive stage",
+      "reproStageDate": "Reproductive stage date",
+      "weightBirth": "At birth",
+      "weightWeaning": "Weaning",
+      "weightOneYear": "At one year"
+    },
+    "sex": {
+      "MACHO": "Male",
+      "HEMBRA": "Female"
+    },
+    "choose": "Choose",
+    "siniigaHint": "The tag's 10 digits",
+    "moreData": "I have more data on my animal",
+    "lessData": "I have less data on my animal",
+    "crossbreed": {
+      "FB": "FB (100% pure)",
+      "F4": "F4 (93.75% · 15/16)",
+      "F3": "F3 (87.5% · 7/8)",
+      "F2": "F2 (75% · 3/4)",
+      "F1": "F1 (50% · 1/2)"
+    },
+    "stages": {
+      "AUTO": "Set automatically (birth date)",
+      "TERNERA": "Calf (up to 6 months)",
+      "DESTETADA": "Weaned (6 to 12 months)",
+      "NOVILLA": "Heifer (12 to 27 months)",
+      "VACA_ADULTA": "Adult cow (over 27 months)",
+      "CARGADA": "In calf (any pregnant cow)",
+      "VACA_ADULTA_VACIA": "Open adult cow (over 27 months)",
+      "A_VERIFICAR": "To check (pregnancy to confirm)",
+      "BECERRO": "Calf (up to 3 months)",
+      "DESTETADO": "Weaned (3 to 9 months)",
+      "NOVILLO": "Steer (9 to 24 months)",
+      "TORO": "Bull (24 months or more)"
+    },
+    "reproNone": "None",
+    "parents": {
+      "search": "Search",
+      "searchButton": "Search",
+      "searchError": "We couldn't search. Try again.",
+      "register": "Register",
+      "remove": "Remove",
+      "dam": {
+        "button": "Dam",
+        "chosen": "Dam: {{id}}",
+        "title": "Dam details",
+        "searchPlaceholder": "Enter the dam's ID",
+        "notFound": "No female matches “{{term}}”. Register her below.",
+        "registerTitle": "Or register the dam",
+        "added": "Cow {{id}} will be registered with this animal"
+      },
+      "sire": {
+        "button": "Sire",
+        "chosen": "Sire: {{id}}",
+        "title": "Sire details",
+        "searchPlaceholder": "Enter the sire's ID",
+        "notFound": "No male matches “{{term}}”. Register him below.",
+        "registerTitle": "Or register the sire",
+        "added": "Bull {{id}} will be registered with this animal"
+      }
+    },
+    "damStatus": {
+      "title": "Dam status",
+      "description": "Record the status of dam {{id}}",
+      "label": "Status",
+      "cancel": "Back",
+      "removes": "The dam will be removed with this reason.",
+      "values": {
+        "VIVA": "Alive, in production",
+        "MUERTA_DESECHO": "Dead (culled)",
+        "VENDIDA_OTRO_RANCHO": "Sold to another ranch",
+        "VENDIDA_RASTRO": "Sold for slaughter"
+      }
+    },
+    "submit": "Register",
+    "created": "Congratulations, {{id}} is registered",
+    "fillRequired": "Please fill in the requested data",
+    "fixErrors": "Check the marked fields",
+    "errors": {
+      "generic": "We couldn't register the animal. Try again.",
+      "permission_denied": "You don't have permission to register animals."
+    },
+    "lactationRange": "Enter a whole number from 0 to 30"
   }
 }

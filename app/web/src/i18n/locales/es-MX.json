@@ -622,5 +622,110 @@
       "error": "No pudimos dar de baja. Intenta de nuevo."
     },
     "unknownGroup": "un potrero que ya no existe"
+  },
+  "animalForm": {
+    "title": "Nuevo animal",
+    "back": "Animales",
+    "sections": {
+      "general": "Información general",
+      "additional": "Información adicional",
+      "reproduction": "Información reproductiva",
+      "weights": "Pesos del animal"
+    },
+    "fields": {
+      "sex": "Sexo",
+      "controlId": "Nombre o Número interno",
+      "breed": "Raza",
+      "birthDate": "Fecha nacimiento",
+      "group": "Potrero",
+      "crossbreedLevel": "Nivel de cruza",
+      "contributingBreed": "Raza de aporte",
+      "developmentStage": "Etapa de desarrollo",
+      "siniiga": "ID SINIIGA (no obligatorio)",
+      "lastCalving": "Último parto",
+      "lactation": "Ciclo de lactancia",
+      "reproStage": "Etapa reproductiva",
+      "reproStageDate": "Fecha etapa reproductiva",
+      "weightBirth": "Al nacer",
+      "weightWeaning": "Destete",
+      "weightOneYear": "Al año"
+    },
+    "sex": {
+      "MACHO": "Macho",
+      "HEMBRA": "Hembra"
+    },
+    "choose": "Selecciona",
+    "siniigaHint": "Los 10 dígitos del arete",
+    "moreData": "Tengo más datos de mi animal",
+    "lessData": "Tengo menos datos de mi animal",
+    "crossbreed": {
+      "FB": "FB (100% Pura)",
+      "F4": "F4 (93.75% · 15/16)",
+      "F3": "F3 (87.5% · 7/8)",
+      "F2": "F2 (75% · 3/4)",
+      "F1": "F1 (50% · 1/2)"
+    },
+    "stages": {
+      "AUTO": "Definir automáticamente (nacimiento)",
+      "TERNERA": "Ternera (hasta 6 meses)",
+      "DESTETADA": "Destetada (6 a 12 meses)",
+      "NOVILLA": "Novilla (12 a 27 meses)",
+      "VACA_ADULTA": "Vaca adulta (más de 27 meses)",
+      "CARGADA": "Cargada (cualquier vaca preñada)",
+      "VACA_ADULTA_VACIA": "Vaca adulta vacía (más de 27 meses)",
+      "A_VERIFICAR": "A verificar (por confirmar preñez)",
+      "BECERRO": "Becerro (hasta 3 meses)",
+      "DESTETADO": "Destetado (3 a 9 meses)",
+      "NOVILLO": "Novillo (9 a 24 meses)",
+      "TORO": "Toro (24 meses o más)"
+    },
+    "reproNone": "Ninguna",
+    "parents": {
+      "search": "Buscar",
+      "searchButton": "Buscar",
+      "searchError": "No pudimos buscar. Intenta de nuevo.",
+      "register": "Registrar",
+      "remove": "Quitar",
+      "dam": {
+        "button": "Madre",
+        "chosen": "Madre: {{id}}",
+        "title": "Datos de la vaca madre",
+        "searchPlaceholder": "Ingresa el ID de la madre",
+        "notFound": "No encontramos una hembra con «{{term}}». Regístrala abajo.",
+        "registerTitle": "O registra la información de la madre",
+        "added": "La vaca {{id}} se registrará junto con este animal"
+      },
+      "sire": {
+        "button": "Padre",
+        "chosen": "Padre: {{id}}",
+        "title": "Datos del toro padre",
+        "searchPlaceholder": "Ingresa el ID del padre",
+        "notFound": "No encontramos un macho con «{{term}}». Regístralo abajo.",
+        "registerTitle": "O registra la información del padre",
+        "added": "El toro {{id}} se registrará junto con este animal"
+      }
+    },
+    "damStatus": {
+      "title": "Estatus vaca madre",
+      "description": "Registra el estatus de la madre {{id}}",
+      "label": "Estatus",
+      "cancel": "Volver",
+      "removes": "La madre se dará de baja con este motivo.",
+      "values": {
+        "VIVA": "Viva en producción",
+        "MUERTA_DESECHO": "Muerta (Desecho)",
+        "VENDIDA_OTRO_RANCHO": "Vendida a otro rancho",
+        "VENDIDA_RASTRO": "Vendida al rastro"
+      }
+    },
+    "submit": "Registrar",
+    "created": "Felicidades, el animal {{id}} quedó registrado",
+    "fillRequired": "Por favor, llena los datos solicitados",
+    "fixErrors": "Revisa los datos marcados",
+    "errors": {
+      "generic": "No pudimos registrar el animal. Intenta de nuevo.",
+      "permission_denied": "No tienes permiso para registrar animales."
+    },
+    "lactationRange": "Escribe un número entero de 0 a 30"
   }
 }
