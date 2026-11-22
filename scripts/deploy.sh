@@ -28,7 +28,9 @@ image="$region-docker.pkg.dev/$project/smartbell/api:$sha"
 api_sa="smartbell-api@$project.iam.gserviceaccount.com"
 sql="$project:$region:smartbell-db"
 step() { printf '\n== %s\n' "$*"; }
-has_secret() { gcloud secrets describe "$1" --project="$project" >/dev/null 2>&1; }
+# Checked by reading the value (discarded): the deploy account may read secrets but not describe
+# them, and a failed describe would silently drop the optional ones below.
+has_secret() { gcloud secrets versions access latest --secret="$1" --project="$project" >/dev/null 2>&1; }
 
 # Production must never fall back to OpenStreetMap's free servers or the local disk.
 for name in database-url secret-key maps-server-key web-build-env; do
