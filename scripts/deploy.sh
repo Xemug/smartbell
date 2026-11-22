@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Deploy the current checkout to a hosting environment: build the API image (Cloud Build), run
-# migrations (a Cloud Run job), deploy the API (Cloud Run), build and deploy the web app
+# migrations (a Cloud Run job), deploy the API (Cloud Run) and the daily alert job (a Cloud Run
+# job that Cloud Scheduler starts at 05:00 Mexico City time), build and deploy the web app
 # (Firebase Hosting, which sends /api/** to the API), then check /api/health.
 #
 #   scripts/deploy.sh staging|production
@@ -74,6 +75,24 @@ gcloud run deploy smartbell-api --project="$project" --region="$region" --image=
   --set-secrets="$secrets" --env-vars-file="$env_file" \
   --allow-unauthenticated --min-instances=0 --max-instances=3 --memory=512Mi \
   --quiet >/dev/null
+
+step "daily alert job (Cloud Run job, started by Cloud Scheduler at 05:00 Mexico City)"
+# The API scales to zero, so it can't keep a clock: Cloud Scheduler starts this job instead.
+gcloud run jobs deploy smartbell-daily --project="$project" --region="$region" \
+  --image="$image" --service-account="$api_sa" --set-cloudsql-instances="$sql" \
+  --set-secrets="DATABASE_URL=database-url:latest,SECRET_KEY=secret-key:latest" \
+  --env-vars-file="$env_file" --command=python --args=-m,smartbell.jobs.daily \
+  --max-retries=1 --task-timeout=30m --quiet >/dev/null
+schedule=(--project="$project" --location="$region" --schedule="0 5 * * *"
+  --time-zone=America/Mexico_City --http-method=POST
+  --uri="https://run.googleapis.com/v2/projects/$project/locations/$region/jobs/smartbell-daily:run"
+  --oauth-service-account-email="$api_sa")
+if gcloud scheduler jobs describe smartbell-daily --project="$project" --location="$region" \
+  >/dev/null 2>&1; then
+  gcloud scheduler jobs update http smartbell-daily "${schedule[@]}" --quiet >/dev/null
+else
+  gcloud scheduler jobs create http smartbell-daily "${schedule[@]}" --quiet >/dev/null
+fi
 
 step "web app (Firebase Hosting)"
 (

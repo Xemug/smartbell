@@ -12,6 +12,7 @@ The pieces, all in `us-central1` (Iowa):
 
 - **Web app:** Firebase Hosting. It also forwards `/api/**` to the API, so the app and API share one address.
 - **API:** Cloud Run service `smartbell-api`. It scales to zero when nobody is using it.
+- **Daily alert job:** Cloud Run job `smartbell-daily` (`python -m smartbell.jobs.daily`), started by the Cloud Scheduler job `smartbell-daily` every day at 05:00 Mexico City time. It moves alerts on a day and applies date-driven changes (a cow going SECA). The API can't do this itself because it scales to zero. To run it by hand: `gcloud run jobs execute smartbell-daily --project=<project> --region=us-central1 --wait`.
 - **Database:** Cloud SQL PostgreSQL 16, instance `smartbell-db` (db-f1-micro), with daily backups kept 7 days. Production also has point-in-time recovery.
 - **Photos:** private bucket `gs://<project>-media`. The API serves photos from it, so they survive redeploys.
 - **Addresses:** Google Geocoding, called through `/api/geocode/*` with a server-side key.
@@ -27,7 +28,7 @@ Expected cost: about $22 a month for both environments ($10 to $12 each). A budg
 
 1. Builds the API image with Cloud Build.
 2. Runs `alembic upgrade head` as the Cloud Run job `smartbell-migrate`.
-3. Deploys the API.
+3. Deploys the API, then the daily alert job and its 05:00 schedule.
 4. Builds the web app with the values in `web-build-env` and deploys it to Hosting.
 5. Checks that `/api/health` answers.
 
