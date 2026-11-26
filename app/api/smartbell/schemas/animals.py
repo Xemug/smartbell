@@ -24,6 +24,7 @@ from smartbell.enums import (
     AnimalKind,
     AnimalStatus,
     Breed,
+    BullAvailability,
     CrossbreedLevel,
     DamStatus,
     DevelopmentStage,
@@ -100,6 +101,8 @@ class AnimalCreate(ParentCreate):
     """ "Nombre o Número interno" and the birth date are the only required fields (§7.1)."""
 
     sex: Sex = Sex.HEMBRA  # The form's toggle starts on Hembra.
+    # Males only. Left out, a male is EN_RANCHO (an inline sire, an older client).
+    bull_availability: BullAvailability | None = None
     photo_url: PhotoUrl | None = None
     birth_length_cm: Centimeters | None = None
     weight_birth_kg: Kilograms | None = None
@@ -133,6 +136,7 @@ class AnimalUpdate(_Strict):
     crossbreed_level: CrossbreedLevel | None = None
     contributing_breed: Breed | None = None
     development_stage: DevelopmentStage | None = None
+    bull_availability: BullAvailability | None = None  # Males only.
     group_id: uuid.UUID | None = None
     photo_url: PhotoUrl | None = None
     birth_length_cm: Centimeters | None = None
@@ -170,6 +174,7 @@ class AnimalOut(BaseModel):
     crossbreed_level: CrossbreedLevel
     contributing_breed: Breed | None
     development_stage: DevelopmentStage
+    bull_availability: BullAvailability | None  # Males only.
     photo_url: str | None
     group_id: uuid.UUID | None
     status: AnimalStatus

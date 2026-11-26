@@ -235,6 +235,8 @@ describe('quick registration', () => {
       sex: 'MACHO',
       control_id: 'T-9',
       birth_date: '2024-03-01',
+      // Quick mode: the bull is on the ranch unless said otherwise.
+      bull_availability: 'EN_RANCHO',
     });
     await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('/vacas?tipo=toros'));
   });
@@ -283,6 +285,35 @@ describe('detailed registration', () => {
       crossbreed_level: 'F2',
       contributing_breed: 'PARDO_SUIZO',
     });
+  });
+
+  it.each([
+    ['Solo semen', 'SEMEN'],
+    ['Ambos', 'AMBOS'],
+    ['En rancho', 'EN_RANCHO'],
+  ])('registers a bull as %s', async (label, value) => {
+    createResponse = () =>
+      Response.json(created({ sex: 'MACHO', kind: 'TORO', control_id: 'T-9' }), { status: 201 });
+    renderAt('/vacas/nueva?tipo=toros');
+    await fillRequired('T-9', '01032020');
+    await user().click(screen.getByRole('button', { name: 'Tengo más datos de mi animal' }));
+    expect(screen.getByRole('combobox', { name: /Disponibilidad/ })).toHaveTextContent('En rancho');
+    await choose(/Disponibilidad/, label);
+    await user().click(screen.getByRole('button', { name: 'Registrar' }));
+
+    await waitFor(() => expect(posts()).toHaveLength(1));
+    expect(sent()).toMatchObject({ sex: 'MACHO', bull_availability: value });
+  });
+
+  it('asks a female for no availability', async () => {
+    renderAt('/vacas/nueva');
+    await fillRequired('V-3', '15012022');
+    await user().click(screen.getByRole('button', { name: 'Tengo más datos de mi animal' }));
+    expect(screen.queryByRole('combobox', { name: /Disponibilidad/ })).not.toBeInTheDocument();
+    await user().click(screen.getByRole('button', { name: 'Registrar' }));
+
+    await waitFor(() => expect(posts()).toHaveLength(1));
+    expect(sent()).not.toHaveProperty('bull_availability');
   });
 
   it('switches the stage list with the sex', async () => {

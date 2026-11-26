@@ -520,7 +520,8 @@
       "edad": "Edad",
       "grupo": "Grupo",
       "nombre": "Nombre",
-      "siniiga": "SINIIGA"
+      "siniiga": "SINIIGA",
+      "disponibilidad": "Disponibilidad"
     },
     "none": "—",
     "months_one": "{{count}} mes",
@@ -535,7 +536,8 @@
       "repro": "Reproducción",
       "salud": "Salud",
       "bajas": "Bajas",
-      "edad": "Edad"
+      "edad": "Edad",
+      "disponibilidad": "Disponibilidad"
     },
     "values": {
       "grupo": {
@@ -584,6 +586,11 @@
         "7": "7 años",
         "8": "8 años",
         "9+": "9 años o más"
+      },
+      "disponibilidad": {
+        "EN_RANCHO": "En rancho",
+        "SEMEN": "Solo semen",
+        "AMBOS": "Ambos"
       }
     },
     "emptyList": {
@@ -648,7 +655,8 @@
       "reproStageDate": "Fecha etapa reproductiva",
       "weightBirth": "Al nacer",
       "weightWeaning": "Destete",
-      "weightOneYear": "Al año"
+      "weightOneYear": "Al año",
+      "bullAvailability": "Disponibilidad"
     },
     "sex": {
       "MACHO": "Macho",
