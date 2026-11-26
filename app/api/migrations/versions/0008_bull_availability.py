@@ -46,4 +46,5 @@ def upgrade() -> None:
 def downgrade() -> None:
     with op.batch_alter_table("animals") as batch:
         batch.drop_constraint(op.f("ck_animals_bull_availability_iff_male"), type_="check")
+        batch.drop_constraint(op.f("ck_animals_bull_availability"), type_="check")
         batch.drop_column("bull_availability")
