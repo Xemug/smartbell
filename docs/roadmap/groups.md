@@ -78,8 +78,8 @@ L.
 
 ## Acceptance
 
-- [ ] Create a manual group with 3 cows; it lists them and its KPI tile shows the selected indicator.
-- [ ] Deleting a group moves its cows to General and writes one history entry.
-- [ ] Heifer groups list heifers by age bucket (0–6 mo, 6–16 mo, …).
+- [x] Create a manual group with 3 cows; it lists them and its KPI tile shows the selected indicator. (`test_manual_group_with_three_cows_lists_them_with_its_kpi`, `groups.test.tsx` wizard test; browser QA 2026-11-26: "Lote QA" with 3 cows and Vacas en celo.)
+- [x] Deleting a group moves its cows to General and writes one history entry. (`test_delete_sends_cows_to_general_with_one_history_entry`; browser QA: one `GROUP_DELETED` row in `history_entries`.)
+- [x] Heifer groups list heifers by age bucket (0–6 mo, 6–16 mo, …). (`test_heifer_groups_by_age_and_state`, `groups.test.tsx` heifer test; browser QA of the Potreros vaquillas tab.)
 - [ ] Matches M 1658-94285, M 1968-104045, W 129-1430, W 164-2822 (human).
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI. (PR #36: api, web, scripts, legacy-firebase green at 77a36f17.)
