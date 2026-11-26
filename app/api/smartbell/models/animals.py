@@ -54,7 +54,7 @@ def _in(values: tuple[str, ...]) -> str:
 
 def _male_on_ranch(context: DefaultExecutionContext) -> BullAvailability | None:
     """A male inserted without one is on the ranch, as every bull record was before it."""
-    sex = context.get_current_parameters()["sex"]  # type: ignore[no-untyped-call]
+    sex = context.get_current_parameters().get("sex")  # type: ignore[no-untyped-call]
     return BullAvailability.EN_RANCHO if sex == Sex.MACHO else None
 
 

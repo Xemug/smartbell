@@ -201,13 +201,20 @@ async def _check_group(session: AsyncSession, ranch_id: uuid.UUID, group_id: uui
 
 
 async def _check_refs(
-    session: AsyncSession, ranch_id: uuid.UUID, animal: Animal, payload: EventInput
+    session: AsyncSession,
+    ranch_id: uuid.UUID,
+    animal: Animal,
+    payload: EventInput,
+    old: EventPayload | None = None,
 ) -> None:
-    """Every id in the payload must name something of the active ranch."""
+    """Every id in the payload must name something of the active ranch. `old` is the payload an
+    edit replaces: a MONTA service it already recorded with this bull stays editable after the bull
+    became semen-only (sold, its semen kept)."""
     match payload:
         case HeatPayload(bull_id=uuid.UUID() as bull, method=method):
             await _check_animal_ref(session, ranch_id, bull, ("payload", "bull_id"), Sex.MACHO)
-            if method is ServiceMethod.MONTA:
+            kept = isinstance(old, HeatPayload) and (old.bull_id, old.method) == (bull, method)
+            if method is ServiceMethod.MONTA and not kept:
                 await _check_bull_on_ranch(session, bull)
         case CalvingPayload(calf_animal_id=uuid.UUID() as calf):
             if calf == animal.id:
@@ -569,7 +576,7 @@ async def edit_event(
             payload: EventInput | EventPayload = body.payload
             if payload.type is not event.type:
                 raise _invalid(("payload", "type"), "type_changed", "No se puede cambiar el tipo")
-            await _check_refs(session, ctx.ranch_id, animal, body.payload)
+            await _check_refs(session, ctx.ranch_id, animal, body.payload, old)
         elif old is not None:
             payload = old
         else:

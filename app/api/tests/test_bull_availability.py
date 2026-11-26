@@ -253,6 +253,26 @@ async def test_editing_a_monta_service_to_a_semen_only_bull_is_refused(
     assert response.json()["detail"][0]["type"] == "bull_semen_only"
 
 
+async def test_a_monta_service_stays_editable_after_its_bull_goes_semen_only(
+    tenant_api: AsyncClient, owner: Account
+) -> None:
+    sold = await bull(tenant_api, owner, "T1")
+    cow_id = await cow(tenant_api, owner, "0100")
+    served = await serve(tenant_api, owner, cow_id, sold["id"], "MONTA")
+    assert served.status_code == 201, served.text
+    event = served.json()["event"]
+    await edit(tenant_api, owner, sold["id"], bull_availability="SEMEN")
+
+    response = await tenant_api.patch(
+        f"/api/animals/{cow_id}/events/{event['id']}",
+        headers=owner.headers(),
+        # A date correction resends the stored payload, bull and method unchanged.
+        json={"occurred_on": "2026-11-01", "payload": event["payload"]},
+    )
+
+    assert response.status_code == 200, response.text
+
+
 # --- Head count and alerts ---------------------------------------------------------------------
 
 
