@@ -265,7 +265,8 @@ export function AnimalListPage() {
               hideOnMobile: true,
               cell: (a) => a.name ?? dash,
             },
-            ageColumn,
+            // A phone has room for the ID and the availability only; age shows from md up.
+            { ...ageColumn, hideOnMobile: true },
             {
               key: 'disponibilidad',
               header: t('animals.columns.disponibilidad'),

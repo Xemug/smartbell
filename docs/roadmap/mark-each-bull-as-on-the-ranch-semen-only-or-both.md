@@ -46,12 +46,13 @@ Farmers pick a bull for each service, so they need to see which bulls can serve 
   `cow-profile` builds it.
 - **MONTA rule:** checked when a HEAT/INSEMINATED event is recorded and when one is edited (422
   `bull_semen_only` on `payload.bull_id`).
-- **Head count:** "Vacas en Sistema" (`animal_count` on `/api/ranch`) leaves `SEMEN` bulls out,
-  through `models.animals.on_ranch()`. The Toros tab badge still counts every bull listed, since
-  it is the list's size, not the ranch's head count.
+- **Head count:** "Vacas en Sistema" (`animal_count` on `/api/ranch`) counts active cows only
+  (`kind = VACA`): no heifers and no males, so a `SEMEN` bull is never in it (founder, staging
+  test 2026-11-26). The Toros tab badge still counts every bull listed, since it is the list's
+  size, not the ranch's head count.
 - **Alerts:** repro alerts are female-only already; a `SEMEN` bull gets no `VACCINE_DUE`.
 - **List:** `GET /api/animals?availability=…`; the Toros list's "Disponibilidad" column shows at
-  both widths, and the filter is `filtro=disponibilidad` in the URL.
+  both widths; on a phone Edad hides so the row fits 360px (founder's Galaxy A15 scrolled), and the filter is `filtro=disponibilidad` in the URL.
 - **Fixture herd:** TORO-1 is `EN_RANCHO`, TORO-2 `SEMEN`, TORO-3 `AMBOS` (its services are all IA).
 
 ## Effort

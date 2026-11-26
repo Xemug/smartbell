@@ -331,6 +331,12 @@ describe('Vacas tab', () => {
     const user = userEvent.setup();
     renderAt('/vacas?tipo=toros');
     expect(await screen.findByText('Solo semen')).toBeInTheDocument();
+    // The phone keeps the ID and the availability; age moves to md up so the row fits 360px.
+    const table = screen.getByRole('table', { name: 'Toros' });
+    expect(within(table).getByRole('columnheader', { name: /Disponibilidad/ })).not.toHaveClass(
+      'hidden',
+    );
+    expect(within(table).getByRole('columnheader', { name: /Edad/ })).toHaveClass('hidden');
 
     await user.click(screen.getByRole('button', { name: 'Filtros disponibles' }));
     await user.click(await screen.findByRole('radio', { name: 'Disponibilidad' }));

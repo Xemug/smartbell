@@ -277,20 +277,17 @@ async def test_a_monta_service_stays_editable_after_its_bull_goes_semen_only(
 # --- Head count and alerts ---------------------------------------------------------------------
 
 
-async def test_a_semen_only_bull_is_left_out_of_the_head_count(
-    tenant_api: AsyncClient, owner: Account
-) -> None:
+async def test_the_head_count_counts_cows_only(tenant_api: AsyncClient, owner: Account) -> None:
     await cow(tenant_api, owner, "0100")
+    heifer = await create(tenant_api, owner, control_id="0200", birth_date="2025-01-15")
+    assert heifer.status_code == 201, heifer.text
     await bull(tenant_api, owner, "T1", bull_availability="EN_RANCHO")
     await bull(tenant_api, owner, "T2", bull_availability="AMBOS")
-    semen = await bull(tenant_api, owner, "T3", bull_availability="SEMEN")
+    await bull(tenant_api, owner, "T3", bull_availability="SEMEN")
 
-    before = (await tenant_api.get("/api/ranch", headers=owner.headers())).json()
-    await edit(tenant_api, owner, semen["id"], bull_availability="AMBOS")
-    after = (await tenant_api.get("/api/ranch", headers=owner.headers())).json()
+    detail = (await tenant_api.get("/api/ranch", headers=owner.headers())).json()
 
-    assert before["animal_count"] == 3
-    assert after["animal_count"] == 4
+    assert detail["animal_count"] == 1
 
 
 async def test_a_semen_only_bull_gets_no_vaccine_alerts(

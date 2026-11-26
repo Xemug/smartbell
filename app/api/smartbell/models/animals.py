@@ -7,14 +7,12 @@ from typing import Any
 
 from sqlalchemy import (
     CheckConstraint,
-    ColumnElement,
     Date,
     DateTime,
     ForeignKey,
     Index,
     Numeric,
     String,
-    or_,
     text,
 )
 from sqlalchemy.engine.default import DefaultExecutionContext
@@ -225,10 +223,3 @@ class Animal(Base):
     is_sick: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
     sick_since: Mapped[dt.date | None]
     milk_withdrawal_until: Mapped[dt.date | None]
-
-
-def on_ranch() -> ColumnElement[bool]:
-    """The animal is physically on the ranch: a semen-only bull is not (it isn't head count)."""
-    return or_(
-        Animal.bull_availability.is_(None), Animal.bull_availability != BullAvailability.SEMEN
-    )
