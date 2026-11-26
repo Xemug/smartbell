@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from smartbell.enums import (
     AlertKind,
+    AlertStatus,
     VaccinationPlanStatus,
     VaccineFrequency,
     VaccineStartBy,
@@ -325,3 +326,55 @@ async def test_a_semen_only_bull_gets_no_vaccine_alerts(
 
     assert await due(on_ranch["id"]) == 1
     assert await due(semen["id"]) == 0
+
+    # Switched to semen-only, its pending alert closes right away, not at the next job.
+    await edit(tenant_api, owner, on_ranch["id"], bull_availability="SEMEN")
+    tenant_db.expire_all()
+    [row] = await tenant_db.scalars(
+        select(Alert).where(Alert.animal_id == uuid.UUID(on_ranch["id"]))
+    )
+    assert row.status is AlertStatus.EXPIRED
+
+
+async def test_a_bull_gone_semen_only_has_its_health_alerts_closed_and_gets_no_new_ones(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
+) -> None:
+    sick = await bull(tenant_api, owner, "T1")
+    illness = {
+        "type": "ILLNESS",
+        "illness": "COJERA",
+        "treatment": {
+            "type": "ANTIBIOTICO",
+            "presentation": "INYECCION",
+            "start_date": TODAY.isoformat(),
+        },
+    }
+
+    async def ill() -> Response:
+        return await tenant_api.post(
+            f"/api/animals/{sick['id']}/events",
+            headers=owner.headers(),
+            json={"occurred_on": TODAY.isoformat(), "payload": illness},
+        )
+
+    async def health() -> list[AlertStatus]:
+        tenant_db.expire_all()
+        rows = await tenant_db.scalars(
+            select(Alert).where(
+                Alert.animal_id == uuid.UUID(sick["id"]), Alert.kind == AlertKind.HEALTH
+            )
+        )
+        return sorted(row.status for row in rows)
+
+    first = await ill()
+    assert first.status_code == 201, first.text
+    assert await health() == [AlertStatus.PENDING]
+
+    switched = await edit(tenant_api, owner, sick["id"], bull_availability="SEMEN")
+    assert switched.status_code == 200, switched.text
+    assert await health() == [AlertStatus.EXPIRED]
+
+    again = await ill()
+    assert again.status_code == 201, again.text
+    assert again.json()["open_alerts"] == []
+    assert AlertStatus.PENDING not in await health()
