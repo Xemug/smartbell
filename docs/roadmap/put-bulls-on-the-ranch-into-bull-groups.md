@@ -2,6 +2,7 @@
 id: put-bulls-on-the-ranch-into-bull-groups
 title: Put bulls on the ranch into bull groups
 summary: Bulls that are physically on the ranch (En rancho or Ambos) belong to a group; bull groups get their own tab next to the cow and heifer potreros.
+verifiedAt: 2026-11-26
 ---
 
 # Put bulls on the ranch into bull groups
