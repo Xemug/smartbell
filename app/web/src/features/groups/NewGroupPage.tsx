@@ -63,7 +63,13 @@ export function NewGroupPage() {
   const cowCount = method === 'AUTO' ? (preview.data?.length ?? 0) : picked.length;
 
   const nameMissing = kind === 'custom' ? name.trim() === '' : preset === '';
-  const stepValid = [!nameMissing, method === 'MANUAL' || values.length > 0, true][step];
+  // An AUTO rule's count decides whether an indicator can be picked, so wait for it.
+  const previewReady = preview.data !== undefined && !preview.isFetching;
+  const stepValid = [
+    !nameMissing,
+    method === 'MANUAL' || (values.length > 0 && previewReady),
+    true,
+  ][step];
   const dirty =
     name !== '' || description !== '' || preset !== '' || values.length > 0 || picked.length > 0;
 
@@ -99,7 +105,9 @@ export function NewGroupPage() {
           setError(
             failure.message === 'group_name_taken'
               ? t('groups.detail.nameTaken')
-              : t('groups.wizard.error'),
+              : failure.message === 'kpi_needs_animals'
+                ? t('groups.kpi.needsCows')
+                : t('groups.wizard.error'),
           ),
       },
     );
@@ -131,7 +139,9 @@ export function NewGroupPage() {
           onBack={() => (step === 0 ? navigate(GROUPS_PATH) : setStep(step - 1))}
           finishLabel={t('groups.wizard.finish')}
           nextLoading={create.isPending}
-          nextDisabled={touched && !stepValid}
+          nextDisabled={
+            (touched && !stepValid) || (step === 1 && method === 'AUTO' && preview.isFetching)
+          }
         >
           {error && (
             <Banner tone="error" onClose={() => setError(null)} className="mb-4">

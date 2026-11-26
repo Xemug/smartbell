@@ -509,3 +509,90 @@ async def test_heifer_groups_by_age_and_state(tenant_api: AsyncClient, owner: Ac
         "PRENADAS": [],
         "ENFERMAS": [],
     }
+
+
+# --- Review fixes ------------------------------------------------------------------------------
+
+
+async def auto_group(api: AsyncClient, account: Account) -> str:
+    response = await api.post(
+        "/api/groups",
+        headers=account.headers(),
+        json={
+            "name": "Jerseys",
+            "selection": "AUTO",
+            "auto_filter": {"field": "BREED", "values": ["JERSEY"]},
+        },
+    )
+    assert response.status_code == 201, response.text
+    group_id: str = response.json()["id"]
+    return group_id
+
+
+async def test_an_auto_group_takes_no_cows_from_a_delete_or_an_event(
+    tenant_api: AsyncClient, owner: Account
+) -> None:
+    cow = await new_cow(tenant_api, owner, "0001")
+    auto = await auto_group(tenant_api, owner)
+    lote = await tenant_api.post(
+        "/api/groups", headers=owner.headers(), json={"name": "Lote", "animal_ids": [cow]}
+    )
+
+    deleted = await tenant_api.delete(
+        f"/api/groups/{lote.json()['id']}",
+        headers=owner.headers(),
+        params={"to_group_id": auto},
+    )
+    event = await tenant_api.post(
+        f"/api/animals/{cow}/events",
+        headers=owner.headers(),
+        json={
+            "occurred_on": TODAY.isoformat(),
+            "payload": {"type": "GROUP_CHANGE", "to_group_id": auto},
+        },
+    )
+
+    assert deleted.status_code == 409 and deleted.json()["detail"] == "group_is_auto"
+    assert event.status_code == 422 and event.json()["detail"][0]["type"] == "group_is_auto"
+
+
+async def test_undoing_a_delete_move_sends_her_to_general_not_the_deleted_group(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
+) -> None:
+    cow = await new_cow(tenant_api, owner, "0001")
+    lote = await tenant_api.post(
+        "/api/groups", headers=owner.headers(), json={"name": "Lote", "animal_ids": [cow]}
+    )
+    await tenant_api.delete(f"/api/groups/{lote.json()['id']}", headers=owner.headers())
+    general = (await groups_by_name(tenant_api, owner))["General"]["id"]
+    move = next(
+        e for e in await group_changes(tenant_db, cow) if e.payload["to_group_id"] == general
+    )
+
+    response = await tenant_api.delete(
+        f"/api/animals/{cow}/events/{move.id}", headers=owner.headers()
+    )
+
+    assert response.status_code in (200, 204), response.text
+    assert await group_of(tenant_db, cow) is None  # No group: General.
+
+
+async def test_a_move_from_several_groups_is_sent_not_moved(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
+) -> None:
+    one = await new_cow(tenant_api, owner, "0001")
+    two = await new_cow(tenant_api, owner, "0002")
+    await tenant_api.post(
+        "/api/groups", headers=owner.headers(), json={"name": "A", "animal_ids": [one]}
+    )
+    b = await tenant_api.post("/api/groups", headers=owner.headers(), json={"name": "B"})
+
+    await tenant_api.post(
+        f"/api/groups/{b.json()['id']}/animals",
+        headers=owner.headers(),
+        json={"animal_ids": [one, two]},
+    )
+
+    entry = (await history(tenant_db, owner))[-1]
+    assert entry.event_key == HistoryKey.GROUP_ANIMALS_SENT and entry.n == 2
+    assert entry.refs["to_group"] == "B"

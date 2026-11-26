@@ -21,6 +21,7 @@ from smartbell.enums import (
     DeletionRequestStatus,
     EventType,
     GroupPreset,
+    GroupSelection,
     HeatOutcome,
     HistoryKey,
     PregnancyCheckResult,
@@ -182,6 +183,10 @@ async def _check_group(session: AsyncSession, ranch_id: uuid.UUID, group_id: uui
     )
     if group is None:
         raise _invalid(("payload", "to_group_id"), "group_not_found", "El potrero no existe")
+    if group.selection is GroupSelection.AUTO:  # Its rule picks its cows (groups card).
+        raise _invalid(
+            ("payload", "to_group_id"), "group_is_auto", "Ese potrero elige sus vacas solo"
+        )
     return group
 
 
@@ -341,7 +346,11 @@ async def _apply_group_change(
     change = _group_change(payload)
     if change is None and auto and isinstance(payload, IllnessPayload):
         sick = await session.scalar(
-            select(Group.id).where(Group.ranch_id == ranch_id, Group.preset == GroupPreset.ENFERMAS)
+            select(Group.id).where(
+                Group.ranch_id == ranch_id,
+                Group.preset == GroupPreset.ENFERMAS,
+                Group.selection == GroupSelection.MANUAL,
+            )
         )
         if sick is not None and sick != animal.group_id:
             payload.group_change = GroupChangeDetails(
@@ -384,7 +393,7 @@ async def _move_again(
                 )
             return
     if old is not None:
-        _revert_group_change(animal, old)
+        await _revert_group_change(session, animal, old)
     if after is not None:
         await _apply_group_change(session, ranch_id, animal, new, auto=False)
 
@@ -419,11 +428,17 @@ async def move_to_group(
     return True
 
 
-def _revert_group_change(animal: Animal, payload: EventPayload) -> None:
-    """Undoes a move, unless the animal has been moved again since."""
+async def _revert_group_change(
+    session: AsyncSession, animal: Animal, payload: EventPayload
+) -> None:
+    """Undoes a move, unless the animal has been moved again since. A group deleted since sent
+    its animals on (to General by default), so she goes to General: no group."""
     change = _group_change(payload)
     if change is not None and animal.group_id == change.to_group_id:
-        animal.group_id = change.from_group_id
+        back = change.from_group_id
+        if back is not None and await session.get(Group, back) is None:
+            back = None
+        animal.group_id = back
 
 
 # --- History -----------------------------------------------------------------------------------
@@ -641,9 +656,11 @@ async def delete_event(
         return request
     settings = await session.get_one(RanchSettings, ctx.ranch_id)
     try:
-        _revert_group_change(animal, validate_event_payload(event.type, event.payload))
+        stored = validate_event_payload(event.type, event.payload)
     except ValueError:
-        pass  # A payload that no longer parses moved nobody we can tell.
+        stored = None  # A payload that no longer parses moved nobody we can tell.
+    if stored is not None:
+        await _revert_group_change(session, animal, stored)
     reopen = await alert_sync.linked_to(session, event.id)
     await alert_sync.detach_event(session, event.id)
     await session.delete(event)

@@ -22,7 +22,7 @@ import { TextArea } from '../../ui/TextArea';
 import { TextField } from '../../ui/TextField';
 import { useSnackbar } from '../../ui/useSnackbar';
 import { ANIMALS_PATH } from '../animals/list/AnimalListPage';
-import { daysInMilk } from '../animals/list/animalFacts';
+import { ageInMonths, daysInMilk } from '../animals/list/animalFacts';
 import { useAnimalPage, type Animal } from '../animals/list/api';
 import {
   useGroup,
@@ -85,19 +85,24 @@ function Detail({ group }: { group: GroupOut }) {
   const bring = useMoveAnimals();
 
   const [name, setName] = useState(group.name);
-  const [description, setDescription] = useState(groupDescription(group, t) ?? '');
+  const [description, setDescription] = useState(group.description ?? '');
   const [kpi, setKpi] = useState<string>(group.kpi_indicator ?? NO_KPI);
   const [formError, setFormError] = useState<string | null>(null);
   useEffect(() => {
     setName(group.name);
-    setDescription(groupDescription(group, t) ?? '');
+    setDescription(group.description ?? '');
     setKpi(group.kpi_indicator ?? NO_KPI);
     // A saved group comes back from the server; the form follows it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [group.id, group.name, group.description, group.kpi_indicator]);
 
   const [page, setPage] = useState(1);
-  const members = useAnimalPage({ group: group.id, page, page_size: PAGE_SIZE });
+  // General also holds the animals with no group, which only its preset filter finds.
+  const members = useAnimalPage({
+    group: group.preset === 'GENERAL' ? 'GENERAL' : group.id,
+    page,
+    page_size: PAGE_SIZE,
+  });
   const rows = members.data?.items ?? [];
   const today = useMemo(() => new Date(), []);
 
@@ -105,12 +110,13 @@ function Detail({ group }: { group: GroupOut }) {
   const [toMove, setToMove] = useState<string[] | null>(null);
   const [bringing, setBringing] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
+  const [bringFailed, setBringFailed] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const moveFrom = useRef<HTMLElement | null>(null);
 
   const dirty =
     name !== group.name ||
-    description !== (groupDescription(group, t) ?? '') ||
+    description !== (group.description ?? '') ||
     kpi !== (group.kpi_indicator ?? NO_KPI);
   const total = group.animal_count ?? 0;
 
@@ -157,10 +163,13 @@ function Detail({ group }: { group: GroupOut }) {
     },
     {
       key: 'dim',
-      header: t('animals.columns.dim'),
+      header: `${t('animals.columns.dim')} / ${t('animals.columns.edad')}`,
       align: 'right',
-      // DEL is a cow's figure; anything else in the potrero shows a dash.
-      cell: (a) => (a.kind === 'VACA' ? (daysInMilk(a, today) ?? '—') : '—'),
+      // DEL is a cow's figure; a heifer or bull shows its age instead.
+      cell: (a) =>
+        a.kind === 'VACA'
+          ? (daysInMilk(a, today) ?? '—')
+          : t('animals.months', { count: ageInMonths(a, today) }),
     },
   ];
   const rowActions: DataTableRowAction<Animal>[] | undefined = canEdit
@@ -180,18 +189,20 @@ function Detail({ group }: { group: GroupOut }) {
     bring.mutate(
       { groupId: group.id, animalIds: picked },
       {
-        onSuccess: () => {
+        onSuccess: (result) => {
           snackbar.show({
             kind: 'success',
             message: t('groups.moveDialog.done', {
-              count: picked.length,
+              count: result.moved.length,
               name: groupName(group, t),
             }),
           });
           setBringing(false);
           setPicked([]);
+          setBringFailed(false);
         },
-        onError: () => setFormError(t('groups.moveDialog.error')),
+        // Shown in the dialog, which covers the page's own banner.
+        onError: () => setBringFailed(true),
       },
     );
 
@@ -233,6 +244,7 @@ function Detail({ group }: { group: GroupOut }) {
               hint={`${description.length}/120`}
               rows={3}
               disabled={!canEdit}
+              placeholder={groupDescription(group, t) ?? undefined}
               value={description}
               onChange={(event) => setDescription(event.target.value)}
             />
@@ -383,6 +395,11 @@ function Detail({ group }: { group: GroupOut }) {
           </>
         }
       >
+        {bringFailed && (
+          <Banner tone="error" onClose={() => setBringFailed(false)} className="mb-3">
+            {t('groups.moveDialog.error')}
+          </Banner>
+        )}
         <CowPicker selected={picked} onChange={setPicked} />
       </Modal>
       {deleting && (

@@ -55,7 +55,7 @@ export function MoveToGroupDialog({
         onSuccess: (result) => {
           snackbar.show({
             kind: 'success',
-            message: t('groups.moveDialog.done', { count: animalIds.length, name }),
+            message: t('groups.moveDialog.done', { count: result.moved.length, name }),
           });
           onClose();
           onMoved?.([...result.moved, ...result.unchanged]);

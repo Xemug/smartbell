@@ -467,6 +467,8 @@ async def delete_group(
         target = await get_group(session, ranch_id, to_group_id)
         if target.id == group.id:
             raise FieldError(422, ("to_group_id",), "same_group", "Elige otro potrero")
+        if target.selection is GroupSelection.AUTO:
+            raise GroupError(409, "group_is_auto")
     animals = (
         await session.scalars(
             select(Animal)
@@ -542,6 +544,15 @@ async def move_animals(
                 user_id,
                 HistoryKey.GROUP_ANIMALS_MOVED,
                 HistoryRefs(animal_ids=ids, group_id=group.id, group=source, to_group=group.name),
+                n=len(ids),
+            )
+        elif len(sources) > 1:  # From several groups: "Se cambiaron N vacas a potrero X".
+            await history.record(
+                session,
+                ranch_id,
+                user_id,
+                HistoryKey.GROUP_ANIMALS_SENT,
+                HistoryRefs(animal_ids=ids, group_id=group.id, to_group=group.name),
                 n=len(ids),
             )
         else:

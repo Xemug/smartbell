@@ -209,6 +209,7 @@ beforeEach(() => {
       const key = `${request.method} ${url.pathname}`;
       if (key === 'GET /api/groups') return Response.json(groups);
       if (key === `GET /api/groups/${LOTE}`) return Response.json(groups[1]);
+      if (key === `GET /api/groups/${GENERAL}`) return Response.json(groups[0]);
       if (key === 'GET /api/groups/heifers') {
         return Response.json([
           {
@@ -244,7 +245,12 @@ beforeEach(() => {
       }
       if (key === 'GET /api/animals') {
         const inGroup = url.searchParams.get('group');
-        const items = inGroup ? herd.filter((a) => a.group_id === inGroup) : herd;
+        const items =
+          inGroup === 'GENERAL'
+            ? herd.filter((a) => a.group_id === null)
+            : inGroup
+              ? herd.filter((a) => a.group_id === inGroup)
+              : herd;
         const size = Number(url.searchParams.get('page_size') ?? 10);
         return Response.json({ items: items.slice(0, size), total: items.length, page: 1 });
       }
@@ -392,6 +398,15 @@ describe('Potrero detail', () => {
     await waitFor(() => expect(writes()).toHaveLength(1));
     expect(writes()[0]?.path).toBe(`/api/groups/${GENERAL}/animals`);
     expect(writes()[0]?.body).toEqual({ animal_ids: ['v-004'] });
+  });
+});
+
+describe('General detail', () => {
+  it('lists the animals with no group too', async () => {
+    renderAt(`/grupos/${GENERAL}`);
+    expect(await screen.findByRole('link', { name: 'V-001' })).toBeInTheDocument();
+    const listed = calls.filter((c) => c.path === '/api/animals' && c.query.has('group'));
+    expect(listed.at(-1)?.query.get('group')).toBe('GENERAL');
   });
 });
 
