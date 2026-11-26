@@ -2,6 +2,7 @@
 id: groups
 title: Groups (potreros): list, wizard, detail, delete and move cows
 summary: Potrero management: list with KPI indicator, create/edit wizard with automatic or manual cow selection, detail, delete with re-homing to General, move/add cows, and computed heifer groups.
+verifiedAt: 2026-11-26
 ---
 
 # Groups (potreros): list, wizard, detail, delete and move cows
