@@ -7,7 +7,9 @@ Every ranch, once a day at 05:00 ranch time:
    written for them, the fold derives them from the dates;
 2. open and close the projection's alerts and reminder tasks (`alert_sync.sync_animal`, the same
    hook `events-api` calls), and the approved vaccination plan's VACCINE_DUE alerts;
-3. move every pending alert one day on: follow-up day, expiry.
+3. move every pending alert one day on: follow-up day, expiry;
+4. re-apply every AUTO group's rule (`groups.reevaluate_ranch`): cows age and calve without
+   anyone editing them, so membership follows the projection just written.
 
 Every step is idempotent, so a second run on the same day changes nothing, and a ranch that
 fails is logged and skipped without stopping the others.
@@ -31,7 +33,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from smartbell.domain.repro import EventFact, project
 from smartbell.models import Animal, Event, Ranch, RanchSettings
-from smartbell.services import alert_sync, alerts
+from smartbell.services import alert_sync, alerts, groups
 from smartbell.services.animals import RANCH_TIMEZONE
 from smartbell.services.projection import animal_facts, event_fact, repro_settings, write_projection
 
@@ -46,6 +48,7 @@ class RanchRun:
     today: dt.date
     animals: int
     expired: int
+    regrouped: int = 0
 
 
 def ranch_today(now: dt.datetime | None = None) -> dt.date:
@@ -83,7 +86,14 @@ async def run_ranch(session: AsyncSession, ranch_id: uuid.UUID, today: dt.date) 
         await alert_sync.sync_animal(session, animal, projection, today)
         await alerts.sync_vaccines(session, animal, projection, vaccines, events, today)
     expired = await alerts.advance(session, ranch_id, today)
-    return RanchRun(ranch_id=ranch_id, today=today, animals=len(animal_ids), expired=len(expired))
+    regrouped = await groups.reevaluate_ranch(session, ranch_id, today)
+    return RanchRun(
+        ranch_id=ranch_id,
+        today=today,
+        animals=len(animal_ids),
+        expired=len(expired),
+        regrouped=regrouped,
+    )
 
 
 async def run_all(

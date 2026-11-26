@@ -152,6 +152,25 @@ class GroupKpiIndicator(_Name):
     DIM = auto()
 
 
+class GroupFilterField(_Name):
+    """What an AUTO group's filter reads (`Group.auto_filter["field"]`)."""
+
+    AGE = auto()  # whole years
+    BREED = auto()
+    LACTATIONS = auto()
+
+
+class HeiferGroup(_Name):
+    """The computed heifer potreros (§1 Group). Never stored; a heifer is in one stage group and,
+    while sick, in ENFERMAS too."""
+
+    RECIEN_NACIDAS = auto()  # under 6 months
+    EN_DESARROLLO = auto()  # 6 months on, not yet served
+    SERVIDAS = auto()
+    PRENADAS = auto()
+    ENFERMAS = auto()
+
+
 class EventType(_Name):
     ALTA = auto()
     HEAT = auto()

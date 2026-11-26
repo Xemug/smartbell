@@ -389,6 +389,36 @@ async def _move_again(
         await _apply_group_change(session, ranch_id, animal, new, auto=False)
 
 
+async def move_to_group(
+    session: AsyncSession,
+    ranch_id: uuid.UUID,
+    user_id: uuid.UUID | None,
+    animal: Animal,
+    to_group_id: uuid.UUID,
+    today: dt.date,
+) -> bool:
+    """The groups card's moves: one GROUP_CHANGE on the animal's bitácora, no history entry
+    (the caller writes one for the whole batch). The caller holds the animal's row lock and has
+    checked the group is the ranch's. A move changes no projection or alert, so none re-runs.
+    Returns False when she is already there."""
+    if animal.group_id == to_group_id:
+        return False
+    payload = GroupChangePayload(from_group_id=animal.group_id, to_group_id=to_group_id)
+    session.add(
+        Event(
+            id=uuid.uuid4(),
+            ranch_id=ranch_id,
+            animal_id=animal.id,
+            type=EventType.GROUP_CHANGE,
+            occurred_on=today,
+            recorded_by=user_id,
+            payload=payload.model_dump(mode="json", exclude_none=True),
+        )
+    )
+    animal.group_id = to_group_id
+    return True
+
+
 def _revert_group_change(animal: Animal, payload: EventPayload) -> None:
     """Undoes a move, unless the animal has been moved again since."""
     change = _group_change(payload)
