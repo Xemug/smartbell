@@ -87,7 +87,7 @@ async def group_changes(db: AsyncSession, animal_id: str) -> list[Event]:
 # --- List --------------------------------------------------------------------------------------
 
 
-async def test_lists_presets_first_then_custom_by_name(
+async def test_lists_general_then_presets_then_custom_by_name(
     tenant_api: AsyncClient, tenant_db: AsyncSession
 ) -> None:
     owner = await sign_up(tenant_api, "owner")
@@ -101,6 +101,12 @@ async def test_lists_presets_first_then_custom_by_name(
                 preset=GroupPreset.GENERAL,
             ),
             Group(ranch_id=owner.ranch_id, name="Lote 2", type=GroupType.CUSTOM),
+            Group(
+                ranch_id=owner.ranch_id,
+                name="Alta producción",
+                type=GroupType.PRESET,
+                preset=GroupPreset.ALTA_PRODUCCION,
+            ),
         ]
     )
     await tenant_db.commit()
@@ -109,9 +115,9 @@ async def test_lists_presets_first_then_custom_by_name(
 
     assert response.status_code == 200
     body = response.json()
-    assert [g["name"] for g in body] == ["General", "Lote 2", "Zeta"]
+    assert [g["name"] for g in body] == ["General", "Alta producción", "Lote 2", "Zeta"]
     assert body[0]["preset"] == "GENERAL" and body[0]["type"] == "PRESET"
-    assert body[1]["preset"] is None
+    assert body[2]["preset"] is None
 
 
 async def test_general_is_created_once_and_counts_cows_with_no_group(
@@ -252,7 +258,7 @@ async def test_auto_group_takes_matching_cows_from_general_only(
         json={"name": "Jerseys", "selection": "AUTO", "auto_filter": rule},
     )
 
-    assert sorted(preview.json()) == sorted([jersey, kept])
+    assert preview.json() == [jersey]  # `kept` is in a manual group, so it stays there.
     assert response.status_code == 201, response.text
     auto_id = uuid.UUID(response.json()["id"])
     assert response.json()["animal_count"] == 1

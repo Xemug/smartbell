@@ -79,14 +79,20 @@ export function useAutoPreview(rule: AutoFilter | null) {
   });
 }
 
-/** Every write moves animals or renames a group, so both lists go stale. */
+/** Every write moves animals or renames a group, so both lists go stale. A deleted group is
+ * dropped rather than refetched, which would only answer 404. */
 function useInvalidate() {
   const queryClient = useQueryClient();
-  return () =>
-    Promise.all([
+  return (deletedId?: string) => {
+    if (deletedId) queryClient.removeQueries({ queryKey: groupKeys.one(deletedId) });
+    return Promise.all([
       queryClient.invalidateQueries({ queryKey: animalKeys.all }),
-      queryClient.invalidateQueries({ queryKey: groupKeys.all }),
+      queryClient.invalidateQueries({
+        queryKey: groupKeys.all,
+        predicate: (query) => !deletedId || query.queryKey[2] !== deletedId,
+      }),
     ]);
+  };
 }
 
 export function useCreateGroup() {
@@ -97,7 +103,7 @@ export function useCreateGroup() {
       if (!data) fail(error, response);
       return data;
     },
-    onSettled: invalidate,
+    onSettled: () => invalidate(),
   });
 }
 
@@ -112,7 +118,7 @@ export function useUpdateGroup(id: string) {
       if (!data) fail(error, response);
       return data;
     },
-    onSettled: invalidate,
+    onSettled: () => invalidate(),
   });
 }
 
@@ -126,7 +132,7 @@ export function useDeleteGroup() {
       if (!data) fail(error, response);
       return data;
     },
-    onSettled: invalidate,
+    onSettled: (_data, _error, { id }) => invalidate(id),
   });
 }
 
@@ -141,7 +147,7 @@ export function useMoveAnimals() {
       if (!data) fail(error, response);
       return data;
     },
-    onSettled: invalidate,
+    onSettled: () => invalidate(),
   });
 }
 
@@ -155,6 +161,6 @@ export function useReevaluate(id: string) {
       if (!data) fail(error, response);
       return data;
     },
-    onSettled: invalidate,
+    onSettled: () => invalidate(),
   });
 }

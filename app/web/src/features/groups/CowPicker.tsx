@@ -64,7 +64,7 @@ export function CowPicker({ selected, onChange }: CowPickerProps) {
           value={search}
           maxLength={60}
           onChange={(event) => setSearch(event.target.value)}
-          className="min-w-0 flex-1 lg:max-w-72"
+          className="w-full min-w-0 sm:w-auto sm:flex-1 lg:max-w-72"
         />
         <SplitIndicator label={t('groups.wizard.inGroup')} count={selected.length} />
       </div>

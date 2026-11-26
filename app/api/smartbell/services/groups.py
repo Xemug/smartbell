@@ -89,11 +89,16 @@ class Reevaluated:
 
 
 async def list_groups(session: AsyncSession, ranch_id: uuid.UUID) -> list[Group]:
-    """Presets first, then the ranch's own groups, each by name."""
+    """General first, then the other presets, then the ranch's own groups, each by name."""
     query = (
         select(Group)
         .where(Group.ranch_id == ranch_id)
-        .order_by(Group.preset.is_(None), Group.name, Group.id)
+        .order_by(
+            func.coalesce(Group.preset, "") != GroupPreset.GENERAL.value,
+            Group.preset.is_(None),
+            Group.name,
+            Group.id,
+        )
     )
     return list((await session.scalars(query)).all())
 
@@ -263,9 +268,13 @@ async def _cows(session: AsyncSession, ranch_id: uuid.UUID, *, lock: bool) -> li
 async def preview(
     session: AsyncSession, ranch_id: uuid.UUID, rule: AutoFilter, today: dt.date
 ) -> list[uuid.UUID]:
-    """The cows a rule matches now, wherever they are."""
+    """The cows a new group with this rule would take in now: matching cows in General."""
+    general = await _general(session, ranch_id)
+    home = (None, general.id if general else None)
     return [
-        cow.id for cow in await _cows(session, ranch_id, lock=False) if matches(rule, cow, today)
+        cow.id
+        for cow in await _cows(session, ranch_id, lock=False)
+        if cow.group_id in home and matches(rule, cow, today)
     ]
 
 

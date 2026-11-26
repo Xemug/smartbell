@@ -38,22 +38,24 @@ export function DeleteGroupDialog({ group, onClose, onDeleted }: DeleteGroupDial
   if (!group) return null;
   const name = groupName(group, t);
 
-  const confirm = () =>
-    remove.mutate(
-      { id: group.id, toGroupId: target || null },
-      {
-        onSuccess: (result) => {
-          const to = others.find((g) => g.id === result.to_group_id);
-          snackbar.show({
-            kind: 'deleted',
-            message: t('groups.deleteDialog.done', { to: to ? groupName(to, t) : result.to_group }),
-          });
-          onClose();
-          onDeleted?.();
-        },
-        onError: () => setFailed(true),
-      },
-    );
+  // Awaited rather than passed as callbacks: the page under the dialog may unmount once the
+  // group is gone, and mutate's own callbacks would then never run.
+  const confirm = async () => {
+    let result;
+    try {
+      result = await remove.mutateAsync({ id: group.id, toGroupId: target || null });
+    } catch {
+      setFailed(true);
+      return;
+    }
+    const to = others.find((g) => g.id === result.to_group_id);
+    snackbar.show({
+      kind: 'deleted',
+      message: t('groups.deleteDialog.done', { to: to ? groupName(to, t) : result.to_group }),
+    });
+    onClose();
+    onDeleted?.();
+  };
 
   return (
     <Modal
@@ -68,7 +70,12 @@ export function DeleteGroupDialog({ group, onClose, onDeleted }: DeleteGroupDial
           <Button variant="outline" onClick={onClose} disabled={remove.isPending}>
             {t('ui.cancel')}
           </Button>
-          <Button variant="danger" loading={remove.isPending} disabled={!target} onClick={confirm}>
+          <Button
+            variant="danger"
+            loading={remove.isPending}
+            disabled={!target}
+            onClick={() => void confirm()}
+          >
             {t('groups.deleteDialog.confirm')}
           </Button>
         </>
