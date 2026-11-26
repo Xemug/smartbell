@@ -236,3 +236,31 @@ export function reproMilestone(
   if (animal.last_service_date) return { key: 'lastService', date: animal.last_service_date };
   return animal.last_calving_date ? { key: 'lastCalving', date: animal.last_calving_date } : null;
 }
+
+export interface Treatment {
+  type: string;
+  corticoidSubtype: string | null;
+  presentation: string;
+  startDate: string;
+  durationDays: number;
+  /** Null: nobody said, so the engine used the treatment's default (domain-model §3.6). */
+  withdrawalDays: number | null;
+}
+
+/**
+ * The treatment an event recorded: a medicated dirty heat, an illness, an accident or a medical
+ * treatment carry `treatment`; a follow-up that changed it carries `new_treatment`.
+ */
+export function treatmentOf(event: AnimalEvent): Treatment | null {
+  const raw = (event.payload.treatment ?? event.payload.new_treatment) as
+    Record<string, unknown> | null | undefined;
+  if (!raw || typeof raw.type !== 'string') return null;
+  return {
+    type: raw.type,
+    corticoidSubtype: typeof raw.corticoid_subtype === 'string' ? raw.corticoid_subtype : null,
+    presentation: typeof raw.presentation === 'string' ? raw.presentation : '',
+    startDate: typeof raw.start_date === 'string' ? raw.start_date : event.occurred_on,
+    durationDays: typeof raw.duration_days === 'number' ? raw.duration_days : 0,
+    withdrawalDays: typeof raw.withdrawal_days === 'number' ? raw.withdrawal_days : null,
+  };
+}

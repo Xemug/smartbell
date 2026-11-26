@@ -963,6 +963,40 @@
       "financeFeature": "Finanzas",
       "error": "No pudimos dar de baja. Intenta de nuevo.",
       "inUse": "No se puede eliminar: otros registros dependen de este animal. Elige otro motivo."
+    },
+    "treatment": {
+      "title": "Tratamiento médico",
+      "tipo": "Tipo de tratamiento",
+      "presentacion": "Presentación medicamento",
+      "inicio": "Fecha de inicio",
+      "duracion": "Duración del tratamiento",
+      "fuera": "Tiempo fuera de producción",
+      "days_one": "{{count}} día",
+      "days_other": "{{count}} días",
+      "defaultWithdrawal": "Según el tipo de tratamiento",
+      "types": {
+        "ANTIBIOTICO": "Antibiótico",
+        "ANTISEPTICO": "Antiséptico",
+        "ANTIBACTERIANO": "Antibacteriano",
+        "ANTIMICOTICO": "Antimicótico",
+        "QUIRURGICO": "Quirúrgico",
+        "ANTIINFLAMATORIO": "Antiinflamatorio",
+        "CORTICOIDE": "Corticoide",
+        "ANTIMICROBIANO": "Antimicrobiano",
+        "ANTIPARASITARIO": "Antiparasitario"
+      },
+      "corticoids": {
+        "BETAMETASONA": "Betametasona",
+        "DEXAMETASONA": "Dexametasona",
+        "CORTISONA": "Cortisona",
+        "PREDNISOLONA": "Prednisolona",
+        "HIDROCORTISONA": "Hidrocortisona"
+      },
+      "presentations": {
+        "TOPICO": "En piel o tópico",
+        "ORAL": "Oral o tableta",
+        "INYECCION": "Inyección"
+      }
     }
   }
 }

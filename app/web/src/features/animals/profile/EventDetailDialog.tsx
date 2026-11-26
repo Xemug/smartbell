@@ -12,9 +12,51 @@ import { TextArea } from '../../../ui/TextArea';
 import { useSnackbar } from '../../../ui/useSnackbar';
 import { useDeleteEvent, useEditEventComments, type AnimalDetail, type AnimalEvent } from './api';
 import { useEventText } from './eventText';
-import { categoryOf } from './profileFacts';
+import { categoryOf, treatmentOf, type Treatment } from './profileFacts';
 
 const COMMENT_MAX = 160;
+
+/** The expandable "Tratamiento médico" block of a medicated event (event-flows 1.9). */
+function TreatmentBlock({ treatment }: { treatment: Treatment }) {
+  const { t } = useTranslation();
+  const days = (count: number) => t('profile.treatment.days', { count });
+  const type = t(`profile.treatment.types.${treatment.type}`);
+  const rows: [string, string][] = [
+    [
+      t('profile.treatment.tipo'),
+      treatment.corticoidSubtype
+        ? `${type} (${t(`profile.treatment.corticoids.${treatment.corticoidSubtype}`)})`
+        : type,
+    ],
+    [
+      t('profile.treatment.presentacion'),
+      treatment.presentation ? t(`profile.treatment.presentations.${treatment.presentation}`) : '',
+    ],
+    [t('profile.treatment.inicio'), toDisplay(treatment.startDate)],
+    [t('profile.treatment.duracion'), days(treatment.durationDays)],
+    [
+      t('profile.treatment.fuera'),
+      treatment.withdrawalDays == null
+        ? t('profile.treatment.defaultWithdrawal')
+        : days(treatment.withdrawalDays),
+    ],
+  ];
+  return (
+    <details className="mt-3 rounded-moon-i-xs border p-3" open>
+      <summary className="cursor-pointer text-primary type-label-md">
+        {t('profile.treatment.title')}
+      </summary>
+      <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 type-body-md">
+        {rows.map(([label, value]) => (
+          <div key={label} className="contents">
+            <dt className="text-secondary-text type-label-md">{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </details>
+  );
+}
 
 interface EventDetailDialogProps {
   animal: AnimalDetail;
@@ -45,6 +87,7 @@ export function EventDetailDialog({ animal, event, onClose }: EventDetailDialogP
   }, [event]);
 
   if (!event) return null;
+  const treatment = treatmentOf(event);
   const recorder = can('EVENTS_RECORD') && animal.status === 'ACTIVE';
   // Only events the API lets anyone edit: the deletable kinds (repro edits are admins' only).
   const editable = recorder && event.deletable;
@@ -137,6 +180,7 @@ export function EventDetailDialog({ animal, event, onClose }: EventDetailDialogP
             </div>
           )}
         </dl>
+        {treatment && <TreatmentBlock treatment={treatment} />}
         {editing && (
           <TextArea
             label={t('profile.detail.comentarios')}

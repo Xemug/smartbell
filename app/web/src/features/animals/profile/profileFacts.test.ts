@@ -8,6 +8,7 @@ import {
   filterEvents,
   profileBanners,
   reproMilestone,
+  treatmentOf,
   windowText,
 } from './profileFacts';
 import { detail, event } from './testData';
@@ -143,5 +144,36 @@ describe('bitácora helpers', () => {
     const dry = detail({ lactation_state: 'SECA', last_service_date: '2026-03-01' });
     expect(reproMilestone(dry)).toEqual({ key: 'lastService', date: '2026-03-01' });
     expect(reproMilestone(detail({ sex: 'MACHO', kind: 'TORO' }))).toBeNull();
+  });
+});
+
+describe('treatmentOf', () => {
+  const treatment = {
+    type: 'CORTICOIDE',
+    corticoid_subtype: 'DEXAMETASONA',
+    presentation: 'INYECCION',
+    start_date: '2026-11-20',
+    duration_days: 5,
+    withdrawal_days: null,
+  };
+  it('reads a medicated heat, an illness and a follow-up that changed it', () => {
+    const heat = event('HEAT', { outcome: 'DIRTY_MEDICATED', clean: false, treatment });
+    expect(treatmentOf(heat)).toEqual({
+      type: 'CORTICOIDE',
+      corticoidSubtype: 'DEXAMETASONA',
+      presentation: 'INYECCION',
+      startDate: '2026-11-20',
+      durationDays: 5,
+      withdrawalDays: null,
+    });
+    expect(treatmentOf(event('ILLNESS', { illness: 'MASTITIS', treatment }))?.type).toBe(
+      'CORTICOIDE',
+    );
+    const followup = event('TREATMENT_FOLLOWUP', { outcome: 'CHANGE', new_treatment: treatment });
+    expect(treatmentOf(followup)?.durationDays).toBe(5);
+  });
+  it('is null for events without one', () => {
+    expect(treatmentOf(event('HEAT', { outcome: 'DIRTY_NOT_MEDICATED', clean: false }))).toBeNull();
+    expect(treatmentOf(event('WEIGHT', { kg: 350 }))).toBeNull();
   });
 });

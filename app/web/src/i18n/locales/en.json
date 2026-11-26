@@ -963,6 +963,40 @@
       "financeFeature": "Finance",
       "error": "We couldn't remove it. Try again.",
       "inUse": "It can't be deleted: other records depend on this animal. Choose another reason."
+    },
+    "treatment": {
+      "title": "Medical treatment",
+      "tipo": "Treatment type",
+      "presentacion": "Drug form",
+      "inicio": "Start date",
+      "duracion": "Treatment length",
+      "fuera": "Time out of production",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
+      "defaultWithdrawal": "Per the treatment type",
+      "types": {
+        "ANTIBIOTICO": "Antibiotic",
+        "ANTISEPTICO": "Antiseptic",
+        "ANTIBACTERIANO": "Antibacterial",
+        "ANTIMICOTICO": "Antifungal",
+        "QUIRURGICO": "Surgical",
+        "ANTIINFLAMATORIO": "Anti-inflammatory",
+        "CORTICOIDE": "Corticoid",
+        "ANTIMICROBIANO": "Antimicrobial",
+        "ANTIPARASITARIO": "Antiparasitic"
+      },
+      "corticoids": {
+        "BETAMETASONA": "Betamethasone",
+        "DEXAMETASONA": "Dexamethasone",
+        "CORTISONA": "Cortisone",
+        "PREDNISOLONA": "Prednisolone",
+        "HIDROCORTISONA": "Hydrocortisone"
+      },
+      "presentations": {
+        "TOPICO": "Topical",
+        "ORAL": "Oral or tablet",
+        "INYECCION": "Injection"
+      }
     }
   }
 }

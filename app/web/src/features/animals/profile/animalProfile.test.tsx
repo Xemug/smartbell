@@ -124,6 +124,22 @@ beforeEach(() => {
     ),
     event('ILLNESS', { illness: 'MASTITIS' }, { id: 'e-ill', occurred_on: '2026-11-21' }),
     event('CALVING', { timing: 'ESPERADO' }, { id: 'e-calving', occurred_on: '2026-09-27' }),
+    event(
+      'HEAT',
+      {
+        outcome: 'DIRTY_MEDICATED',
+        clean: false,
+        treatment: {
+          type: 'ANTIBIOTICO',
+          corticoid_subtype: null,
+          presentation: 'INYECCION',
+          start_date: '2026-08-10',
+          duration_days: 5,
+          withdrawal_days: 3,
+        },
+      },
+      { id: 'e-heat', occurred_on: '2026-08-10' },
+    ),
     event('ALTA', {}, { id: 'e-alta', occurred_on: '2022-10-18' }),
   ];
   vi.stubGlobal(
@@ -242,6 +258,29 @@ describe('the bitácora', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Detalle del evento' });
     expect(within(dialog).queryByRole('button', { name: 'Eliminar' })).not.toBeInTheDocument();
     expect(within(dialog).getByText(/no se pueden eliminar/)).toBeInTheDocument();
+  });
+
+  it('shows the treatment recorded with a medicated heat', async () => {
+    renderAt(`/vacas/${ID}/registros`);
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Celo sucio: con tratamiento' }),
+    );
+    const dialog = await screen.findByRole('dialog', { name: 'Detalle del evento' });
+    const block = within(dialog).getByText('Tratamiento médico').closest('details');
+    expect(block).not.toBeNull();
+    const details = within(block as HTMLElement);
+    expect(details.getByText('Antibiótico')).toBeInTheDocument();
+    expect(details.getByText('Inyección')).toBeInTheDocument();
+    expect(details.getByText('10/08/2026')).toBeInTheDocument();
+    expect(details.getByText('5 días')).toBeInTheDocument();
+    expect(details.getByText('3 días')).toBeInTheDocument();
+  });
+
+  it('shows no treatment block on an event without one', async () => {
+    renderAt(`/vacas/${ID}/registros`);
+    await userEvent.click(await screen.findByRole('button', { name: /Cambio de dieta/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'Detalle del evento' });
+    expect(within(dialog).queryByText('Tratamiento médico')).not.toBeInTheDocument();
   });
 
   it('deletes a diet change, which leaves the log', async () => {
