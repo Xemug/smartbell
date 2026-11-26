@@ -125,7 +125,7 @@ function Diets({ events }: { events: AnimalEvent[] }) {
       <DataTable<Diet>
         label={t('profile.diet.title')}
         rows={rows}
-        getRowId={(row) => `${row.since}-${row.diet}`}
+        getRowId={(row) => row.eventId}
         columns={[
           {
             key: 'tipo',

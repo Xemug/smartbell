@@ -25,6 +25,7 @@ let desktop: boolean;
 let cow: AnimalDetail;
 let events: AnimalEvent[];
 let deleteStatus: number;
+let removed: boolean;
 
 function authFor(permissions: Permission[]): AuthApi {
   const noop = vi.fn(async () => {});
@@ -108,6 +109,7 @@ beforeEach(() => {
   calls = [];
   desktop = false;
   deleteStatus = 200;
+  removed = false;
   cow = detail({
     id: ID,
     is_sick: true,
@@ -140,6 +142,9 @@ beforeEach(() => {
         body: text ? JSON.parse(text) : null,
       });
       const key = `${request.method} ${url.pathname}`;
+      // After an Error al registrar she is gone: her own reads 404.
+      if (removed && url.pathname.includes(ID))
+        return Response.json({ detail: 'animal_not_found' }, { status: 404 });
       if (key === `GET /api/animals/${ID}`) return Response.json(cow);
       if (key === `GET /api/animals/${ID}/events`) return Response.json(events);
       if (key === `GET /api/milk/cows/${ID}`)
@@ -165,7 +170,10 @@ beforeEach(() => {
         events = events.filter((e) => e.id !== 'e-diet');
         return Response.json({ animal: cow, open_alerts: [] });
       }
-      if (key === `POST /api/animals/${ID}/removal`) return new Response(null, { status: 204 });
+      if (key === `POST /api/animals/${ID}/removal`) {
+        removed = true;
+        return new Response(null, { status: 204 });
+      }
       if (key === 'GET /api/support/config') return Response.json({});
       return Response.json({ detail: 'not_mocked' }, { status: 404 });
     }),
@@ -210,6 +218,18 @@ describe('the profile', () => {
     const table = await screen.findByRole('table');
     expect(within(table).getByText('Enfermedad: Mastitis')).toBeInTheDocument();
     expect(within(table).queryByText(/Cambio de dieta/)).not.toBeInTheDocument();
+  });
+});
+
+describe('the records', () => {
+  it('falls back to the bitácora when a bull is sent to Producción', async () => {
+    cow = detail({ id: ID, sex: 'MACHO', kind: 'TORO', lactation_state: null });
+    renderAt(`/vacas/${ID}/registros?tab=produccion`);
+    expect(await screen.findByRole('tab', { name: 'Bitácora' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.queryByRole('tab', { name: 'Producción' })).not.toBeInTheDocument();
   });
 });
 
@@ -289,6 +309,23 @@ describe('Baja', () => {
       path: `/api/animals/${ID}/removal`,
       body: { reason: 'ERROR_REGISTRO' },
     });
+    await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent(/^\/vacas$/));
+  });
+
+  it('keeps the success dialog while her reads 404, until Entendido', async () => {
+    renderAt(`/vacas/${ID}`);
+    await userEvent.click(await screen.findByRole('button', { name: 'Eliminar' }));
+    await userEvent.click(await screen.findByRole('radio', { name: 'Error al registrar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Dar de baja' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Sí, dar de baja' }));
+    expect(await screen.findByText('La vaca 00001 se eliminó del sistema')).toBeInTheDocument();
+    // Give any refetch time to land; the dialog must survive it.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.queryByText('Este animal ya no existe en el rancho.')).not.toBeInTheDocument();
+    expect(calls.filter((c) => c.method === 'GET' && c.path === `/api/animals/${ID}`)).toHaveLength(
+      1,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Entendido' }));
     await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent(/^\/vacas$/));
   });
 

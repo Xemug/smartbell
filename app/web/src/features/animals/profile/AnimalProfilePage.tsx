@@ -12,7 +12,7 @@ import { Icon } from '../../../ui/icons/Icon';
 import { Spinner } from '../../../ui/Spinner';
 import { ANIMALS_PATH } from '../list/AnimalListPage';
 import { ApiError } from '../list/api';
-import { useAnimal, useAnimalEvents, useCowMilk, type AnimalDetail } from './api';
+import { useAnimal, useAnimalEvents, useCowMilk, useForgetAnimal, type AnimalDetail } from './api';
 import {
   EVENT_CATEGORIES,
   longDate,
@@ -35,11 +35,12 @@ const KIND_ICONS: Record<AnimalDetail['kind'], Glyph> = {
   NOVILLO: iconBull,
 };
 
-/** The list each kind lives in, for the back arrow and after a Baja. */
+/** The list each kind lives in, for the back arrow and after a Baja. Calves and steers have
+ * no list of their own yet, so they go to the default one. */
 const listOf = (animal: AnimalDetail | undefined) =>
-  animal?.kind === 'TORO' || animal?.kind === 'NOVILLO'
+  animal?.kind === 'TORO'
     ? `${ANIMALS_PATH}?tipo=toros`
-    : animal && animal.kind !== 'VACA'
+    : animal?.kind === 'VAQUILLA'
       ? `${ANIMALS_PATH}?tipo=vaquillas`
       : ANIMALS_PATH;
 
@@ -80,6 +81,7 @@ export function AnimalProfilePage({ records = false }: { records?: boolean }) {
   const [params, setParams] = useSearchParams();
   const today = useMemo(() => new Date(), []);
   const [removing, setRemoving] = useState(false);
+  const forgetAnimal = useForgetAnimal();
 
   const animalQuery = useAnimal(id);
   const eventsQuery = useAnimalEvents(id);
@@ -90,9 +92,11 @@ export function AnimalProfilePage({ records = false }: { records?: boolean }) {
   const sire = useAnimal(animal?.sire_id ?? undefined);
 
   const tabParam = params.get('tab');
-  const tab: RecordTab = (RECORD_TABS as readonly string[]).includes(tabParam ?? '')
-    ? (tabParam as RecordTab)
-    : 'bitacora';
+  const offered = (value: string | null): value is RecordTab =>
+    (RECORD_TABS as readonly string[]).includes(value ?? '') &&
+    // A bull has no Producción tab.
+    !(value === 'produccion' && animal?.sex === 'MACHO');
+  const tab: RecordTab = offered(tabParam) ? tabParam : 'bitacora';
   const filter = readFilter(params);
   const profileHref = `${ANIMALS_PATH}/${id}`;
   const recordsHref = (target: { tab?: string; tipo?: EventCategory }) => {
@@ -147,7 +151,7 @@ export function AnimalProfilePage({ records = false }: { records?: boolean }) {
       values.reason = animal.removed_reason
         ? t(`profile.baja.reasons.${animal.removed_reason}`).toLowerCase()
         : '';
-      values.date = animal.removed_at ? longDate(animal.removed_at.slice(0, 10)) : '';
+      values.date = animal.removed_at ? longDate(animal.removed_at) : '';
     }
     return { ...banner, text: t(`profile.banners.${banner.key}`, values) };
   });
@@ -222,7 +226,10 @@ export function AnimalProfilePage({ records = false }: { records?: boolean }) {
         animal={animal}
         open={removing}
         onClose={() => setRemoving(false)}
-        onDeleted={() => navigate(listOf(animal), { replace: true })}
+        onDeleted={() => {
+          navigate(listOf(animal), { replace: true });
+          forgetAnimal(animal.id);
+        }}
       />
     </div>
   );

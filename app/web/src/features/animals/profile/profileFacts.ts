@@ -20,7 +20,7 @@ export function windowText(startIso: string, endIso: string): string {
   return `entre los días ${day(start, 'd')} al ${day(end, "d 'de' MMMM 'de' yyyy")}`;
 }
 
-/** "18 de junio de 2025". */
+/** "18 de junio de 2025". A timestamp is read in local time, so the day is the user's. */
 export const longDate = (iso: string): string =>
   format(parseISO(iso), "d 'de' MMMM 'de' yyyy", { locale: es });
 
@@ -46,7 +46,7 @@ export function profileBanners(animal: AnimalDetail, today: Date): ProfileBanner
         params: {
           noun,
           reason: animal.removed_reason ?? '',
-          date: animal.removed_at ? longDate(animal.removed_at.slice(0, 10)) : '',
+          date: animal.removed_at ? longDate(animal.removed_at) : '',
         },
       },
     ];
@@ -119,10 +119,11 @@ export interface Diet {
   dailyKg: number | null;
   dailyCost: number | null;
   since: string;
+  eventId: string;
 }
 
 /** The diet details an event carries: its own (DIET_CHANGE) or one made alongside an illness. */
-function dietOf(event: AnimalEvent): Omit<Diet, 'since'> | null {
+function dietOf(event: AnimalEvent): Omit<Diet, 'since' | 'eventId'> | null {
   const details =
     event.type === 'DIET_CHANGE'
       ? event.payload
@@ -140,7 +141,7 @@ function dietOf(event: AnimalEvent): Omit<Diet, 'since'> | null {
 export function dietHistory(events: AnimalEvent[]): Diet[] {
   return events.flatMap((event) => {
     const diet = dietOf(event);
-    return diet ? [{ ...diet, since: event.occurred_on }] : [];
+    return diet ? [{ ...diet, since: event.occurred_on, eventId: event.id }] : [];
   });
 }
 

@@ -81,10 +81,20 @@ export function useDeleteEvent(animalId: string) {
   });
 }
 
+/** Drops a deleted animal's cached profile, so going back to it can't show it again. */
+export function useForgetAnimal() {
+  const queryClient = useQueryClient();
+  return (animalId: string) =>
+    queryClient.removeQueries({
+      queryKey: animalKeys.all,
+      predicate: (query) => query.queryKey.includes(animalId),
+    });
+}
+
 export function useEditEventComments(animalId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ eventId, comments }: { eventId: string; comments: string }) => {
+    mutationFn: async ({ eventId, comments }: { eventId: string; comments: string | null }) => {
       const { data, error, response } = await api.PATCH(
         '/api/animals/{animal_id}/events/{event_id}',
         {
@@ -111,13 +121,12 @@ export function useRemoveAnimal(animalId: string) {
       if (!response.ok) fail(error, response);
       return response.status === 204;
     },
-    onSuccess: (deleted) => {
-      if (deleted) {
-        // Gone for good: drop its cached profile so nothing shows it again.
-        queryClient.removeQueries({ queryKey: profileKeys.animal(animalId) });
-        queryClient.removeQueries({ queryKey: profileKeys.events(animalId) });
-      }
-      return queryClient.invalidateQueries({ queryKey: animalKeys.all });
-    },
+    // A deleted animal's own queries aren't refetched: they'd 404 and unmount the open profile,
+    // and its success dialog with it. The page forgets them once it has left (`forgetAnimal`).
+    onSuccess: (deleted) =>
+      queryClient.invalidateQueries({
+        queryKey: animalKeys.all,
+        predicate: (query) => !deleted || !query.queryKey.includes(animalId),
+      }),
   });
 }

@@ -140,9 +140,11 @@ async def recorder_names(
     rows = await session.execute(
         select(User.id, User.first_name, User.last_name).where(User.id.in_(user_ids))
     )
-    return {
-        user_id: " ".join(part for part in (first, last) if part) for user_id, first, last in rows
+    names = {
+        user_id: " ".join(p for p in (first, last) if p and p.strip())
+        for user_id, first, last in rows
     }
+    return {user_id: name for user_id, name in names.items() if name}
 
 
 async def _get_event(

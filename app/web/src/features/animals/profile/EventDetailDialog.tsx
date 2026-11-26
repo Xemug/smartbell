@@ -52,7 +52,7 @@ export function EventDetailDialog({ animal, event, onClose }: EventDetailDialogP
 
   const save = () =>
     edit.mutate(
-      { eventId: event.id, comments: comments.trim() },
+      { eventId: event.id, comments: comments.trim() || null },
       {
         onSuccess: () => {
           show({ kind: 'success', message: t('profile.detail.saved') });
@@ -83,7 +83,7 @@ export function EventDetailDialog({ animal, event, onClose }: EventDetailDialogP
     [t('profile.detail.tipoRegistro'), t(`profile.categories.${categoryOf(event)}`)],
     [t('profile.detail.fecha'), toDisplay(event.occurred_on)],
     [t('profile.detail.tipoEvento'), text(event)],
-    [t('profile.detail.realizo'), event.recorded_by_name ?? t('profile.detail.unknownUser')],
+    [t('profile.detail.realizo'), event.recorded_by_name || t('profile.detail.unknownUser')],
   ];
 
   return (
