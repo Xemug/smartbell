@@ -93,7 +93,6 @@ function Detail({ group }: { group: GroupOut }) {
     setDescription(group.description ?? '');
     setKpi(group.kpi_indicator ?? NO_KPI);
     // A saved group comes back from the server; the form follows it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [group.id, group.name, group.description, group.kpi_indicator]);
 
   const [page, setPage] = useState(1);

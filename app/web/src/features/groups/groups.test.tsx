@@ -431,7 +431,8 @@ describe('Animal lists bulk move', () => {
   it('offers no move on the heifer list: heifers are grouped by age', async () => {
     renderAt('/vacas?tipo=vaquillas', ['ANIMALS_VIEW', 'ANIMALS_DELETE', 'GROUPS_VIEW_EDIT']);
     const [first] = await screen.findAllByRole('checkbox', { name: /Seleccionar [A-Z]-\d/ });
-    await userEvent.click(first!);
+    if (!first) throw new Error('the heifer list has no rows');
+    await userEvent.click(first);
     expect(await screen.findByRole('button', { name: 'Dar de baja' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Cambiar de potrero' })).not.toBeInTheDocument();
   });
