@@ -50,4 +50,4 @@ L.
 - [x] Repro events show no Eliminar; a diet change can be deleted and disappears from the log.
 - [x] Baja with "Error al registrar" removes the cow from all lists.
 - [ ] Matches M 1841-98715, M 1841-99061, M 1866-100732, W 2018-907783 (human).
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
