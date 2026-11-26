@@ -34,6 +34,44 @@ Per mobile-core A11, C1–C7 and web 1.10–1.13. Name ≤60, description ≤120
 - `animal-lists` adds a read-only `GET /api/groups` (id, name, preset). Extend it here; don't replace it.
 - The bulk "move to group" action in the animal lists stays hidden until this card's group picker exists. Wire it up here.
 
+## Decisions and assumptions (groomed 2026-11-26)
+
+Audit: `routes/groups.py` (read-only `GET /api/groups`), the `Group` model with every wizard
+field, the `GROUP_*` history keys and templates, and the `GROUP_CHANGE` event all existed. No
+migration was needed. The Grupos nav entry was a V4 fake door (`built: false`); the orchestrator
+confirmed flipping it to the real page.
+
+- **Scope split:** the onboarding first-potrero wizard (mobile-core A11, web 1.10 header "Crea tu
+  primer potrero", "Omitir paso") stays with `onboarding-hub`. This card builds the post-onboarding
+  wizard (C3), list (C1/C2, 1.12), detail (C5, 1.13), delete (C4) and add/move (C6).
+- **General** is created on first use (first `GET /api/groups` or group write) and holds every
+  animal with no group. It can't be deleted or renamed. Lists show General first, then the other
+  presets, then custom groups by name.
+- **Moves** write one `GROUP_CHANGE` event per animal (bitácora) and one history entry per request:
+  `GROUP_ANIMALS_MOVED` when every animal came from the same group, else `GROUP_ANIMALS_ADDED`.
+  Delete writes one `GROUP_DELETED`. Moves don't re-run the repro projection (groups don't feed it).
+- **AUTO rules** (`{field: AGE|BREED|LACTATIONS, values}`): matching cows come in **only from
+  General**, and members that stop matching go back to General. A rule never takes an animal from
+  another group (manual or AUTO), so two rules can't fight over a cow. Animals can't be added to an
+  AUTO group by hand (409 `group_is_auto`). Rules re-apply on create, on rule edit, from "Revisar
+  filtro ahora", and in the daily job (`smartbell.jobs.daily`, after the projection step), as the
+  orchestrator asked.
+- **Chips:** age and lactation chips are 1–6 and "Más" (7+). The design draws 3–6 and "más";
+  1 and 2 were added because first- and second-lactation groups are common.
+- **Indicator:** optional. The server refuses one on a group created with no cows
+  (`kpi_needs_animals`), per C3. Figures: EN_CELO = members with a pending HEAT alert, PRENADAS =
+  pregnant (GESTANTE/SECA), ENFERMAS = sick, DIM (shown as "DEL") = average days in milk of milking
+  members.
+- **Heifer groups** are computed from active VAQUILLA animals: Preñadas (pregnant), Servidas
+  (SERVIDA), Recién nacidas (under 6 months), En desarrollo (6 months on, not served, with no upper
+  age, so an unserved heifer past 16 months stays visible). A sick heifer is also in Enfermas.
+  They're read-only, so there's no Editar/Eliminar on them (C2 draws Eliminar; not built).
+- **Manual picker:** checkboxes on every screen. The web designs also drag rows across; checkboxes
+  do the same job and work with a keyboard. Drag-and-drop is not built.
+- **Permissions:** view = `ANIMALS_VIEW`; create = `GROUPS_CREATE`; edit, move, re-evaluate =
+  `GROUPS_VIEW_EDIT`; delete = `GROUPS_DELETE`. The animal lists' bulk "Cambiar de potrero" needs
+  `GROUPS_VIEW_EDIT`.
+
 ## Effort
 
 L.
