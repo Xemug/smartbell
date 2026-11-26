@@ -57,6 +57,14 @@ class AnimalKind(_Name):
     NOVILLO = auto()
 
 
+class BullAvailability(_Name):
+    """How a bull is available for service: on the ranch (MONTA), semen only (IA), or both."""
+
+    EN_RANCHO = auto()
+    SEMEN = auto()
+    AMBOS = auto()
+
+
 class DevelopmentStage(_Name):
     AUTO = auto()
     TERNERA = auto()

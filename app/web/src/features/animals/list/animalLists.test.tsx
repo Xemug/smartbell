@@ -26,6 +26,7 @@ function animal(id: string, fields: Record<string, unknown> = {}) {
     crossbreed_level: 'FB',
     contributing_breed: null,
     development_stage: 'AUTO',
+    bull_availability: null,
     photo_url: null,
     group_id: null,
     status: 'ACTIVE',
@@ -64,6 +65,7 @@ const bulls = [
     name: 'Cadillac',
     siniiga: 'MX-01-23-4567-8901',
     birth_date: '2024-05-21',
+    bull_availability: 'SEMEN',
     lactation_state: null,
     repro_state: null,
   }),
@@ -296,7 +298,7 @@ describe('Vacas tab', () => {
     expect(screen.getByTestId('where')).toHaveTextContent('orden=dim%3Adesc');
   });
 
-  it('shows the bulls with name, age and SINIIGA, and their Edad filter', async () => {
+  it('shows the bulls with name, age, availability and SINIIGA, and their filters', async () => {
     const user = userEvent.setup();
     renderAt('/vacas');
     await user.click(await screen.findByRole('tab', { name: /Toros/ }));
@@ -306,11 +308,39 @@ describe('Vacas tab', () => {
     expect(await within(table).findByText('Cadillac')).toBeInTheDocument();
     expect(within(table).getByText('MX-01-23-4567-8901')).toBeInTheDocument();
     expect(within(table).getByText('30 meses')).toBeInTheDocument();
+    expect(within(table).getByRole('columnheader', { name: /Disponibilidad/ })).toBeInTheDocument();
+    expect(within(table).getByText('Solo semen')).toBeInTheDocument();
     expect(screen.getByTestId('where')).toHaveTextContent('/vacas?tipo=toros');
 
     await user.click(screen.getByRole('combobox', { name: 'Categoría' }));
     const options = (await screen.findAllByRole('option')).map((o) => o.textContent);
-    expect(options).toEqual(['Raza', 'Edad', 'Bajas']);
+    expect(options).toEqual(['Raza', 'Edad', 'Disponibilidad', 'Bajas']);
+  });
+
+  it('filters the bulls by availability from the URL', async () => {
+    renderAt('/vacas?tipo=toros&filtro=disponibilidad&valor=AMBOS');
+
+    await screen.findByRole('table', { name: 'Toros' });
+    await waitFor(() => expect(lastQuery()?.get('availability')).toBe('AMBOS'));
+    expect(lastQuery()?.get('kind')).toBe('TORO');
+    expect(screen.getByText('Filtro: Disponibilidad · Ambos')).toBeInTheDocument();
+  });
+
+  it('shows the availability on a phone and filters by it from the sheet', async () => {
+    desktop = false;
+    const user = userEvent.setup();
+    renderAt('/vacas?tipo=toros');
+    expect(await screen.findByText('Solo semen')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Filtros disponibles' }));
+    await user.click(await screen.findByRole('radio', { name: 'Disponibilidad' }));
+    await user.click(screen.getByRole('radio', { name: 'En rancho' }));
+    await user.click(screen.getByRole('button', { name: 'Aplicar filtro' }));
+
+    await waitFor(() => expect(lastQuery()?.get('availability')).toBe('EN_RANCHO'));
+    expect(screen.getByTestId('where')).toHaveTextContent(
+      '/vacas?tipo=toros&filtro=disponibilidad&valor=EN_RANCHO',
+    );
   });
 
   it('removes the selected animals with a reason and reports the ones refused', async () => {

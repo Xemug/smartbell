@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from smartbell.enums import AnimalStatus, HistoryKey, Role
 from smartbell.models import Animal, Membership, Ranch, RanchSettings, User
+from smartbell.models.animals import on_ranch
 from smartbell.schemas.history import HistoryRefs
 from smartbell.security.permissions import ROLE_PRESETS, Permission, effective, preset
 from smartbell.security.ranch import RanchContext
@@ -135,11 +136,11 @@ def same_name(typed: str, name: str) -> bool:
 
 
 async def count_animals(session: AsyncSession, ranch_id: uuid.UUID) -> int:
-    """The ranch's active cows and heifers ("Vacas en Sistema")."""
+    """The ranch's head count ("Vacas en Sistema"): its active animals, less semen-only bulls."""
     count = await session.scalar(
         select(func.count())
         .select_from(Animal)
-        .where(Animal.ranch_id == ranch_id, Animal.status == AnimalStatus.ACTIVE)
+        .where(Animal.ranch_id == ranch_id, Animal.status == AnimalStatus.ACTIVE, on_ranch())
     )
     return count or 0
 

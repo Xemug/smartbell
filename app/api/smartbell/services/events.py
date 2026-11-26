@@ -17,6 +17,7 @@ from smartbell.domain.withdrawal import separates_milk, withdrawal_until
 from smartbell.enums import (
     NON_DELETABLE_EVENT_TYPES,
     AnimalStatus,
+    BullAvailability,
     CalvingTiming,
     DeletionRequestStatus,
     EventType,
@@ -27,6 +28,7 @@ from smartbell.enums import (
     PregnancyCheckResult,
     ReproState,
     Role,
+    ServiceMethod,
     Sex,
     TreatmentFollowupOutcome,
 )
@@ -177,6 +179,19 @@ async def _check_animal_ref(
         raise _invalid(loc, "bull_not_male", "El toro debe ser macho")
 
 
+async def _check_bull_on_ranch(session: AsyncSession, bull_id: uuid.UUID) -> None:
+    """A natural service (MONTA) needs the bull itself: a semen-only bull can only serve by IA."""
+    availability = await session.scalar(
+        select(Animal.bull_availability).where(Animal.id == bull_id)
+    )
+    if availability is BullAvailability.SEMEN:
+        raise _invalid(
+            ("payload", "bull_id"),
+            "bull_semen_only",
+            "Este toro es solo semen: regístralo como inseminación (IA)",
+        )
+
+
 async def _check_group(session: AsyncSession, ranch_id: uuid.UUID, group_id: uuid.UUID) -> Group:
     group = await session.scalar(
         select(Group).where(Group.id == group_id, Group.ranch_id == ranch_id)
@@ -191,12 +206,21 @@ async def _check_group(session: AsyncSession, ranch_id: uuid.UUID, group_id: uui
 
 
 async def _check_refs(
-    session: AsyncSession, ranch_id: uuid.UUID, animal: Animal, payload: EventInput
+    session: AsyncSession,
+    ranch_id: uuid.UUID,
+    animal: Animal,
+    payload: EventInput,
+    old: EventPayload | None = None,
 ) -> None:
-    """Every id in the payload must name something of the active ranch."""
+    """Every id in the payload must name something of the active ranch. `old` is the payload an
+    edit replaces: a MONTA service it already recorded with this bull stays editable after the bull
+    became semen-only (sold, its semen kept)."""
     match payload:
-        case HeatPayload(bull_id=uuid.UUID() as bull):
+        case HeatPayload(bull_id=uuid.UUID() as bull, method=method):
             await _check_animal_ref(session, ranch_id, bull, ("payload", "bull_id"), Sex.MACHO)
+            kept = isinstance(old, HeatPayload) and (old.bull_id, old.method) == (bull, method)
+            if method is ServiceMethod.MONTA and not kept:
+                await _check_bull_on_ranch(session, bull)
         case CalvingPayload(calf_animal_id=uuid.UUID() as calf):
             if calf == animal.id:
                 raise _invalid(("payload", "calf_animal_id"), "calf_is_dam", "Elige la cría")
@@ -597,7 +621,7 @@ async def edit_event(
             payload: EventInput | EventPayload = body.payload
             if payload.type is not event.type:
                 raise _invalid(("payload", "type"), "type_changed", "No se puede cambiar el tipo")
-            await _check_refs(session, ctx.ranch_id, animal, body.payload)
+            await _check_refs(session, ctx.ranch_id, animal, body.payload, old)
         elif old is not None:
             payload = old
         else:

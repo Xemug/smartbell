@@ -913,6 +913,7 @@ export interface components {
       group_id?: string | null;
       /** @default HEMBRA */
       sex: components['schemas']['Sex'];
+      bull_availability?: components['schemas']['BullAvailability'] | null;
       /** Photo Url */
       photo_url?: string | null;
       /** Birth Length Cm */
@@ -967,6 +968,7 @@ export interface components {
       crossbreed_level: components['schemas']['CrossbreedLevel'];
       contributing_breed: components['schemas']['Breed'] | null;
       development_stage: components['schemas']['DevelopmentStage'];
+      bull_availability: components['schemas']['BullAvailability'] | null;
       /** Photo Url */
       photo_url: string | null;
       /** Group Id */
@@ -1037,6 +1039,7 @@ export interface components {
       crossbreed_level: components['schemas']['CrossbreedLevel'];
       contributing_breed: components['schemas']['Breed'] | null;
       development_stage: components['schemas']['DevelopmentStage'];
+      bull_availability: components['schemas']['BullAvailability'] | null;
       /** Photo Url */
       photo_url: string | null;
       /** Group Id */
@@ -1110,6 +1113,7 @@ export interface components {
       crossbreed_level: components['schemas']['CrossbreedLevel'];
       contributing_breed: components['schemas']['Breed'] | null;
       development_stage: components['schemas']['DevelopmentStage'];
+      bull_availability: components['schemas']['BullAvailability'] | null;
       /** Photo Url */
       photo_url: string | null;
       /** Group Id */
@@ -1196,6 +1200,7 @@ export interface components {
       crossbreed_level?: components['schemas']['CrossbreedLevel'] | null;
       contributing_breed?: components['schemas']['Breed'] | null;
       development_stage?: components['schemas']['DevelopmentStage'] | null;
+      bull_availability?: components['schemas']['BullAvailability'] | null;
       /** Group Id */
       group_id?: string | null;
       /** Photo Url */
@@ -1261,6 +1266,12 @@ export interface components {
         [key: string]: string;
       };
     };
+    /**
+     * BullAvailability
+     * @description How a bull is available for service: on the ranch (MONTA), semen only (IA), or both.
+     * @enum {string}
+     */
+    BullAvailability: 'EN_RANCHO' | 'SEMEN' | 'AMBOS';
     /** CalvingInput */
     CalvingInput: {
       /**
@@ -3196,6 +3207,8 @@ export interface operations {
         born_from?: string | null;
         /** @description Born on or before this date */
         born_to?: string | null;
+        /** @description The bulls' Disponibilidad filter */
+        availability?: components['schemas']['BullAvailability'] | null;
         /** @description Lists the removed animals with this reason */
         removed_reason?: components['schemas']['RemovalReason'] | null;
         sort?:

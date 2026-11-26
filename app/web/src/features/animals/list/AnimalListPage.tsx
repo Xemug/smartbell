@@ -273,6 +273,14 @@ export function AnimalListPage() {
             },
             ageColumn,
             {
+              key: 'disponibilidad',
+              header: t('animals.columns.disponibilidad'),
+              cell: (a) =>
+                a.bull_availability
+                  ? t(`animals.values.disponibilidad.${a.bull_availability}`)
+                  : dash,
+            },
+            {
               key: 'siniiga',
               header: t('animals.columns.siniiga'),
               hideOnMobile: true,

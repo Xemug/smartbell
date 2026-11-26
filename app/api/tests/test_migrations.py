@@ -7,6 +7,7 @@ from alembic.autogenerate import compare_metadata
 from alembic.config import Config
 from alembic.migration import MigrationContext
 from sqlalchemy import Connection, inspect, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from smartbell import models  # noqa: F401 - registers every table on Base.metadata
@@ -41,7 +42,7 @@ async def test_upgrade_head_on_empty_database(db_conn: AsyncConnection) -> None:
     await db_conn.run_sync(_upgrade_head)
 
     version = (await db_conn.execute(text("SELECT version_num FROM alembic_version"))).scalar_one()
-    assert version == "0007"
+    assert version == "0008"
 
 
 async def test_upgrade_creates_every_model_table(db_conn: AsyncConnection) -> None:
@@ -104,3 +105,46 @@ async def test_0007_numbers_existing_history_in_its_old_order(
         {"id": uuid.uuid4(), "ranch_id": ranch_id},
     )
     assert next_seq == 6
+
+
+async def test_0008_puts_existing_males_on_the_ranch(
+    db_conn: AsyncConnection, db_backend: str
+) -> None:
+    if db_backend != "postgresql":
+        pytest.skip("checked on Postgres, as CI runs it")
+    await db_conn.run_sync(lambda c: command.upgrade(_config(c), "0007"))
+    ranch_id, owner_id = uuid.uuid4(), uuid.uuid4()
+    await db_conn.execute(
+        text("INSERT INTO users (id, first_name, email) VALUES (:id, 'Ana', 'ana@example.com')"),
+        {"id": owner_id},
+    )
+    await db_conn.execute(
+        text("INSERT INTO ranches (id, name, owner_user_id) VALUES (:id, 'El Roble', :owner)"),
+        {"id": ranch_id, "owner": owner_id},
+    )
+    for control_id, sex, kind in (("T1", "MACHO", "TORO"), ("V1", "HEMBRA", "VACA")):
+        await db_conn.execute(
+            text(
+                "INSERT INTO animals (id, ranch_id, sex, kind, control_id, birth_date)"
+                " VALUES (:id, :ranch_id, :sex, :kind, :control_id, '2020-01-01')"
+            ),
+            {
+                "id": uuid.uuid4(),
+                "ranch_id": ranch_id,
+                "sex": sex,
+                "kind": kind,
+                "control_id": control_id,
+            },
+        )
+
+    await db_conn.run_sync(_upgrade_head)
+
+    rows = await db_conn.execute(
+        text("SELECT control_id, bull_availability FROM animals ORDER BY control_id")
+    )
+    assert [tuple(row) for row in rows] == [("T1", "EN_RANCHO"), ("V1", None)]
+    with pytest.raises(IntegrityError):
+        async with db_conn.begin_nested():
+            await db_conn.execute(
+                text("UPDATE animals SET bull_availability = NULL WHERE control_id = 'T1'")
+            )

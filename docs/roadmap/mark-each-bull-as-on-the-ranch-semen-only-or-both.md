@@ -30,7 +30,29 @@ Farmers pick a bull for each service, so they need to see which bulls can serve 
 - **UI:**
   - **Form:** the field is in the bull section of the animal form, using `src/ui` components.
   - **Toros list:** gets a "Disponibilidad" column and filter. Labels: "En rancho", "Solo semen", "Ambos".
-- **Open item:** the founder confirms the three values (recommended) or just two.
+- **Open item:** the founder confirms the three values (recommended) or just two. All three are built.
+
+## Decisions made while building (2026-11-26)
+
+- **Which animals:** every male stores a value and females store none (DB check
+  `ck_animals_bull_availability_iff_male`). A male calf that grows into a bull already says it.
+  Migration `0008` backfills every existing male to `EN_RANCHO`.
+- **Required:** a male can't be set to no value (`PATCH` with `null` is a 422). When a create
+  leaves it out (an inline sire, an older client), the male is `EN_RANCHO`. A female given one gets
+  a 422 `male_only`.
+- **Form:** the field is a `Select` in `BullSection`, the seam `animal-forms` left in "Información
+  adicional". It starts on "En rancho", so a bull registered in quick mode is on the ranch. There
+  is no web edit form yet (`/vacas/:id` is still a placeholder), so editing is API-only until
+  `cow-profile` builds it.
+- **MONTA rule:** checked when a HEAT/INSEMINATED event is recorded and when one is edited (422
+  `bull_semen_only` on `payload.bull_id`).
+- **Head count:** "Vacas en Sistema" (`animal_count` on `/api/ranch`) leaves `SEMEN` bulls out,
+  through `models.animals.on_ranch()`. The Toros tab badge still counts every bull listed, since
+  it is the list's size, not the ranch's head count.
+- **Alerts:** repro alerts are female-only already; a `SEMEN` bull gets no `VACCINE_DUE`.
+- **List:** `GET /api/animals?availability=…`; the Toros list's "Disponibilidad" column shows at
+  both widths, and the filter is `filtro=disponibilidad` in the URL.
+- **Fixture herd:** TORO-1 is `EN_RANCHO`, TORO-2 `SEMEN`, TORO-3 `AMBOS` (its services are all IA).
 
 ## Effort
 
@@ -38,9 +60,9 @@ S.
 
 ## Acceptance
 
-- [ ] A bull is created and edited with each value, and existing bulls read `EN_RANCHO` after the migration.
-- [ ] A MONTA service with a `SEMEN` bull is refused; an IA service accepts it (tests).
-- [ ] A `SEMEN` bull is left out of head counts (test).
-- [ ] The Toros list shows the column and filters by it at both widths.
+- [x] A bull is created and edited with each value, and existing bulls read `EN_RANCHO` after the migration.
+- [x] A MONTA service with a `SEMEN` bull is refused; an IA service accepts it (tests).
+- [x] A `SEMEN` bull is left out of head counts (test).
+- [x] The Toros list shows the column and filters by it at both widths.
 - [ ] The founder confirms the values (human).
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
