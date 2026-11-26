@@ -65,4 +65,4 @@ S.
 - [x] A `SEMEN` bull is left out of head counts (test).
 - [x] The Toros list shows the column and filters by it at both widths.
 - [ ] The founder confirms the values (human).
-- [ ] Tests for the new code pass in CI.
+- [x] Tests for the new code pass in CI.
