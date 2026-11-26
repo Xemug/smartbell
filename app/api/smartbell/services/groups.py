@@ -155,7 +155,12 @@ async def describe(
                 Animal.is_sick,
                 Animal.lactation_state,
                 Animal.last_calving_date,
-            ).where(Animal.ranch_id == ranch_id, Animal.status == AnimalStatus.ACTIVE)
+            ).where(
+                Animal.ranch_id == ranch_id,
+                Animal.status == AnimalStatus.ACTIVE,
+                # Potreros hold cows: heifers are grouped by age and bulls have none.
+                Animal.kind == AnimalKind.VACA,
+            )
         )
     ).all()
     in_heat = set(
@@ -524,6 +529,8 @@ async def move_animals(
         raise GroupError(404, "animal_not_found")
     if any(a.status is AnimalStatus.REMOVED for a in animals):
         raise GroupError(409, "animal_removed")
+    if any(a.kind is not AnimalKind.VACA for a in animals):  # Heifer groups go by age.
+        raise GroupError(409, "not_a_cow")
     moved: list[Animal] = []
     unchanged: list[uuid.UUID] = []
     sources: set[uuid.UUID | None] = set()

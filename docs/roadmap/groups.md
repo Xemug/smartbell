@@ -48,7 +48,8 @@ confirmed flipping it to the real page.
   animal with no group. It can't be deleted or renamed. Lists show General first, then the other
   presets, then custom groups by name.
 - **Moves** write one `GROUP_CHANGE` event per animal (bitácora) and one history entry per request:
-  `GROUP_ANIMALS_MOVED` when every animal came from the same group, else `GROUP_ANIMALS_ADDED`.
+  `GROUP_ANIMALS_MOVED` when every animal came from the same group, `GROUP_ANIMALS_SENT` when they
+  came from several, and `GROUP_ANIMALS_ADDED` when none had a group.
   Delete writes one `GROUP_DELETED`. Moves don't re-run the repro projection (groups don't feed it).
 - **AUTO rules** (`{field: AGE|BREED|LACTATIONS, values}`): matching cows come in **only from
   General**, and members that stop matching go back to General. A rule never takes an animal from
@@ -65,6 +66,11 @@ confirmed flipping it to the real page.
 - **Heifer groups** are computed from active VAQUILLA animals: Preñadas (pregnant), Servidas
   (SERVIDA), Recién nacidas (under 6 months), En desarrollo (6 months on, not served, with no upper
   age, so an unserved heifer past 16 months stays visible). A sick heifer is also in Enfermas.
+- **Cow potreros hold cows only** (founder, 2026-11-26): heifers move through their groups by age
+  and bulls have no group. Counts, member lists and the move actions cover VACA animals only; a
+  move with a heifer or bull is refused (409 `not_a_cow`), and the heifer and bull lists offer no
+  "Cambiar de potrero". Bull groups (for bulls on the ranch, in their own tab) are a separate idea
+  passed to the planner, not built here.
   They're read-only, so there's no Editar/Eliminar on them (C2 draws Eliminar; not built).
 - **Manual picker:** checkboxes on every screen. The web designs also drag rows across; checkboxes
   do the same job and work with a keyboard. Drag-and-drop is not built.

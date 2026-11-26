@@ -621,3 +621,22 @@ async def test_an_animal_is_not_registered_or_edited_into_an_auto_group(
     assert moved.status_code == 422 and moved.json()["detail"][0]["type"] == "group_is_auto"
     assert stays.status_code == 200, stays.text
     assert str(await group_of(tenant_db, jersey)) == auto
+
+
+async def test_potreros_hold_cows_only(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
+) -> None:
+    cow = await new_cow(tenant_api, owner, "0001")
+    heifer = await new_heifer(tenant_api, owner, "0002")
+    lote = await tenant_api.post("/api/groups", headers=owner.headers(), json={"name": "Lote"})
+
+    moved = await tenant_api.post(
+        f"/api/groups/{lote.json()['id']}/animals",
+        headers=owner.headers(),
+        json={"animal_ids": [cow, heifer]},
+    )
+
+    assert moved.status_code == 409 and moved.json()["detail"] == "not_a_cow"
+    assert await group_of(tenant_db, cow) is None  # Nothing moved.
+    general = (await groups_by_name(tenant_api, owner))["General"]
+    assert general["animal_count"] == 1  # The heifer is counted in her own groups.

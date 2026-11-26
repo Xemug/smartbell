@@ -22,7 +22,7 @@ import { TextArea } from '../../ui/TextArea';
 import { TextField } from '../../ui/TextField';
 import { useSnackbar } from '../../ui/useSnackbar';
 import { ANIMALS_PATH } from '../animals/list/AnimalListPage';
-import { ageInMonths, daysInMilk } from '../animals/list/animalFacts';
+import { daysInMilk } from '../animals/list/animalFacts';
 import { useAnimalPage, type Animal } from '../animals/list/api';
 import {
   useGroup,
@@ -100,6 +100,8 @@ function Detail({ group }: { group: GroupOut }) {
   // General also holds the animals with no group, which only its preset filter finds.
   const members = useAnimalPage({
     group: group.preset === 'GENERAL' ? 'GENERAL' : group.id,
+    // A cow potrero lists cows: heifers have their own groups and bulls have none.
+    kind: 'VACA',
     page,
     page_size: PAGE_SIZE,
   });
@@ -163,13 +165,9 @@ function Detail({ group }: { group: GroupOut }) {
     },
     {
       key: 'dim',
-      header: `${t('animals.columns.dim')} / ${t('animals.columns.edad')}`,
+      header: t('animals.columns.dim'),
       align: 'right',
-      // DEL is a cow's figure; a heifer or bull shows its age instead.
-      cell: (a) =>
-        a.kind === 'VACA'
-          ? (daysInMilk(a, today) ?? '—')
-          : t('animals.months', { count: ageInMonths(a, today) }),
+      cell: (a) => daysInMilk(a, today) ?? '—',
     },
   ];
   const rowActions: DataTableRowAction<Animal>[] | undefined = canEdit

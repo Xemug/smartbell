@@ -180,7 +180,8 @@ export function AnimalListPage() {
   const showingRemoved = state.filter?.category === 'bajas';
   const canRemove = can('ANIMALS_DELETE') && !showingRemoved;
   // Bulk "Cambiar de potrero" (groups card); a baja has no potrero to change.
-  const canMove = can('GROUPS_VIEW_EDIT') && !showingRemoved;
+  // Only cows change potrero by hand: heifers are grouped by age and bulls have none.
+  const canMove = can('GROUPS_VIEW_EDIT') && !showingRemoved && state.kind === 'vacas';
   const selectable = canRemove || canMove;
 
   const kindNoun = t(`animals.nouns.${state.kind}`);
