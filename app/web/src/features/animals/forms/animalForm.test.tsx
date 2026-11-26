@@ -159,6 +159,13 @@ beforeEach(() => {
             type: 'CUSTOM',
             preset: null,
           },
+          {
+            id: 'b0b0b0b0-0000-4000-8000-00000000000c',
+            name: 'Jerseys',
+            type: 'CUSTOM',
+            preset: null,
+            selection: 'AUTO',
+          },
         ]);
       if (key === 'GET /api/animals')
         return Response.json({
@@ -220,6 +227,15 @@ describe('quick registration', () => {
     // Untouched: the API's age-based default applies.
     expect(sent()).toHaveProperty('lactation_number', null);
     await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent(/^\/vacas$/));
+  });
+
+  it('offers no AUTO potrero, which picks its own cows', async () => {
+    renderAt('/vacas/nueva');
+    const potrero = await screen.findByRole('combobox', { name: 'Potrero' });
+    await waitFor(() => expect(potrero).toBeEnabled());
+    await user().click(potrero);
+    expect(await screen.findByRole('option', { name: 'Lote 7' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Jerseys' })).not.toBeInTheDocument();
   });
 
   it('registers a male, and goes to the bulls list', async () => {

@@ -596,3 +596,28 @@ async def test_a_move_from_several_groups_is_sent_not_moved(
     entry = (await history(tenant_db, owner))[-1]
     assert entry.event_key == HistoryKey.GROUP_ANIMALS_SENT and entry.n == 2
     assert entry.refs["to_group"] == "B"
+
+
+async def test_an_animal_is_not_registered_or_edited_into_an_auto_group(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
+) -> None:
+    jersey = await new_cow(tenant_api, owner, "0001", breed="JERSEY")
+    other = await new_cow(tenant_api, owner, "0002")
+    auto = await auto_group(tenant_api, owner)  # Takes the Jersey from General.
+
+    created = await tenant_api.post(
+        "/api/animals",
+        headers=owner.headers(),
+        json={"control_id": "0003", "birth_date": "2022-01-15", "group_id": auto},
+    )
+    moved = await tenant_api.patch(
+        f"/api/animals/{other}", headers=owner.headers(), json={"group_id": auto}
+    )
+    stays = await tenant_api.patch(
+        f"/api/animals/{jersey}", headers=owner.headers(), json={"group_id": auto, "name": "Lupe"}
+    )
+
+    assert created.status_code == 422 and created.json()["detail"][0]["type"] == "group_is_auto"
+    assert moved.status_code == 422 and moved.json()["detail"][0]["type"] == "group_is_auto"
+    assert stays.status_code == 200, stays.text
+    assert str(await group_of(tenant_db, jersey)) == auto
