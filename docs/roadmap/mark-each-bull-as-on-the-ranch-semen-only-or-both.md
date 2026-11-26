@@ -2,6 +2,7 @@
 id: mark-each-bull-as-on-the-ranch-semen-only-or-both
 title: Mark each bull as on the ranch, semen only, or both
 summary: Bulls need to say whether they are physically on the ranch (natural service), available only as semen for IA, or both, so farmers see how each bull is used. Add the field, migration, API, the bull section of the animal form, and a Toros column and filter.
+verifiedAt: 2026-11-26
 ---
 
 # Mark each bull as on the ranch, semen only, or both
