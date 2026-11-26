@@ -2,6 +2,7 @@
 id: cow-profile
 title: Animal profile (V4 MVP), event log and removal
 summary: The V4 MVP animal profile (photo, breed/cross chips, Peso / DEL / Lts tiles, Genealogía / Dieta / Reproducción / Salud cards, Registros for production and weight) plus the bitácora with filters, event detail and delete rules, and the Baja flow.
+verifiedAt: 2026-11-26
 ---
 
 # Animal profile (V4 MVP), event log and removal
