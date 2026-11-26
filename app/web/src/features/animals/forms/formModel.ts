@@ -9,6 +9,7 @@ export type CrossbreedLevel = components['schemas']['CrossbreedLevel'];
 export type DevelopmentStage = components['schemas']['DevelopmentStage'];
 export type ReproState = components['schemas']['ReproState'];
 export type DamStatus = components['schemas']['DamStatus'];
+export type BullAvailability = components['schemas']['BullAvailability'];
 export type AnimalCreate = components['schemas']['AnimalCreate'];
 export type ParentCreate = components['schemas']['ParentCreate'];
 
@@ -63,6 +64,7 @@ export const animalSchema = z
     crossbreedLevel: z.string(),
     contributingBreed: z.string(),
     developmentStage: z.string(),
+    bullAvailability: z.string(),
     siniiga: optional,
     lastCalvingDate: optional,
     lactationNumber: optional,
@@ -101,6 +103,7 @@ export function defaultValues(sex: Sex, generalGroupId = ''): AnimalValues {
     crossbreedLevel: 'FB',
     contributingBreed: '',
     developmentStage: 'AUTO',
+    bullAvailability: 'EN_RANCHO',
     siniiga: '',
     lastCalvingDate: '',
     // Empty: the API sets the default from her age ("1" is the field's placeholder).
@@ -163,6 +166,7 @@ export const DETAILED_FIELDS: ReadonlySet<keyof AnimalValues> = new Set([
   'crossbreedLevel',
   'contributingBreed',
   'developmentStage',
+  'bullAvailability',
   'siniiga',
   'lastCalvingDate',
   'lactationNumber',
@@ -205,6 +209,7 @@ export function toCreateBody(
     weight_weaning_kg: blank(values.weightWeaning),
     weight_one_year_kg: blank(values.weightOneYear),
   };
+  if (values.sex === 'MACHO') body.bull_availability = values.bullAvailability as BullAvailability;
 
   if (showsRepro(values.sex, body.development_stage, values.birthDate, options.today)) {
     body.last_calving_date = blank(values.lastCalvingDate);
@@ -232,6 +237,7 @@ const FIELD_OF_LOC: Record<string, keyof AnimalValues> = {
   crossbreed_level: 'crossbreedLevel',
   contributing_breed: 'contributingBreed',
   development_stage: 'developmentStage',
+  bull_availability: 'bullAvailability',
   siniiga: 'siniiga',
   last_calving_date: 'lastCalvingDate',
   lactation_number: 'lactationNumber',

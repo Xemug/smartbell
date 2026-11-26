@@ -326,7 +326,7 @@ export function AnimalForm({
           />
         )}
       />
-      {sex === 'MACHO' && <BullSection />}
+      {sex === 'MACHO' && <BullSection control={control} />}
       {parentButton('sire')}
       {parentButton('dam')}
     </Section>

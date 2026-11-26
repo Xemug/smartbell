@@ -7,6 +7,7 @@ export type Breed = components['schemas']['Breed'];
 export type ReproState = components['schemas']['ReproState'];
 export type RemovalReason = components['schemas']['RemovalReason'];
 export type GroupPreset = components['schemas']['GroupPreset'];
+export type BullAvailability = components['schemas']['BullAvailability'];
 export type ListQuery = NonNullable<operations['listAnimals']['parameters']['query']>;
 
 /** The three lists of the Vacas tab, by the slug they carry in the URL. */
@@ -41,8 +42,10 @@ const HEIFER_REPRO: ReproState[] = ['VAQUILLA', 'SERVIDA', 'GESTANTE'];
 export const LISTED_REMOVALS: RemovalReason[] = ['VENTA_OTRO_RANCHO', 'VENTA_RASTRO', 'MUERTE'];
 /** Bull_Age: under one year, then each year up to 9+. */
 export const BULL_AGES = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9+'] as const;
+/** On the ranch (natural service), semen only (IA), or both. */
+export const BULL_AVAILABILITIES: BullAvailability[] = ['EN_RANCHO', 'SEMEN', 'AMBOS'];
 
-export type Category = 'grupo' | 'raza' | 'repro' | 'salud' | 'bajas' | 'edad';
+export type Category = 'grupo' | 'raza' | 'repro' | 'salud' | 'bajas' | 'edad' | 'disponibilidad';
 
 /** Which categories each list offers, in the sheet's order (B1), and the value each preselects. */
 export function categoriesFor(kind: ListKind): { category: Category; defaultVariable: string }[] {
@@ -50,6 +53,7 @@ export function categoriesFor(kind: ListKind): { category: Category; defaultVari
     return [
       { category: 'raza', defaultVariable: 'HOLSTEIN' },
       { category: 'edad', defaultVariable: '0' },
+      { category: 'disponibilidad', defaultVariable: 'EN_RANCHO' },
       { category: 'bajas', defaultVariable: 'VENTA_OTRO_RANCHO' },
     ];
   }
@@ -77,6 +81,8 @@ export function variablesFor(kind: ListKind, category: Category, customGroups: s
       return LISTED_REMOVALS;
     case 'edad':
       return [...BULL_AGES];
+    case 'disponibilidad':
+      return BULL_AVAILABILITIES;
   }
 }
 
@@ -188,6 +194,9 @@ export function listQuery(state: ListState, today: Date, pageSize = 10): ListQue
       break;
     case 'edad':
       Object.assign(query, ageRange(filter.variable, today));
+      break;
+    case 'disponibilidad':
+      query.availability = filter.variable as BullAvailability;
       break;
   }
   return query;

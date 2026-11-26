@@ -75,6 +75,15 @@ describe('API query', () => {
     });
   });
 
+  it('filters the bulls by availability, and only the bulls', () => {
+    const state = parse('tipo=toros&filtro=disponibilidad&valor=SEMEN');
+
+    expect(state.filter).toEqual({ category: 'disponibilidad', variable: 'SEMEN' });
+    expect(listQuery(state, TODAY)).toMatchObject({ kind: 'TORO', availability: 'SEMEN' });
+    expect(parse('tipo=toros&filtro=disponibilidad&valor=PRESTADO').filter).toBeNull();
+    expect(parse('filtro=disponibilidad&valor=SEMEN').filter).toBeNull();
+  });
+
   it('turns a bull age bucket into a birth-date range', () => {
     expect(ageRange('0', TODAY)).toEqual({ born_from: '2025-11-22', born_to: '2026-11-21' });
     expect(ageRange('2', TODAY)).toEqual({ born_from: '2023-11-22', born_to: '2024-11-21' });
