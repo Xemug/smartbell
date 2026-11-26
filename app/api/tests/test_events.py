@@ -31,6 +31,7 @@ from smartbell.models import (
     Group,
     HistoryEntry,
     PlanVaccine,
+    User,
     VaccinationPlan,
 )
 from smartbell.routes.animals import get_today
@@ -803,6 +804,21 @@ async def test_the_bitacora_lists_newest_first(tenant_api: AsyncClient, owner: A
         ("WEIGHT", days(-2)),
     ]
     assert rows[0]["deletable"] is False and rows[1]["deletable"] is True
+
+
+async def test_the_bitacora_names_who_recorded_each_event(
+    tenant_api: AsyncClient, owner: Account, tenant_db: AsyncSession
+) -> None:
+    animal_id = await new_cow(tenant_api, owner, "0100")
+    await recorded(tenant_api, owner, animal_id, {"type": "WEIGHT", "kg": 500}, on=days(-1))
+    user = await tenant_db.get(User, owner.user_id)
+    assert user is not None
+    user.first_name, user.last_name = "Roberto", "Casablancas"
+    await tenant_db.commit()
+
+    response = await tenant_api.get(f"/api/animals/{animal_id}/events", headers=owner.headers())
+
+    assert {row["recorded_by_name"] for row in response.json()} == {"Roberto Casablancas"}
 
 
 async def test_payload_text_is_capped(tenant_api: AsyncClient, owner: Account) -> None:

@@ -9,6 +9,11 @@ import {
   AnimalListPage,
   NEW_ANIMAL_PATH,
 } from '../features/animals/list/AnimalListPage';
+import {
+  AnimalProfilePage,
+  PROFILE_ROUTE,
+  RECORDS_ROUTE,
+} from '../features/animals/profile/AnimalProfilePage';
 import { FIRST_COW_PATH } from '../features/auth/guards';
 import { AccountPage } from '../features/config/account/AccountPage';
 import { RanchPage } from '../features/config/ranch/RanchPage';
@@ -26,8 +31,8 @@ export const shellRoute: RouteObject = {
     { path: FIRST_COW_PATH, element: <PlaceholderPage titleKey="auth.firstCow" /> },
     { path: ANIMALS_PATH, element: <AnimalListPage /> },
     { path: NEW_ANIMAL_PATH, element: <NewAnimalPage /> },
-    // Held for `cow-profile`.
-    { path: '/vacas/:id', element: <PlaceholderPage titleKey="nav.vacas" /> },
+    { path: PROFILE_ROUTE, element: <AnimalProfilePage /> },
+    { path: RECORDS_ROUTE, element: <AnimalProfilePage records /> },
     { path: '/grupos', element: <PlaceholderPage titleKey="nav.grupos" /> },
     { path: '/reportes', element: <PlaceholderPage titleKey="nav.reportes" /> },
     { path: '/ranchos', element: <PlaceholderPage titleKey="nav.ranchos" /> },

@@ -727,5 +727,242 @@
       "permission_denied": "You don't have permission to register animals."
     },
     "lactationRange": "Enter a whole number from 0 to 30"
+  },
+  "profile": {
+    "title": "{{kind}} ID {{id}}",
+    "kinds": {
+      "VACA": "Cow",
+      "VAQUILLA": "Heifer",
+      "TORO": "Bull",
+      "BECERRO": "Calf",
+      "NOVILLO": "Steer"
+    },
+    "back": "Back to the list",
+    "loadError": "We couldn't load this animal.",
+    "notFound": "This animal is no longer on the ranch.",
+    "toList": "Go to the list",
+    "photoAlt": "Photo of {{id}}",
+    "noPhoto": "No photo",
+    "editPhoto": "Edit photo",
+    "raza": "Breed",
+    "cruza": "Cross",
+    "tiles": {
+      "peso": "Weight",
+      "del": "DIM",
+      "lts": "Avg litres",
+      "edad": "Age",
+      "pesoNacer": "Birth weight",
+      "kg": "{{kg}} kg",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
+      "ltsValue": "{{lts}} l /day"
+    },
+    "cards": {
+      "genealogia": "Genealogy",
+      "padre": "Sire",
+      "madre": "Dam",
+      "noRecord": "No record",
+      "dieta": "Diet",
+      "tipoDieta": "Diet type",
+      "reproduccion": "Reproduction",
+      "lastCalving": "Last calving",
+      "lastService": "Last service",
+      "salud": "Health",
+      "estado": "Status",
+      "saludable": "Healthy",
+      "enferma": "Sick",
+      "enfermo": "Sick",
+      "consultar": "View history"
+    },
+    "banners": {
+      "removed": "Removed for {{reason}} on {{date}}.",
+      "sickToday": "This {{noun}} was declared sick. Don't milk her for production.",
+      "sick_one": "This {{noun}} has been sick for {{count}} day. Don't milk her for production.",
+      "sick_other": "This {{noun}} has been sick for {{count}} days. Don't milk her for production.",
+      "calving": "Expected calving {{window}}.",
+      "calvingLate": "Calving was expected {{window}} and hasn't been recorded.",
+      "pregnancyCheck": "Check pregnancy {{window}}.",
+      "heat": "Expected heat {{window}}."
+    },
+    "eliminar": "Delete",
+    "registros": "Records",
+    "records": {
+      "title": "Records {{kind}} ID {{id}}",
+      "tabs": "Records",
+      "bitacora": "Event log",
+      "produccion": "Production",
+      "peso": "Weight",
+      "toProfile": "General data"
+    },
+    "production": {
+      "avg": "Daily average",
+      "total": "Litres recorded",
+      "days": "Days recorded",
+      "peak": "Peak day",
+      "peakValue": "{{liters}} l (DIM {{dim}})",
+      "litres": "{{liters}} l",
+      "empty": "No litres recorded for this animal yet.",
+      "noAccess": "Litres need the reports permission."
+    },
+    "weight": {
+      "atBirth": "At birth",
+      "atWeaning": "At weaning",
+      "atYear": "At one year",
+      "columns": {
+        "peso": "Weight",
+        "fecha": "Date"
+      },
+      "empty": "No weighings in the log yet."
+    },
+    "diet": {
+      "title": "Diet change history",
+      "latest": "Latest diet change",
+      "tipo": "Diet type",
+      "inicio": "Start date",
+      "costo": "Daily cost",
+      "cantidad": "Daily amount",
+      "columns": {
+        "tipo": "Type",
+        "kg": "Kg",
+        "costo": "Cost",
+        "fecha": "Date"
+      },
+      "empty": "No diet changes yet."
+    },
+    "bitacora": {
+      "label": "Event log",
+      "columns": {
+        "tipo": "Type",
+        "fecha": "Date",
+        "evento": "Event"
+      },
+      "filter": "Filter",
+      "filterTitle": "Event types to filter:",
+      "period": "Period",
+      "apply": "Apply filter",
+      "clear": "Clear filters",
+      "filtered_one": "{{count}} filter applied",
+      "filtered_other": "{{count}} filters applied",
+      "empty": "No events match the selected filters; try others.",
+      "loadError": "We couldn't load the event log."
+    },
+    "categories": {
+      "reproduccion": "Reproduction",
+      "salud": "Health",
+      "dieta": "Nutrition",
+      "vacunas": "Vaccines",
+      "potrero": "Group change",
+      "desarrollo": "Development",
+      "alta": "Added",
+      "baja": "Removal"
+    },
+    "events": {
+      "ALTA": "Initial registration",
+      "heat": {
+        "NOT_OBSERVED": "Heat not observed",
+        "VWP": "Heat confirmed: waiting period",
+        "NOT_INSEMINATED": "Heat confirmed: not inseminated",
+        "DIRTY_MEDICATED": "Dirty heat: treated",
+        "DIRTY_NOT_MEDICATED": "Dirty heat: not treated",
+        "INSEMINATED": "Heat confirmed: insemination"
+      },
+      "pregnancy": {
+        "POSITIVE": "Pregnancy confirmed",
+        "NEGATIVE": "Pregnancy check negative"
+      },
+      "calving": {
+        "ESPERADO": "Calving on time",
+        "ANTICIPADO": "Early calving",
+        "RETRASADO": "Late calving"
+      },
+      "abortion": {
+        "NATURAL": "Natural abortion",
+        "INDUCIDO": "Induced abortion"
+      },
+      "illness": "Illness: {{illness}}",
+      "ACCIDENT": "Accident",
+      "MEDICAL_TREATMENT": "Medical treatment",
+      "followup": {
+        "SUCCESS": "Follow-up: treatment worked",
+        "CHANGE": "Follow-up: treatment changed"
+      },
+      "diet": "Diet change: {{diet}}",
+      "GROUP_CHANGE": "Group change",
+      "VACCINATION": "Vaccine given",
+      "weight": "Weighing: {{kg}} kg",
+      "removal": "Removal: {{reason}}"
+    },
+    "illnesses": {
+      "MASTITIS": "Mastitis",
+      "BRUCELOSIS": "Brucellosis",
+      "PULMONIA": "Pneumonia",
+      "CETOSIS": "Ketosis",
+      "TUBERCULOSIS": "Tuberculosis",
+      "COJERA": "Lameness",
+      "FIEBRE_AFTOSA": "Foot-and-mouth",
+      "ENVENENAMIENTO": "Poisoning",
+      "OTRO": "Other"
+    },
+    "detail": {
+      "title": "Event detail",
+      "tipoRegistro": "Record type",
+      "fecha": "Date",
+      "tipoEvento": "Event type",
+      "realizo": "Recorded by",
+      "comentarios": "Comments",
+      "sinComentarios": "No comments",
+      "unknownUser": "Unknown",
+      "editar": "Edit",
+      "eliminar": "Delete",
+      "guardar": "Save",
+      "placeholder": "What happened?",
+      "locked": "Reproduction, registration and removal events can't be deleted.",
+      "saved": "Comment saved",
+      "saveError": "We couldn't save the comment. Try again."
+    },
+    "deleteEvent": {
+      "title": "Delete log event",
+      "body": "Are you sure you want to delete this event from the log? Once deleted, no record of it stays in the system.",
+      "confirm": "Yes, delete",
+      "done": "Log event deleted",
+      "requested": "An admin will be notified. If they accept, the event will be deleted.",
+      "error": "Connection failure, try again later"
+    },
+    "baja": {
+      "link": "Remove animal",
+      "title": "Remove animal",
+      "intro": "{{noun}} {{id}} will be removed",
+      "ask": "Tell us why you're removing it",
+      "reasons": {
+        "VENTA_OTRO_RANCHO": "Sold to another ranch",
+        "VENTA_RASTRO": "Sold to slaughter",
+        "MUERTE": "Death (cull record)",
+        "ERROR_REGISTRO": "Registration error"
+      },
+      "submit": "Remove",
+      "confirmTitle": {
+        "VENTA_OTRO_RANCHO": "{{noun}} {{id}} will be removed: sold to another ranch",
+        "VENTA_RASTRO": "{{noun}} {{id}} will be removed: sold to slaughter",
+        "MUERTE": "{{noun}} {{id}} will be removed: death",
+        "ERROR_REGISTRO": "{{noun}} {{id}} will be deleted from the system for good"
+      },
+      "confirmBody": {
+        "VENTA_OTRO_RANCHO": "We'll miss this {{noun}}; hopefully they look after her as well as you did.",
+        "VENTA_RASTRO": "We'll miss her.",
+        "MUERTE": "We're sorry for your loss.",
+        "ERROR_REGISTRO": "Which {{noun}}? There was never a {{noun}} here!"
+      },
+      "confirm": "Yes, remove",
+      "doneTitle": "{{noun}} {{id}} was removed: {{reason}}",
+      "doneDeletedTitle": "{{noun}} {{id}} was deleted from the system",
+      "doneDeletedBody": "Keeping accurate records makes your ranch more profitable.",
+      "finance": "See the financial impact of this event. Finance module coming soon.",
+      "waitlist": "Join the waitlist",
+      "notNow": "Not now, thanks",
+      "ok": "Got it",
+      "financeFeature": "Finance",
+      "error": "We couldn't remove it. Try again.",
+      "inUse": "It can't be deleted: other records depend on this animal. Choose another reason."
+    }
   }
 }

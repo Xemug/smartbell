@@ -80,6 +80,8 @@ class EventOut(BaseModel):
     type: EventType
     occurred_on: dt.date
     recorded_by: uuid.UUID | None
+    # "Realizó registro": filled by the bitácora list; other responses leave it empty.
+    recorded_by_name: str | None = None
     created_at: dt.datetime
     description: str | None
     comments: str | None

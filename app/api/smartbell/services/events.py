@@ -37,6 +37,7 @@ from smartbell.models import (
     Group,
     PlanVaccine,
     RanchSettings,
+    User,
     VaccinationPlan,
 )
 from smartbell.schemas.event_api import EventCreate, EventDerived, EventInput, EventUpdate
@@ -128,6 +129,20 @@ async def list_events(
         .order_by(Event.occurred_on.desc(), Event.created_at.desc(), Event.id.desc())
     )
     return list(rows)
+
+
+async def recorder_names(
+    session: AsyncSession, user_ids: Collection[uuid.UUID]
+) -> dict[uuid.UUID, str]:
+    """The display name of each user who recorded one of these events."""
+    if not user_ids:
+        return {}
+    rows = await session.execute(
+        select(User.id, User.first_name, User.last_name).where(User.id.in_(user_ids))
+    )
+    return {
+        user_id: " ".join(part for part in (first, last) if part) for user_id, first, last in rows
+    }
 
 
 async def _get_event(

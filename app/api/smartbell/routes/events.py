@@ -82,7 +82,14 @@ async def list_events(
         rows = await events.list_events(session, ctx.ranch_id, animal_id)
     except AnimalNotFound as error:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="animal_not_found") from error
-    return [EventOut.model_validate(row) for row in rows]
+    names = await events.recorder_names(
+        session, {row.recorded_by for row in rows if row.recorded_by is not None}
+    )
+    out = [EventOut.model_validate(row) for row in rows]
+    for event in out:
+        if event.recorded_by is not None:
+            event.recorded_by_name = names.get(event.recorded_by)
+    return out
 
 
 @router.post(

@@ -727,5 +727,242 @@
       "permission_denied": "No tienes permiso para registrar animales."
     },
     "lactationRange": "Escribe un número entero de 0 a 30"
+  },
+  "profile": {
+    "title": "{{kind}} ID {{id}}",
+    "kinds": {
+      "VACA": "Vaca",
+      "VAQUILLA": "Vaquilla",
+      "TORO": "Toro",
+      "BECERRO": "Becerro",
+      "NOVILLO": "Novillo"
+    },
+    "back": "Regresar a la lista",
+    "loadError": "No pudimos cargar este animal.",
+    "notFound": "Este animal ya no existe en el rancho.",
+    "toList": "Ir a la lista",
+    "photoAlt": "Foto de {{id}}",
+    "noPhoto": "Sin foto",
+    "editPhoto": "Editar foto",
+    "raza": "Raza",
+    "cruza": "Cruza",
+    "tiles": {
+      "peso": "Peso",
+      "del": "DEL",
+      "lts": "Lts promedio",
+      "edad": "Edad",
+      "pesoNacer": "Peso al nacer",
+      "kg": "{{kg}} Kg",
+      "days_one": "{{count}} día",
+      "days_other": "{{count}} días",
+      "ltsValue": "{{lts}} lt /día"
+    },
+    "cards": {
+      "genealogia": "Genealogía",
+      "padre": "Padre",
+      "madre": "Madre",
+      "noRecord": "Sin registro",
+      "dieta": "Dieta",
+      "tipoDieta": "Tipo de dieta",
+      "reproduccion": "Reproducción",
+      "lastCalving": "Último parto",
+      "lastService": "Última monta / Inseminación",
+      "salud": "Salud",
+      "estado": "Estado",
+      "saludable": "Saludable",
+      "enferma": "Enferma",
+      "enfermo": "Enfermo",
+      "consultar": "Consultar historial"
+    },
+    "banners": {
+      "removed": "Dada de baja por {{reason}} el {{date}}.",
+      "sickToday": "Esta {{noun}} se declaró enferma. Evita ordeñar para producción.",
+      "sick_one": "Esta {{noun}} lleva {{count}} día enferma. Evita ordeñar para producción.",
+      "sick_other": "Esta {{noun}} lleva {{count}} días enferma. Evita ordeñar para producción.",
+      "calving": "Parto estimado {{window}}.",
+      "calvingLate": "El parto se esperaba {{window}} y aún no se registra.",
+      "pregnancyCheck": "Confirma preñez {{window}}.",
+      "heat": "Celo estimado {{window}}."
+    },
+    "eliminar": "Eliminar",
+    "registros": "Registros",
+    "records": {
+      "title": "Registros {{kind}} ID {{id}}",
+      "tabs": "Registros",
+      "bitacora": "Bitácora",
+      "produccion": "Producción",
+      "peso": "Peso",
+      "toProfile": "Datos generales"
+    },
+    "production": {
+      "avg": "Promedio diario",
+      "total": "Litros registrados",
+      "days": "Días con registro",
+      "peak": "Día pico",
+      "peakValue": "{{liters}} lt (DEL {{dim}})",
+      "litres": "{{liters}} lt",
+      "empty": "Aún no hay litros registrados para este animal.",
+      "noAccess": "Los litros se ven con el permiso de reportes."
+    },
+    "weight": {
+      "atBirth": "Al nacer",
+      "atWeaning": "Al destete",
+      "atYear": "Al año",
+      "columns": {
+        "peso": "Peso",
+        "fecha": "Fecha"
+      },
+      "empty": "Aún no hay pesajes en la bitácora."
+    },
+    "diet": {
+      "title": "Historial cambios en dieta",
+      "latest": "Último cambio de dieta",
+      "tipo": "Tipo de dieta",
+      "inicio": "Fecha de inicio",
+      "costo": "Costo diario",
+      "cantidad": "Cantidad diaria",
+      "columns": {
+        "tipo": "Tipo",
+        "kg": "Kg",
+        "costo": "Costo",
+        "fecha": "Fecha"
+      },
+      "empty": "Aún no hay cambios de dieta."
+    },
+    "bitacora": {
+      "label": "Bitácora de eventos",
+      "columns": {
+        "tipo": "Tipo",
+        "fecha": "Fecha",
+        "evento": "Evento"
+      },
+      "filter": "Filtrar",
+      "filterTitle": "Tipo de evento(s) a filtrar:",
+      "period": "Periodo",
+      "apply": "Aplicar filtro",
+      "clear": "Quitar filtros",
+      "filtered_one": "{{count}} filtro aplicado",
+      "filtered_other": "{{count}} filtros aplicados",
+      "empty": "No se encontró ningún evento con los filtros seleccionados, prueba con otros filtros.",
+      "loadError": "No pudimos cargar la bitácora."
+    },
+    "categories": {
+      "reproduccion": "Reproducción",
+      "salud": "Salud",
+      "dieta": "Nutrición",
+      "vacunas": "Vacunas",
+      "potrero": "Cambio potrero",
+      "desarrollo": "Desarrollo",
+      "alta": "Alta",
+      "baja": "Baja"
+    },
+    "events": {
+      "ALTA": "Registro inicial en sistema",
+      "heat": {
+        "NOT_OBSERVED": "Celo no observado",
+        "VWP": "Celo confirmado: Periodo espera",
+        "NOT_INSEMINATED": "Celo confirmado: No se inseminó",
+        "DIRTY_MEDICATED": "Celo sucio: con tratamiento",
+        "DIRTY_NOT_MEDICATED": "Celo sucio: sin tratamiento",
+        "INSEMINATED": "Celo confirmado: Inseminación"
+      },
+      "pregnancy": {
+        "POSITIVE": "Preñez confirmada",
+        "NEGATIVE": "Diagnóstico de preñez negativo"
+      },
+      "calving": {
+        "ESPERADO": "Parto dentro de lo esperado",
+        "ANTICIPADO": "Parto anticipado",
+        "RETRASADO": "Parto retrasado"
+      },
+      "abortion": {
+        "NATURAL": "Aborto natural",
+        "INDUCIDO": "Aborto inducido"
+      },
+      "illness": "Enfermedad: {{illness}}",
+      "ACCIDENT": "Accidente",
+      "MEDICAL_TREATMENT": "Tratamiento médico",
+      "followup": {
+        "SUCCESS": "Seguimiento: tratamiento exitoso",
+        "CHANGE": "Seguimiento: cambio de tratamiento"
+      },
+      "diet": "Cambio de dieta: {{diet}}",
+      "GROUP_CHANGE": "Cambio de potrero",
+      "VACCINATION": "Vacuna aplicada",
+      "weight": "Pesaje: {{kg}} Kg",
+      "removal": "Baja: {{reason}}"
+    },
+    "illnesses": {
+      "MASTITIS": "Mastitis",
+      "BRUCELOSIS": "Brucelosis",
+      "PULMONIA": "Pulmonía",
+      "CETOSIS": "Cetosis",
+      "TUBERCULOSIS": "Tuberculosis",
+      "COJERA": "Cojera",
+      "FIEBRE_AFTOSA": "Fiebre aftosa",
+      "ENVENENAMIENTO": "Envenenamiento",
+      "OTRO": "Otra"
+    },
+    "detail": {
+      "title": "Detalle del evento",
+      "tipoRegistro": "Tipo de registro",
+      "fecha": "Fecha",
+      "tipoEvento": "Tipo de evento",
+      "realizo": "Realizó registro",
+      "comentarios": "Comentarios",
+      "sinComentarios": "Sin comentarios",
+      "unknownUser": "Sin dato",
+      "editar": "Editar",
+      "eliminar": "Eliminar",
+      "guardar": "Guardar",
+      "placeholder": "¿Qué pasó?",
+      "locked": "Los eventos de reproducción, alta y baja no se pueden eliminar.",
+      "saved": "Comentario guardado",
+      "saveError": "No pudimos guardar el comentario. Intenta de nuevo."
+    },
+    "deleteEvent": {
+      "title": "Eliminar evento en bitácora",
+      "body": "¿Seguro que quieres eliminar este evento de la bitácora? Una vez eliminado el evento, no quedará ningún registro en el sistema.",
+      "confirm": "Sí, eliminar",
+      "done": "Evento en bitácora eliminado",
+      "requested": "Un administrador será notificado. Si acepta, se eliminará el evento.",
+      "error": "Falla de conexión, intenta más tarde"
+    },
+    "baja": {
+      "link": "Baja de ganado",
+      "title": "Baja de ganado",
+      "intro": "La {{noun}} {{id}} se dará de baja",
+      "ask": "Cuéntanos por qué la das de baja",
+      "reasons": {
+        "VENTA_OTRO_RANCHO": "Venta a otro rancho",
+        "VENTA_RASTRO": "Venta a rastro",
+        "MUERTE": "Muerte (registro de desecho)",
+        "ERROR_REGISTRO": "Error al registrar"
+      },
+      "submit": "Dar de baja",
+      "confirmTitle": {
+        "VENTA_OTRO_RANCHO": "La {{noun}} {{id}} se dará de baja por venta a otro rancho",
+        "VENTA_RASTRO": "La {{noun}} {{id}} se dará de baja por venta a rastro",
+        "MUERTE": "La {{noun}} {{id}} se dará de baja por muerte (registro de desecho)",
+        "ERROR_REGISTRO": "La {{noun}} {{id}} se eliminará por completo del sistema, sin posibilidad de recuperarla"
+      },
+      "confirmBody": {
+        "VENTA_OTRO_RANCHO": "¡¡¡Ahhh!!! Vamos a extrañar a esta {{noun}}, esperemos que la cuiden tan bien como tú.",
+        "VENTA_RASTRO": "¡¡¡Ahhh!!! La vamos a extrañar, esperemos se convierta en suculentos cortes.",
+        "MUERTE": "Lamentamos tu pérdida, esperemos que tus vacas no se pongan tristes por su partida.",
+        "ERROR_REGISTRO": "¿Cuál {{noun}}? ¡¡¡Aquí nunca hubo una {{noun}}!!!"
+      },
+      "confirm": "Sí, dar de baja",
+      "doneTitle": "La {{noun}} {{id}} se dio de baja exitosamente por {{reason}}",
+      "doneDeletedTitle": "La {{noun}} {{id}} se eliminó del sistema",
+      "doneDeletedBody": "Recuerda que mantener registros precisos hará que tu rancho sea más rentable.",
+      "finance": "Conoce el impacto financiero de este evento. Módulo de finanzas próximamente disponible.",
+      "waitlist": "Registrarme en la lista de espera",
+      "notNow": "Por ahora no, gracias",
+      "ok": "Entendido",
+      "financeFeature": "Finanzas",
+      "error": "No pudimos dar de baja. Intenta de nuevo.",
+      "inUse": "No se puede eliminar: otros registros dependen de este animal. Elige otro motivo."
+    }
   }
 }

@@ -451,6 +451,57 @@ export interface paths {
     patch: operations['editEvent'];
     trace?: never;
   };
+  '/api/alerts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Alerts */
+    get: operations['listAlerts'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/alerts/counts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Count Alerts */
+    get: operations['countAlerts'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/alerts/{alert_id}/resolve': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Resolve Alert */
+    post: operations['resolveAlert'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/milk/herd-logs': {
     parameters: {
       query?: never;
@@ -705,6 +756,15 @@ export interface components {
       /** Address */
       address: string | null;
     };
+    /** AlertCountsOut */
+    AlertCountsOut: {
+      /** Total */
+      total: number;
+      /** By Kind */
+      by_kind: {
+        [key: string]: number;
+      };
+    };
     /**
      * AlertKind
      * @enum {string}
@@ -720,25 +780,15 @@ export interface components {
       | 'TREATMENT_DUE'
       | 'DRY_OFF'
       | 'DIET_CHANGE';
-    /** AlertOut */
-    AlertOut: {
+    /** AlertResolve */
+    AlertResolve: {
       /**
-       * Id
-       * Format: uuid
+       * Status
+       * @enum {string}
        */
-      id: string;
-      kind: components['schemas']['AlertKind'];
-      /**
-       * Window Start
-       * Format: date
-       */
-      window_start: string;
-      /**
-       * Window End
-       * Format: date
-       */
-      window_end: string;
-      status: components['schemas']['AlertStatus'];
+      status: 'CONFIRMED' | 'NEGATED';
+      /** Event Id */
+      event_id?: string | null;
     };
     /**
      * AlertStatus
@@ -1324,7 +1374,7 @@ export interface components {
     EventDeleted: {
       animal: components['schemas']['AnimalDetail'];
       /** Open Alerts */
-      open_alerts: components['schemas']['AlertOut'][];
+      open_alerts: components['schemas']['smartbell__schemas__event_api__AlertOut'][];
     };
     /**
      * EventDerived
@@ -1357,6 +1407,8 @@ export interface components {
       occurred_on: string;
       /** Recorded By */
       recorded_by: string | null;
+      /** Recorded By Name */
+      recorded_by_name?: string | null;
       /**
        * Created At
        * Format: date-time
@@ -1428,7 +1480,7 @@ export interface components {
       derived: components['schemas']['EventDerived'];
       animal: components['schemas']['AnimalDetail'];
       /** Open Alerts */
-      open_alerts: components['schemas']['AlertOut'][];
+      open_alerts: components['schemas']['smartbell__schemas__event_api__AlertOut'][];
     };
     /** FakeDoorCount */
     FakeDoorCount: {
@@ -2185,6 +2237,59 @@ export interface components {
        * Format: date
        */
       end: string;
+    };
+    /** AlertOut */
+    smartbell__schemas__alerts__AlertOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Animal Id
+       * Format: uuid
+       */
+      animal_id: string;
+      kind: components['schemas']['AlertKind'];
+      /**
+       * Window Start
+       * Format: date
+       */
+      window_start: string;
+      /**
+       * Window End
+       * Format: date
+       */
+      window_end: string;
+      status: components['schemas']['AlertStatus'];
+      /** Follow Up Day */
+      follow_up_day: number;
+      /** Resolved By */
+      resolved_by: string | null;
+      /** Resolved At */
+      resolved_at: string | null;
+      /** Resulting Event Id */
+      resulting_event_id: string | null;
+    };
+    /** AlertOut */
+    smartbell__schemas__event_api__AlertOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      kind: components['schemas']['AlertKind'];
+      /**
+       * Window Start
+       * Format: date
+       */
+      window_start: string;
+      /**
+       * Window End
+       * Format: date
+       */
+      window_end: string;
+      status: components['schemas']['AlertStatus'];
     };
   };
   responses: never;
@@ -3230,6 +3335,108 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['EventWritten'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  listAlerts: {
+    parameters: {
+      query?: {
+        kind?: components['schemas']['AlertKind'] | null;
+        status?: components['schemas']['AlertStatus'] | null;
+      };
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['smartbell__schemas__alerts__AlertOut'][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  countAlerts: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AlertCountsOut'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  resolveAlert: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path: {
+        alert_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AlertResolve'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['smartbell__schemas__alerts__AlertOut'];
         };
       };
       /** @description Validation Error */
