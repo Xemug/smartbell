@@ -27,6 +27,7 @@ from smartbell.enums import (
     AnimalKind,
     AnimalStatus,
     Breed,
+    BullAvailability,
     CrossbreedLevel,
     DamStatus,
     DevelopmentStage,
@@ -308,6 +309,15 @@ def _repro_inputs(body: AnimalCreate, today: dt.date) -> dict[str, Any]:
     return given
 
 
+def _check_availability(
+    sex: Sex, availability: BullAvailability | None, loc: tuple[str, ...]
+) -> None:
+    if availability is not None and sex is not Sex.MACHO:
+        raise _invalid(
+            (*loc, "bull_availability"), "male_only", "Solo los machos tienen disponibilidad"
+        )
+
+
 async def _register(
     session: AsyncSession,
     ctx: RanchContext,
@@ -385,6 +395,7 @@ async def create_animal(
     if body.dam_status is not None and body.dam is None and body.dam_id is None:
         raise _invalid(("dam_status",), "dam_required", "Indica primero la madre")
     alta = _repro_inputs(body, today)
+    _check_availability(body.sex, body.bull_availability, ())
     settings = await session.get_one(RanchSettings, ctx.ranch_id)
     created: list[Animal] = []
 
@@ -420,6 +431,8 @@ async def create_animal(
         "weight_one_year_kg": body.weight_one_year_kg,
         "dam_id": dam.id if dam else None,
         "sire_id": sire.id if sire else None,
+        # Left out, the model's default puts a male on the ranch (an inline sire too).
+        **({"bull_availability": body.bull_availability} if body.bull_availability else {}),
     }
     animal, projection = await _register(
         session, ctx, settings, _Registration(body, body.sex, (), extra, alta), today
@@ -483,6 +496,10 @@ async def update_animal(
     _check_crossbreed(level, contributing, ())
     if "development_stage" in changes:
         _check_stage(animal.sex, changes["development_stage"], ())
+    if "bull_availability" in changes:
+        _check_availability(animal.sex, changes["bull_availability"], ())
+        if animal.sex is Sex.MACHO and changes["bull_availability"] is None:
+            raise _invalid(("bull_availability",), "required", "Este campo es obligatorio")
     final_birth: dt.date = changes.get("birth_date") or animal.birth_date
     for slot, sex in (("dam_id", Sex.HEMBRA), ("sire_id", Sex.MACHO)):
         parent_id = changes[slot] if slot in changes else getattr(animal, slot)
@@ -664,6 +681,7 @@ class AnimalFilters:
     health: Health | None = None
     born_from: dt.date | None = None
     born_to: dt.date | None = None
+    availability: BullAvailability | None = None
     removed_reason: RemovalReason | None = None
     sort: SortKey = "control_id"
     page: int = 1
@@ -715,6 +733,8 @@ def _filters(ranch_id: uuid.UUID, filters: AnimalFilters) -> list[ColumnElement[
         conditions.append(Animal.birth_date >= filters.born_from)
     if filters.born_to is not None:
         conditions.append(Animal.birth_date <= filters.born_to)
+    if filters.availability is not None:
+        conditions.append(Animal.bull_availability == filters.availability)
     return conditions
 
 
