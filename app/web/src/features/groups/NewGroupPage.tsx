@@ -10,7 +10,6 @@ import { RadioGroup } from '../../ui/RadioGroup';
 import { Select } from '../../ui/Select';
 import { TextArea } from '../../ui/TextArea';
 import { TextField } from '../../ui/TextField';
-import { useSnackbar } from '../../ui/useSnackbar';
 import { Wizard } from '../../ui/Wizard';
 import { BREEDS, GROUP_PRESETS } from '../animals/list/listState';
 import {
@@ -35,7 +34,6 @@ const NO_KPI = 'NONE';
 export function NewGroupPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const snackbar = useSnackbar();
   const { can } = useActiveRanch();
   const groups = useGroupList();
   const create = useCreateGroup();
@@ -92,15 +90,9 @@ export function NewGroupPage() {
         kpi_indicator: kpi === NO_KPI || cowCount === 0 ? null : kpi,
       },
       {
-        onSuccess: (group) => {
-          snackbar.show({
-            kind: 'success',
-            message: t('groups.wizard.created', {
-              name: group.preset ? t(`groups.presets.${group.preset}`) : group.name,
-            }),
-          });
-          navigate(groupPath(group.id), { replace: true });
-        },
+        // The new potrero's page says it was created, at the top where it can't be missed.
+        onSuccess: (group) =>
+          navigate(groupPath(group.id), { replace: true, state: { created: true } }),
         onError: (failure) =>
           setError(
             failure.message === 'group_name_taken'

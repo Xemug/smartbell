@@ -210,6 +210,8 @@ beforeEach(() => {
       if (key === 'GET /api/groups') return Response.json(groups);
       if (key === `GET /api/groups/${LOTE}`) return Response.json(groups[1]);
       if (key === `GET /api/groups/${GENERAL}`) return Response.json(groups[0]);
+      if (key === 'GET /api/groups/new-group')
+        return Response.json(group('new-group', { name: 'Lote sur', animal_count: 3 }));
       if (key === 'GET /api/groups/heifers') {
         return Response.json([
           {
@@ -360,6 +362,10 @@ describe('New potrero wizard', () => {
       kpi_indicator: 'PRENADAS',
     });
     await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('/grupos/new-group'));
+    // The new page says so at the top and keeps saying it until it's closed.
+    expect(
+      await screen.findByText('¡Listo! Acabas de agregar el potrero Lote sur a tu rancho virtual.'),
+    ).toBeInTheDocument();
   });
 
   it('needs a name before going on', async () => {

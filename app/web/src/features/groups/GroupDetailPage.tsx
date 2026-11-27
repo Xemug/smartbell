@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useActiveRanch } from '../../app/useActiveRanch';
 import { Banner } from '../../ui/Banner';
@@ -88,6 +88,16 @@ function Detail({ group }: { group: GroupOut }) {
   const [description, setDescription] = useState(group.description ?? '');
   const [kpi, setKpi] = useState<string>(group.kpi_indicator ?? NO_KPI);
   const [formError, setFormError] = useState<string | null>(null);
+  // Arriving from the wizard: say the potrero was created until it's dismissed.
+  const location = useLocation();
+  const [justCreated, setJustCreated] = useState(
+    (location.state as { created?: boolean } | null)?.created === true,
+  );
+  useEffect(() => {
+    // A reload or a later visit shouldn't announce it again.
+    if (justCreated) navigate(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useEffect(() => {
     setName(group.name);
     setDescription(group.description ?? '');
@@ -217,6 +227,11 @@ function Detail({ group }: { group: GroupOut }) {
           </span>
         }
       >
+        {justCreated && (
+          <Banner tone="success" onClose={() => setJustCreated(false)}>
+            {t('groups.wizard.created', { name: groupName(group, t) })}
+          </Banner>
+        )}
         {formError && (
           <Banner tone="error" onClose={() => setFormError(null)}>
             {formError}
