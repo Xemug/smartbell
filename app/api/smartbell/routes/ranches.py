@@ -37,7 +37,7 @@ class RanchOut(BaseModel):
 
 
 class RanchDetail(RanchOut):
-    animal_count: int  # "Vacas en Sistema": its active animals, less semen-only bulls.
+    animal_count: int  # "Vacas en Sistema": its active cows (no heifers or males).
 
 
 def ranch_out(ranch: Ranch, membership: Membership) -> RanchOut:
