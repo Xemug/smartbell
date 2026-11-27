@@ -65,5 +65,5 @@ S.
 - [x] A MONTA service with a `SEMEN` bull is refused; an IA service accepts it (tests).
 - [x] A `SEMEN` bull is left out of head counts (test).
 - [x] The Toros list shows the column and filters by it at both widths.
-- [ ] The founder confirms the values (human).
+- [x] The founder confirms the values (human). Confirmed 2026-11-26: En rancho / Solo semen / Ambos.
 - [x] Tests for the new code pass in CI.
