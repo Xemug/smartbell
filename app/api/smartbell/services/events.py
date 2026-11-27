@@ -40,6 +40,7 @@ from smartbell.models import (
     Group,
     PlanVaccine,
     RanchSettings,
+    User,
     VaccinationPlan,
 )
 from smartbell.schemas.event_api import EventCreate, EventDerived, EventInput, EventUpdate
@@ -131,6 +132,55 @@ async def list_events(
         .order_by(Event.occurred_on.desc(), Event.created_at.desc(), Event.id.desc())
     )
     return list(rows)
+
+
+@dataclass(frozen=True)
+class BullService:
+    """One cow this bull served: a HEAT event recorded as INSEMINATED with him."""
+
+    event_id: uuid.UUID
+    occurred_on: dt.date
+    method: ServiceMethod
+    cow_id: uuid.UUID
+    cow_control_id: str
+
+
+async def list_bull_services(
+    session: AsyncSession, ranch_id: uuid.UUID, bull_id: uuid.UUID
+) -> list[BullService]:
+    """Every service this bull gave, newest first. The services live on the cows' bitácoras (the
+    bull is named in the heat's payload), so a bull's own bitácora never shows them."""
+    await get_animal(session, ranch_id, bull_id)
+    rows = await session.execute(
+        select(Event.id, Event.occurred_on, Event.payload, Animal.id, Animal.control_id)
+        .join(Animal, Animal.id == Event.animal_id)
+        .where(
+            Event.ranch_id == ranch_id,
+            Event.type == EventType.HEAT,
+            Event.payload["bull_id"].as_string() == str(bull_id),
+        )
+        .order_by(Event.occurred_on.desc(), Event.created_at.desc(), Event.id.desc())
+    )
+    return [
+        BullService(event_id, on, ServiceMethod(payload["method"]), cow_id, control_id)
+        for event_id, on, payload, cow_id, control_id in rows
+    ]
+
+
+async def recorder_names(
+    session: AsyncSession, user_ids: Collection[uuid.UUID]
+) -> dict[uuid.UUID, str]:
+    """The display name of each user who recorded one of these events."""
+    if not user_ids:
+        return {}
+    rows = await session.execute(
+        select(User.id, User.first_name, User.last_name).where(User.id.in_(user_ids))
+    )
+    names = {
+        user_id: " ".join(p for p in (first, last) if p and p.strip())
+        for user_id, first, last in rows
+    }
+    return {user_id: name for user_id, name in names.items() if name}
 
 
 async def _get_event(

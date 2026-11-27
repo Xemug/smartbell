@@ -11,7 +11,14 @@ from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from smartbell.enums import AlertKind, AlertStatus, CalvingTiming, DeletionRequestStatus, EventType
+from smartbell.enums import (
+    AlertKind,
+    AlertStatus,
+    CalvingTiming,
+    DeletionRequestStatus,
+    EventType,
+    ServiceMethod,
+)
 from smartbell.schemas.animals import AnimalDetail
 from smartbell.schemas.events import (
     AbortionPayload,
@@ -80,11 +87,23 @@ class EventOut(BaseModel):
     type: EventType
     occurred_on: dt.date
     recorded_by: uuid.UUID | None
+    # "Realizó registro": filled by the bitácora list; other responses leave it empty.
+    recorded_by_name: str | None = None
     created_at: dt.datetime
     description: str | None
     comments: str | None
     payload: dict[str, Any]
     deletable: bool
+
+
+class BullServiceOut(BaseModel):
+    """A service the bull gave: the cow, the day and how (IA or MONTA)."""
+
+    event_id: uuid.UUID
+    occurred_on: dt.date
+    method: ServiceMethod
+    cow_id: uuid.UUID
+    cow_control_id: str
 
 
 class EventDerived(BaseModel):
