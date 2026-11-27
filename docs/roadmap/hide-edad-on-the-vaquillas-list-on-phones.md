@@ -30,8 +30,13 @@ Vacas has no Edad column (cows show DEL), so nothing changes there.
 Root cause: Toros opted the shared `ageColumn` into `hideOnMobile` with a spread
 at the call site (`{ ...ageColumn, hideOnMobile: true }`), but Vaquillas used the
 column without it. Every list that shows Edad now hides it on phones, so the
-flag moves onto `ageColumn` itself and the Toros spread goes. Sorting by Edad
-stays available. Computer screens (`md` and up) are unchanged.
+flag moves onto `ageColumn` itself and the Toros spread goes. Computer screens
+(`md` and up) are unchanged.
+
+Sorting by Edad becomes desktop-only, as on Toros: the only sort control is the
+column header, which hides with the column. A phone sort control, or a cue when a
+link sorted by Edad opens on a phone, is out of scope; raise it as its own spec if
+field users want it.
 
 ## Effort
 
