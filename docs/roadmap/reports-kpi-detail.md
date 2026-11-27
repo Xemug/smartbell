@@ -21,7 +21,7 @@ Completes the reports experience.
 `app/web/src/features/reports/detail/*` (Recharts line/bar, Gauge component).
 
 **Figma:** [R 1-123396](https://www.figma.com/design/nUJCa7ZxyUPwr3J6sxato1/x?node-id=1-123396), [R 1-123548](https://www.figma.com/design/nUJCa7ZxyUPwr3J6sxato1/x?node-id=1-123548), [R 1-123848](https://www.figma.com/design/nUJCa7ZxyUPwr3J6sxato1/x?node-id=1-123848), [W 1091-41926](https://www.figma.com/design/6UCRP77ZAdWb1ut1A91yJX/x?node-id=1091-41926)
-**Inventory:** alerts-dashboard-reports.md 1.8–1.9, §3.4 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.
+**Inventory:** alerts-dashboard-reports.md 1.8–1.9, §3.4; 2019 reference: `legacy-2019-web.md` §3.1 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.
 
 ## Approach
 

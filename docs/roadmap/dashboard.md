@@ -21,7 +21,7 @@ First screen after onboarding; ties alerts and registry together.
 `app/api/smartbell/api/dashboard.py` (one aggregate endpoint), `app/web/src/features/dashboard/*`.
 
 **Figma:** [V 3259-9504](https://www.figma.com/design/hmrArjwi6iI4cOlPkR5hQD/x?node-id=3259-9504), [V 3633-1096](https://www.figma.com/design/hmrArjwi6iI4cOlPkR5hQD/x?node-id=3633-1096)
-**Inventory:** v4-reports.md §1.1, §3 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.
+**Inventory:** v4-reports.md §1.1, §3; 2019 reference: `legacy-2019-web.md` §1, Founder decisions (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.
 
 ## Approach
 
