@@ -18,6 +18,7 @@ import {
 import { Icon } from '../../../ui/icons/Icon';
 import { ANIMALS_PATH } from '../list/AnimalListPage';
 import type { AnimalDetail, AnimalEvent, BullService } from './api';
+import { AvailabilityFact, GroupFact } from './ProfileEdits';
 import {
   ageInMonths,
   currentWeight,
@@ -42,6 +43,10 @@ interface ProfileSummaryProps {
   onRemove: (() => void) | null;
   /** Null hides Registros (the web layout shows them beside the profile). */
   registrosHref: string | null;
+  /** Shows Cambiar on her potrero (EVENTS_RECORD: the move is a GROUP_CHANGE). */
+  canMove: boolean;
+  /** Shows Cambiar on his availability (ANIMALS_EDIT: it goes through the animal's PATCH). */
+  canSetAvailability: boolean;
 }
 
 const shortDate = (iso: string) => format(parseISO(iso), 'dd/MM/yyyy');
@@ -137,6 +142,8 @@ export function ProfileSummary({
   services,
   onRemove,
   registrosHref,
+  canMove,
+  canSetAvailability,
   parents,
 }: ProfileSummaryProps & { parents: { dam?: string; sire?: string } }) {
   const { t } = useTranslation();
@@ -150,6 +157,7 @@ export function ProfileSummary({
   const diet = dietHistory(events)[0];
   const bull = animal.sex === 'MACHO';
   const strawsOnly = semenOnly(animal);
+  const availability = animal.kind === 'TORO' ? animal.bull_availability : null;
   // A bull never calves: his card follows the cows he served (newest first).
   const milestone = bull
     ? services?.[0] && { key: 'lastBullService', date: services[0].occurred_on }
@@ -223,6 +231,19 @@ export function ProfileSummary({
           </>
         )}
       </div>
+
+      {/* Cows live in potreros; heifers go by age and bulls have none. */}
+      {(animal.kind === 'VACA' || availability) && (
+        <div className="flex flex-col divide-y divide-secondary-background rounded-moon-i-sm bg-neutral-1 shadow-moon-sm">
+          {animal.kind === 'VACA' && <GroupFact animal={animal} editable={canMove} today={today} />}
+          {availability && (
+            <AvailabilityFact
+              animal={{ ...animal, bull_availability: availability }}
+              editable={canSetAvailability}
+            />
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <InfoCard title={t('profile.cards.genealogia')} icon={iconUsers}>

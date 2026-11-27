@@ -796,6 +796,7 @@
     },
     "eliminar": "Delete",
     "registros": "Records",
+    "cambiar": "Change",
     "records": {
       "title": "Records {{kind}} ID {{id}}",
       "tabs": "Records",
@@ -1024,6 +1025,30 @@
       },
       "empty": "This bull has no services yet. They are recorded from each cow’s heat.",
       "loadError": "We couldn’t load the services."
+    },
+    "potrero": {
+      "label": "Group",
+      "change": "Change group",
+      "title": "Move to another group",
+      "body": "Cow {{id}} will be moved to {{name}}.",
+      "pick": "Choose the group cow {{id}} moves to.",
+      "target": "Group",
+      "current": "{{name}} (current)",
+      "save": "Move",
+      "done": "Cow {{id}} moved to {{name}}",
+      "error": "We couldn't move her. Try again."
+    },
+    "availability": {
+      "label": "Availability",
+      "change": "Change availability",
+      "title": "Bull availability",
+      "pick": "Choose where bull {{id}} is.",
+      "save": "Save",
+      "done": "Bull {{id}} is now {{value}}",
+      "error": "We couldn't save it. Try again.",
+      "confirmTitle": "Keep bull {{id}} as semen only?",
+      "confirmBody": "He leaves the ranch's head count, his open alerts and tasks close, and his records freeze: nothing new can be recorded on him. What he already has stays, and he can still sire by artificial insemination (AI). Switching him back to On the ranch or Both unfreezes his records.",
+      "confirm": "Yes, semen only"
     }
   },
   "groups": {

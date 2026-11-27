@@ -80,7 +80,32 @@ function Where() {
   return <output data-testid="where">{location.pathname + location.search}</output>;
 }
 
-const ALL: Permission[] = ['ANIMALS_VIEW', 'ANIMALS_DELETE', 'EVENTS_RECORD', 'REPORTS_VIEW'];
+const ALL: Permission[] = [
+  'ANIMALS_VIEW',
+  'ANIMALS_EDIT',
+  'ANIMALS_DELETE',
+  'EVENTS_RECORD',
+  'REPORTS_VIEW',
+];
+
+const potrero = (id: string, name: string, fields: Record<string, unknown> = {}) => ({
+  id,
+  name,
+  description: null,
+  type: 'CUSTOM',
+  preset: null,
+  selection: 'MANUAL',
+  auto_filter: null,
+  kpi_indicator: null,
+  animal_count: 0,
+  kpi_value: null,
+  ...fields,
+});
+const GROUPS = [
+  potrero('g-general', 'General', { type: 'PRESET', preset: 'GENERAL' }),
+  potrero('g-norte', 'Lote norte'),
+  potrero('g-auto', 'Primerizas', { selection: 'AUTO' }),
+];
 
 function renderAt(path: string, permissions: Permission[] = ALL) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -203,6 +228,16 @@ beforeEach(() => {
         removed = true;
         return new Response(null, { status: 204 });
       }
+      if (key === 'GET /api/groups') return Response.json(GROUPS);
+      if (key === `POST /api/animals/${ID}/events`) {
+        const body = JSON.parse(text) as { payload: { to_group_id: string } };
+        cow = { ...cow, group_id: body.payload.to_group_id };
+        return Response.json({ animal: cow, open_alerts: [] }, { status: 201 });
+      }
+      if (key === `PATCH /api/animals/${ID}`) {
+        cow = { ...cow, ...(JSON.parse(text) as Partial<AnimalDetail>) };
+        return Response.json(cow);
+      }
       if (key === 'GET /api/support/config') return Response.json({});
       return Response.json({ detail: 'not_mocked' }, { status: 404 });
     }),
@@ -247,6 +282,53 @@ describe('the profile', () => {
     const table = await screen.findByRole('table');
     expect(within(table).getByText('Enfermedad: Mastitis')).toBeInTheDocument();
     expect(within(table).queryByText(/Cambio de dieta/)).not.toBeInTheDocument();
+  });
+});
+
+describe('her potrero', () => {
+  it('moves her to another manual potrero with a GROUP_CHANGE, never to an AUTO one', async () => {
+    renderAt(`/vacas/${ID}`);
+    expect(await screen.findByText('General')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Cambiar potrero' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Cambiar de potrero' });
+    await userEvent.click(within(dialog).getByRole('combobox'));
+    expect(await screen.findByRole('option', { name: 'General (actual)' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    expect(screen.queryByRole('option', { name: /Primerizas/ })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('option', { name: 'Lote norte' }));
+    expect(
+      within(dialog).getByText('La vaca 00001 se moverá al potrero Lote norte.'),
+    ).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Mover' }));
+
+    await waitFor(() =>
+      expect(calls.find((c) => c.method === 'POST')?.body).toEqual({
+        occurred_on: '2026-11-26',
+        payload: { type: 'GROUP_CHANGE', to_group_id: 'g-norte' },
+      }),
+    );
+    expect(await screen.findByText('Lote norte')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    // The profile, the bitácora and the potrero lists are read again.
+    await waitFor(() =>
+      expect(calls.filter((c) => c.path === '/api/groups').length).toBeGreaterThan(1),
+    );
+  });
+
+  it('is not offered to a user who may not record events', async () => {
+    renderAt(`/vacas/${ID}`, ['ANIMALS_VIEW']);
+    expect(await screen.findByText('Potrero')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cambiar potrero' })).not.toBeInTheDocument();
+  });
+
+  it('is not shown on a heifer: heifers move by age', async () => {
+    cow = detail({ id: ID, kind: 'VAQUILLA', lactation_state: null, birth_date: '2025-05-26' });
+    renderAt(`/vacas/${ID}`);
+    await screen.findByText('Edad');
+    expect(screen.queryByText('Potrero')).not.toBeInTheDocument();
   });
 });
 
@@ -323,6 +405,50 @@ describe('a bull', () => {
     );
     expect(screen.queryByRole('tab', { name: 'Bitácora' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: '00012' })).toBeInTheDocument();
+  });
+
+  it('switches to Solo semen only after confirming, and back without asking', async () => {
+    renderAt(`/vacas/${ID}`);
+    expect(await screen.findByText('En rancho')).toBeInTheDocument();
+    expect(screen.queryByText('Potrero')).not.toBeInTheDocument();
+    const patches = () => calls.filter((c) => c.method === 'PATCH');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cambiar disponibilidad' }));
+    let picker = await screen.findByRole('dialog', { name: 'Disponibilidad del toro' });
+    await userEvent.click(within(picker).getByRole('radio', { name: 'Solo semen' }));
+    await userEvent.click(within(picker).getByRole('button', { name: 'Guardar' }));
+    let confirm = await screen.findByRole('alertdialog', {
+      name: '¿Dejar al toro TORO-1 solo como semen?',
+    });
+    expect(confirm).toHaveTextContent(/sus registros quedarán congelados/);
+    await userEvent.click(within(confirm).getByRole('button', { name: 'Cancelar' }));
+    expect(patches()).toHaveLength(0);
+
+    picker = await screen.findByRole('dialog', { name: 'Disponibilidad del toro' });
+    await userEvent.click(within(picker).getByRole('button', { name: 'Guardar' }));
+    confirm = await screen.findByRole('alertdialog');
+    await userEvent.click(within(confirm).getByRole('button', { name: 'Sí, solo semen' }));
+    await waitFor(() => expect(patches()).toHaveLength(1));
+    expect(patches()[0]?.body).toEqual({ bull_availability: 'SEMEN' });
+    expect(await screen.findByText('Solo semen')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Salud' })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cambiar disponibilidad' }));
+    picker = await screen.findByRole('dialog', { name: 'Disponibilidad del toro' });
+    await userEvent.click(within(picker).getByRole('radio', { name: 'Ambos' }));
+    await userEvent.click(within(picker).getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(patches()).toHaveLength(2));
+    expect(patches()[1]?.body).toEqual({ bull_availability: 'AMBOS' });
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: 'Salud' })).toBeInTheDocument();
+  });
+
+  it('hides Cambiar from a user who may not edit animals', async () => {
+    renderAt(`/vacas/${ID}`, ['ANIMALS_VIEW', 'EVENTS_RECORD']);
+    expect(await screen.findByText('En rancho')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Cambiar disponibilidad' }),
+    ).not.toBeInTheDocument();
   });
 
   it('says so when he has served no cow yet', async () => {

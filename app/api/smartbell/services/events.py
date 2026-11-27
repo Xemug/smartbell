@@ -87,7 +87,8 @@ class EventNotFound(Exception):
 
 
 class EventLocked(Exception):
-    """A 409: the event can't be edited or deleted. `code` says which."""
+    """A 409: the event can't be edited or deleted, or none can be recorded (`bull_semen_only`).
+    `code` says which."""
 
     def __init__(self, code: str):
         super().__init__(code)
@@ -611,6 +612,11 @@ async def record_event(
     today: dt.date,
 ) -> Written:
     animal = await _writable_animal(session, ctx.ranch_id, animal_id)
+    # A bull kept only as semen has his records frozen: nothing new is logged on him. His past
+    # records stay, he can still sire by IA (that event is the cow's), and switching him back to
+    # En rancho or Ambos thaws them.
+    if animal.bull_availability is BullAvailability.SEMEN:
+        raise EventLocked("bull_semen_only")
     settings = await session.get_one(RanchSettings, ctx.ranch_id)
     payload = body.payload
     _check_female(animal, payload.type)

@@ -208,6 +208,8 @@ export function AnimalProfilePage({ records = false }: { records?: boolean }) {
             parents={{ dam: dam.data?.control_id, sire: sire.data?.control_id }}
             onRemove={active && can('ANIMALS_DELETE') ? () => setRemoving(true) : null}
             registrosHref={desktop ? null : `${profileHref}/registros`}
+            canMove={active && can('EVENTS_RECORD')}
+            canSetAvailability={active && can('ANIMALS_EDIT')}
           />
         )}
         {showRecords && (

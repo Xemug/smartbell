@@ -371,7 +371,44 @@ async def test_a_bull_gone_semen_only_has_its_health_alerts_closed_and_gets_no_n
     assert switched.status_code == 200, switched.text
     assert await health() == [AlertStatus.EXPIRED]
 
-    again = await ill()
-    assert again.status_code == 201, again.text
-    assert again.json()["open_alerts"] == []
+    again = await ill()  # His records are frozen: nothing new to open an alert from.
+    assert again.status_code == 409, again.text
+    assert again.json()["detail"] == "bull_semen_only"
     assert AlertStatus.PENDING not in await health()
+
+
+async def weigh(api: AsyncClient, account: Account, animal_id: str) -> Response:
+    return await api.post(
+        f"/api/animals/{animal_id}/events",
+        headers=account.headers(),
+        json={"occurred_on": TODAY.isoformat(), "payload": {"type": "WEIGHT", "kg": 820}},
+    )
+
+
+async def test_a_semen_only_bull_has_his_records_frozen(
+    tenant_api: AsyncClient, owner: Account
+) -> None:
+    """Switching to Solo semen freezes his records: nothing new is logged on him, what was logged
+    stays, he still sires by IA, and switching him back thaws them."""
+    toro = await bull(tenant_api, owner, "T1")
+    assert (await weigh(tenant_api, owner, toro["id"])).status_code == 201
+
+    assert (await edit(tenant_api, owner, toro["id"], bull_availability="SEMEN")).status_code == 200
+    refused = await weigh(tenant_api, owner, toro["id"])
+    assert refused.status_code == 409, refused.text
+    assert refused.json()["detail"] == "bull_semen_only"
+
+    logged = await tenant_api.get(f"/api/animals/{toro['id']}/events", headers=owner.headers())
+    assert logged.status_code == 200
+    assert [e["type"] for e in logged.json()].count("WEIGHT") == 1
+
+    vaca = await cow(tenant_api, owner, "V1")
+    served = await serve(tenant_api, owner, vaca, toro["id"], "IA")
+    assert served.status_code == 201, served.text
+
+    for value in ("EN_RANCHO", "AMBOS"):
+        await edit(tenant_api, owner, toro["id"], bull_availability="SEMEN")
+        back = await edit(tenant_api, owner, toro["id"], bull_availability=value)
+        assert back.status_code == 200, back.text
+        thawed = await weigh(tenant_api, owner, toro["id"])
+        assert thawed.status_code == 201, thawed.text
