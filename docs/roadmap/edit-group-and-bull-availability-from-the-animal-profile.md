@@ -87,10 +87,10 @@ S–M. It's two profile actions plus one API rule, with tests.
 
 ## Acceptance
 
-- [ ] From a cow's profile, the user moves her to another manual potrero. The profile, the potrero lists and her bitácora reflect it. AUTO potreros aren't offered.
-- [ ] From a bull's profile, the user changes availability. Switching to Solo semen shows a confirmation first, and cancelling leaves him unchanged.
-- [ ] A Solo semen bull can't have new events recorded on him (API `bull_semen_only`, and no record action in the UI). His past records are kept, not deleted, and show again when he's switched back; he can still be picked as the sire for IA.
-- [ ] Switching him back to En rancho or Ambos lets events be recorded again.
-- [ ] Users without edit permission don't see either action.
-- [ ] API and web tests cover the above, and CI is green.
+- [x] From a cow's profile, the user moves her to another manual potrero. The profile, the potrero lists and her bitácora reflect it. AUTO potreros aren't offered.
+- [x] From a bull's profile, the user changes availability. Switching to Solo semen shows a confirmation first, and cancelling leaves him unchanged.
+- [x] A Solo semen bull can't have new events recorded on him (API `bull_semen_only`, and no record action in the UI). His past records are kept, not deleted, and show again when he's switched back; he can still be picked as the sire for IA.
+- [x] Switching him back to En rancho or Ambos lets events be recorded again.
+- [x] Users without edit permission don't see either action.
+- [x] API and web tests cover the above, and CI is green.
 - [ ] The founder moves a cow, and switches a bull to Solo semen and back, on staging (human).
