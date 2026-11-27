@@ -122,7 +122,7 @@ Global chrome on every frame:
 | DEL | days in milk | avg over lactating cows (today − last calving date) | ranch, category | current | calving dates, dry-off events | none | populated |
 | Vacas a observar celos | cows to watch for heat | count of cows whose expected-heat window (last heat/service/calving + 21 d cycle) includes today and are unconfirmed | ranch, category | today | heat, service, calving events, alert status | – | populated |
 | Vacas enfermas | sick cows | count of cows with an open sickness event | ranch, category | current | sickness/treatment events | – | populated |
-| Seguimiento preñez | pregnancy follow-up | count of served cows due for a pregnancy diagnosis (or pregnant cows in follow-up) | ranch, category | current/due | service dates, diagnosis results | – | populated (highlighted row) |
+| Seguimiento preñez | pregnancy follow-up | count of cows with a confirmed pregnancy (GESTANTE + SECA), followed toward expected calving (founder, 2026-11-26) | ranch, category | current/due | service dates, diagnosis results | – | populated (highlighted row) |
 | Lts/día promedio por vaca | litres/day avg per cow | herd total litres for the day ÷ number of milking cows; or Σ individual litres ÷ cows recorded | ranch | day (latest log) | daily herd litres, lactating cow count, per-cow litres | – | populated |
 | Historial de producción (chart) | production history | per bucket: avg (or total) litres; bars + trend line | ranch (cow, if individual) | rolling week / month / quarter / semester / year | daily milk logs (herd and/or per cow) | – | populated (3 granularities) |
 
@@ -187,11 +187,11 @@ Compared against `alerts-dashboard-reports.md` §1.1–1.2 (dashboard), §1.8 (m
 | Vacas en Sistema / counters (vacas, vaquillas, toros) | header pill 035/020 + counters | counters 002/000/000, cow active | UNCHANGED (pill text "Vacas en Sistema" dropped) |
 | DIM / DEL | "DIM 185" tile (v3 mobile), "DEL 120" in R variant | "DEL 120" card | **SUPERSEDES**: label settles on "DEL". Formula unchanged. |
 | Días abiertos | "75" in R variant + "Días abiertos - Rangos" | "Días Abiertos 75" card, top position | UNCHANGED (promoted to a headline card) |
-| Celos a confirmar (A revisar hoy / Para seguimiento) | 2-part tile | "Vacas a observar celos 05" single count | **CONFLICTS**: today vs follow-up split lost. The wording changes from "confirm" to "observe". |
+| Celos a confirmar (A revisar hoy / Para seguimiento) | 2-part tile | "Vacas a observar celos 05" single count | **RESOLVED 2026-11-26 (founder): keep the split.** "A revisar hoy" = first expected heat since calving; "Para seguimiento" = second or later cycle. See `docs/roadmap/dashboard.md` Approach §1. |
 | Enfermas | "002" tile | "Vacas enfermas 01" | UNCHANGED |
-| Preñadas | count of pregnant cows | **"Seguimiento preñez 06"** | **CONFLICTS**: now likely "pregnancy follow-up" (diagnosis due) rather than the pregnant stock. Confirm. |
+| Preñadas | count of pregnant cows | **"Seguimiento preñez 06"** | **RESOLVED 2026-11-26 (founder):** confirmed pregnant cows (GESTANTE + SECA), followed toward the expected calving date so they get care during the calving window. Not a diagnosis-due count. See `docs/roadmap/dashboard.md` Approach §2. |
 | Vacunas y tratamientos (Por vacunar / Por tratar) | tile | absent | **DROPPED** from dashboard |
-| Distribución del hato (donut) | web only | absent | UNCHANGED (web not in v4) |
+| Distribución del hato (donut) | web only | absent | **KEEP on web (founder, 2026-11-26).** Slices Preñadas / Con servicio / Abiertas; Enfermas is a legend count, not a slice. See `docs/roadmap/dashboard.md` Approach §3. |
 | Producción de leche lts/día/vaca | single value + daily input | value + herd input + per-cow input + history chart | **EXTENDS** |
 | Historial de producción (chart) | none | new | **ADDED** |
 | Producción individual por vaca | spec annotation only ("Volumen de leche producido por vaca") | per-cow log | **ADDED** (fulfils the v3 annotation) |

@@ -13,7 +13,7 @@ The founder recovered the 2019 Smartbell web app (Vue 2 + Vuetify + Firebase Rea
 
 `/Users/juan/Documents/Inversiones/Smartbell/Accelerator Pro /Code - backup/smartbel solutions -2019/smartbell-solutions-2019`
 
-(the space before `/Code` is part of the path). Its Inicio (`src/views/Home.vue`), Historial (`src/views/History.vue`) and Reportes (`src/views/DashResume.vue`) screens are the ancestors of the "v3" designs our specs already reconcile (`docs/design-inventory/v4-reports.md` §3, `alerts-dashboard-reports.md`). The agents who will build `dashboard`, `history`, `kpi-engine`, `reports-overview` and `reports-kpi-detail` cannot see that folder, and two v3→v4 conflicts in `v4-reports.md` §3 are still open. The 2019 code shows how the original app defined them.
+(the space before `/Code` is part of the path). Its Inicio (`src/views/Home.vue`), Historial (`src/views/History.vue`) and Reportes (`src/views/DashResume.vue`) screens are the ancestors of the "v3" designs our specs already reconcile (`docs/design-inventory/v4-reports.md` §3, `alerts-dashboard-reports.md`). The agents who will build `dashboard`, `history`, `kpi-engine`, `reports-overview` and `reports-kpi-detail` cannot see that folder, and the 2019 code is the source for three of the founder's dashboard decisions (2026-11-26).
 
 ## Why
 
@@ -38,12 +38,12 @@ Write `legacy-2019-web.md` with one section per screen. For each element, give a
 
 **§1 Inicio (Home.vue + HomeFullCard.vue)**
 - Header: an "Agregar animal" button, the ranch switcher and a "Vacas en Sistema" counter. Covered by `app-shell-navigation` and `dashboard`.
-- "Celos a confirmar" card, split into "A revisar hoy" and "Para seguimiento". In `HomeFullCard.vue`, the first is cows with `heatCycle === 1` and the second is those with `heatCycle !== 1`. `mixins/heats.js` counts cycles from the last calving, 21 days ± 3, cycles 1 to 6. Record this as the 2019 definition for the open **CONFLICTS** row "Celos a confirmar" in `v4-reports.md` §3. Do not settle it: that is a founder call.
-- "Preñadas" means cows with a `pregDate`, which is the pregnant stock, not diagnosis follow-up. Record it as evidence for the open "Preñadas → Seguimiento preñez" conflict.
+- "Celos a confirmar" card, split into "A revisar hoy" and "Para seguimiento". In `HomeFullCard.vue`, the first is cows with `heatCycle === 1` and the second is those with `heatCycle !== 1`. `mixins/heats.js` counts cycles from the last calving, 21 days ± 3, cycles 1 to 6. The founder decided on 2026-11-26 to keep this split, now in `dashboard.md` Approach §1. Record the 2019 rule as its source.
+- "Preñadas" means cows with a `pregDate`, which is the pregnant stock, not diagnosis follow-up. The founder settled this on 2026-11-26: v4's "Seguimiento preñez" follows confirmed pregnant cows toward calving (`dashboard.md` Approach §2). Record the 2019 definition as its source.
 - The DEL tile averages DEL over cows whose DEL is not 0. Covered (`v4-reports.md` DEL row). Label it **DEL**, never DIM.
 - "Enfermas" filters by disease (9 values, matching ILLNESS). Covered.
 - "Vacunas y tratamiento" (Por vacunar / A dar tratamiento): drop, since v4 dropped it from the dashboard.
-- "Distribución del hato" donut: Preñadas / Con servicio / Abiertas / Enfermas, with the total in the centre (the `chart.js` centre-text plugin). Its numbers are hardcoded `002`. This is a **gap**: the `dashboard` spec builds a web layout but says nothing about the donut, and `v4-reports.md` §3 marks it "web only, UNCHANGED". Write down the 2019 categories so the founder can decide whether the web dashboard keeps it.
+- "Distribución del hato" donut: Preñadas / Con servicio / Abiertas / Enfermas, with the total in the centre (the `chart.js` centre-text plugin). Its numbers are hardcoded `002`. The founder kept it for web on 2026-11-26 (`dashboard.md` Approach §3), so mark it **covered**.
 - Drill-down lists: preñadas filtered by an expected-calving date range, heats by heat day, sick by disease. Covered by `alerts-dashboard-reports.md` filter sheets.
 - Counts are zero-padded to three digits (`002`), which matches the v4 counters. Note it for `dashboard`.
 
@@ -67,7 +67,7 @@ Write `legacy-2019-web.md` with one section per screen. For each element, give a
 - Copying `src/firebase.js` or any other config. It holds keys for the `smartbell-master` Firebase project: do not put it in the repo.
 - Importing 2019 RTDB data.
 - Changing any behaviour.
-- Settling the two conflicts. Record the evidence and list them under "Open questions for the founder".
+- Re-opening the founder's 2026-11-26 decisions (heat split, Seguimiento preñez, web donut). These are already in `dashboard.md` and `v4-reports.md` §3.
 
 ## Effort
 
@@ -75,11 +75,11 @@ S. Docs only: one inventory note, 14 images, and a line added to five specs. The
 
 ## Acceptance
 
-- [ ] `docs/design-inventory/legacy-2019-web.md` exists with §1 Inicio, §2 Historial, §3 Reportes and a final "Open questions for the founder". Every element has a covered/gap/drop verdict that cites a spec or inventory row.
+- [ ] `docs/design-inventory/legacy-2019-web.md` exists with §1 Inicio, §2 Historial, §3 Reportes and a final "Founder decisions" section linking to `dashboard.md` Approach §1–3. Every element has a covered/gap/drop verdict that cites a spec or inventory row.
 - [ ] The 14 chart PNGs are in `docs/design-inventory/legacy-2019/graphs/` and every image link in the note resolves (`grep -o 'legacy-2019/graphs/[^)]*' docs/design-inventory/legacy-2019-web.md` lists only files that exist).
 - [ ] The Inventory lines in `dashboard.md`, `history.md`, `kpi-engine.md`, `reports-overview.md` and `reports-kpi-detail.md` point to the matching section of the note.
 - [ ] No 2019 source code or Firebase config is in the repo (`git grep -n "smartbell-master\|apiKey" -- docs/` returns nothing).
-- [ ] The open questions list the heat watch split, the meaning of "Preñadas" and the web herd-distribution donut, each with the 2019 definition (human).
+- [ ] The "Founder decisions" section gives the heat split, Seguimiento preñez and the web donut, each next to its 2019 definition, and agrees with `dashboard.md` (human).
 
 ## Verify
 
