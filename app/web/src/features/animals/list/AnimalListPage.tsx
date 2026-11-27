@@ -22,6 +22,7 @@ import {
 } from '../../../ui/FilterPanel';
 import { IconButton } from '../../../ui/IconButton';
 import {
+  iconArrowRight,
   iconBull,
   iconCow,
   iconHeifer,
@@ -35,6 +36,7 @@ import { Icon } from '../../../ui/icons/Icon';
 import { Tabs } from '../../../ui/Tabs';
 import { TextField } from '../../../ui/TextField';
 import { useSnackbar } from '../../../ui/useSnackbar';
+import { MoveToGroupDialog } from '../../groups/MoveToGroupDialog';
 import { ageInMonths, daysInMilk } from './animalFacts';
 import { useAnimalPage, useGroups, useKindCount, useRemoveAnimals, type Animal } from './api';
 import {
@@ -103,6 +105,7 @@ export function AnimalListPage() {
   const [error, setError] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const removeFrom = useRef<HTMLElement | null>(null);
+  const [toMove, setToMove] = useState<string[] | null>(null);
 
   const update = (patch: Partial<ListState>, options: { replace?: boolean } = {}) => {
     const restart = patch.kind !== undefined || patch.q !== undefined || patch.filter !== undefined;
@@ -176,6 +179,10 @@ export function AnimalListPage() {
 
   const showingRemoved = state.filter?.category === 'bajas';
   const canRemove = can('ANIMALS_DELETE') && !showingRemoved;
+  // Bulk "Cambiar de potrero" (groups card); a baja has no potrero to change.
+  // Only cows change potrero by hand: heifers are grouped by age and bulls have none.
+  const canMove = can('GROUPS_VIEW_EDIT') && !showingRemoved && state.kind === 'vacas';
+  const selectable = canRemove || canMove;
 
   const kindNoun = t(`animals.nouns.${state.kind}`);
   const dash = t('animals.none');
@@ -266,6 +273,14 @@ export function AnimalListPage() {
               cell: (a) => a.name ?? dash,
             },
             ageColumn,
+            {
+              key: 'disponibilidad',
+              header: t('animals.columns.disponibilidad'),
+              cell: (a) =>
+                a.bull_availability
+                  ? t(`animals.values.disponibilidad.${a.bull_availability}`)
+                  : dash,
+            },
             {
               key: 'siniiga',
               header: t('animals.columns.siniiga'),
@@ -399,7 +414,7 @@ export function AnimalListPage() {
         </p>
       )}
 
-      {selected.length > 0 && canRemove && (
+      {selected.length > 0 && selectable && (
         <div
           role="region"
           aria-label={t('animals.bulk.label')}
@@ -408,17 +423,31 @@ export function AnimalListPage() {
           <span className="type-label-md text-primary-text">
             {t('animals.bulk.selected', { count: selected.length })}
           </span>
-          <Button
-            size="sm"
-            variant="danger"
-            leadingIcon={iconTrash}
-            onClick={(event) => {
-              removeFrom.current = event.currentTarget;
-              setToRemove(selectedRows(selected));
-            }}
-          >
-            {t('animals.bulk.remove')}
-          </Button>
+          {canMove && (
+            <Button
+              size="sm"
+              leadingIcon={iconArrowRight}
+              onClick={(event) => {
+                removeFrom.current = event.currentTarget;
+                setToMove(selected);
+              }}
+            >
+              {t('animals.bulk.move')}
+            </Button>
+          )}
+          {canRemove && (
+            <Button
+              size="sm"
+              variant="danger"
+              leadingIcon={iconTrash}
+              onClick={(event) => {
+                removeFrom.current = event.currentTarget;
+                setToRemove(selectedRows(selected));
+              }}
+            >
+              {t('animals.bulk.remove')}
+            </Button>
+          )}
           <IconButton
             icon={iconX}
             size="sm"
@@ -449,8 +478,8 @@ export function AnimalListPage() {
           getRowId={(a) => a.id}
           getRowLabel={(a) => a.control_id}
           rowActions={rowActions}
-          selected={canRemove ? selected : undefined}
-          onSelectionChange={canRemove ? setSelected : undefined}
+          selected={selectable ? selected : undefined}
+          onSelectionChange={selectable ? setSelected : undefined}
           total={page.data?.total ?? 0}
           sort={sort}
           onSortChange={(next) => update({ sort: next, page: 1 })}
@@ -494,6 +523,12 @@ export function AnimalListPage() {
         loading={remove.isPending}
         onCancel={() => setToRemove(null)}
         onConfirm={confirmRemove}
+        returnFocus={removeFrom}
+      />
+      <MoveToGroupDialog
+        animalIds={toMove}
+        onClose={() => setToMove(null)}
+        onMoved={() => setSelected([])}
         returnFocus={removeFrom}
       />
     </div>

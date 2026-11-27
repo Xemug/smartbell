@@ -26,6 +26,7 @@ from smartbell.enums import (
     AlertKind,
     AnimalStatus,
     Breed,
+    BullAvailability,
     CalvingTiming,
     CrossbreedLevel,
     DevelopmentStage,
@@ -640,8 +641,16 @@ async def seed_fixture_herd(session: AsyncSession, today: dt.date) -> bool:
             1200 + index * 200,
             control_id=f"TORO-{index + 1}",
             name=name,
+            bull_availability=availability,
         )
-        for index, name in enumerate(("Emperador", "Relámpago", "Trueno"))
+        # One of each availability; the services below are all IA, which any bull can give.
+        for index, (name, availability) in enumerate(
+            (
+                ("Emperador", BullAvailability.EN_RANCHO),
+                ("Relámpago", BullAvailability.SEMEN),
+                ("Trueno", BullAvailability.AMBOS),
+            )
+        )
     ]
     herd.bulls.extend(bulls)
     prototype_cows(herd, bulls[0])

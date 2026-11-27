@@ -19,6 +19,7 @@ from smartbell.domain.repro import AlertSpec, Projection, ReminderKind, Reminder
 from smartbell.enums import (
     AlertKind,
     AlertStatus,
+    BullAvailability,
     EventType,
     TaskCategory,
     TaskKind,
@@ -82,14 +83,16 @@ async def sync_animal(
     `event_id` and `event_type` name the event just written, so an alert it answers is closed as
     CONFIRMED (NEGATED when `negative`: a heat not observed), and one it supersedes as EXPIRED;
     either way it is linked to the event. Without them (a
-    deletion) a dropped alert is closed as EXPIRED. A removed animal has every alert closed.
+    deletion) a dropped alert is closed as EXPIRED. A removed animal has every alert closed, and
+    so has a semen-only bull: it isn't a live animal of the ranch, so nothing opens for it either.
     `reopen` lists closed alerts whose resolving event was just edited or deleted (`linked_to`):
     if the projection asks for one again, it is pending again. No other closed alert reopens,
     so one the alert engine expired stays expired. The caller commits.
     """
     rows = (await session.scalars(select(Alert).where(Alert.animal_id == animal.id))).all()
     by_key = {(row.kind, row.window_start, row.window_end): row for row in rows}
-    wanted = {_key(spec) for spec in projection.alerts}
+    gone = projection.removed or animal.bull_availability is BullAvailability.SEMEN
+    wanted = set() if gone else {_key(spec) for spec in projection.alerts}
 
     for kind, start, end in sorted(wanted):
         row = by_key.get((kind, start, end))
@@ -116,10 +119,10 @@ async def sync_animal(
     for key, row in by_key.items():
         if key in wanted or row.status is not AlertStatus.PENDING:
             continue
-        if row.kind not in PROJECTED_KINDS and not projection.removed:
+        if row.kind not in PROJECTED_KINDS and not gone:
             continue
         answered = row.kind in resolves
-        if not answered and row.window_end < today and not projection.removed:
+        if not answered and row.window_end < today and not gone:
             continue  # Its window passed on its own: expiring it is the alert engine's job.
         if answered:
             row.status = AlertStatus.NEGATED if negative else AlertStatus.CONFIRMED
@@ -132,7 +135,7 @@ async def sync_animal(
         closed.append(row)
     await session.flush()
     await close_tasks(session, closed)
-    await sync_reminders(session, animal, projection.reminders)
+    await sync_reminders(session, animal, () if gone else projection.reminders)
     return sorted(
         (row for row in by_key.values() if row.status is AlertStatus.PENDING),
         key=lambda row: (row.window_start, row.kind),

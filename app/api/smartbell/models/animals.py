@@ -5,7 +5,19 @@ import uuid
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import CheckConstraint, Date, DateTime, ForeignKey, Index, Numeric, String, text
+from sqlalchemy import (
+    CheckConstraint,
+    ColumnElement,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    Numeric,
+    String,
+    or_,
+    text,
+)
+from sqlalchemy.engine.default import DefaultExecutionContext
 from sqlalchemy.orm import Mapped, mapped_column
 
 from smartbell.db import Base
@@ -13,6 +25,7 @@ from smartbell.enums import (
     AnimalKind,
     AnimalStatus,
     Breed,
+    BullAvailability,
     CrossbreedLevel,
     DevelopmentStage,
     GroupKpiIndicator,
@@ -37,6 +50,12 @@ MALE_STAGES = (
 
 def _in(values: tuple[str, ...]) -> str:
     return "(" + ", ".join(f"'{value}'" for value in values) + ")"
+
+
+def _male_on_ranch(context: DefaultExecutionContext) -> BullAvailability | None:
+    """A male inserted without one is on the ranch, as every bull record was before it."""
+    sex = context.get_current_parameters().get("sex")  # type: ignore[no-untyped-call]
+    return BullAvailability.EN_RANCHO if sex == Sex.MACHO else None
 
 
 def derive_kind(sex: Sex, stage: DevelopmentStage, *, has_calved: bool) -> AnimalKind:
@@ -130,6 +149,10 @@ class Animal(Base):
             "(status = 'REMOVED') = (removed_reason IS NOT NULL)",
             name="removed_reason_iff_removed",
         ),
+        CheckConstraint(
+            "(sex = 'MACHO') = (bull_availability IS NOT NULL)",
+            name="bull_availability_iff_male",
+        ),
     )
 
     id: Mapped[UuidPk]
@@ -155,6 +178,10 @@ class Animal(Base):
         server_default=DevelopmentStage.AUTO,
     )
     photo_url: Mapped[str | None] = mapped_column(String(2048))
+    # Every male has one, so a calf that grows into a bull already says it; females have none.
+    bull_availability: Mapped[BullAvailability | None] = mapped_column(
+        str_enum(BullAvailability, "bull_availability"), default=_male_on_ranch
+    )
     # SET NULL: deleting a group first moves its animals to General; this is only the backstop.
     group_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("groups.id", ondelete="SET NULL"), index=True
@@ -198,3 +225,10 @@ class Animal(Base):
     is_sick: Mapped[bool] = mapped_column(default=False, server_default=text("false"))
     sick_since: Mapped[dt.date | None]
     milk_withdrawal_until: Mapped[dt.date | None]
+
+
+def on_ranch() -> ColumnElement[bool]:
+    """The animal is physically on the ranch: a semen-only bull is not (it isn't head count)."""
+    return or_(
+        Animal.bull_availability.is_(None), Animal.bull_availability != BullAvailability.SEMEN
+    )

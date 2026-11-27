@@ -17,15 +17,18 @@ from smartbell.domain.withdrawal import separates_milk, withdrawal_until
 from smartbell.enums import (
     NON_DELETABLE_EVENT_TYPES,
     AnimalStatus,
+    BullAvailability,
     CalvingTiming,
     DeletionRequestStatus,
     EventType,
     GroupPreset,
+    GroupSelection,
     HeatOutcome,
     HistoryKey,
     PregnancyCheckResult,
     ReproState,
     Role,
+    ServiceMethod,
     Sex,
     TreatmentFollowupOutcome,
 )
@@ -193,22 +196,48 @@ async def _check_animal_ref(
         raise _invalid(loc, "bull_not_male", "El toro debe ser macho")
 
 
+async def _check_bull_on_ranch(session: AsyncSession, bull_id: uuid.UUID) -> None:
+    """A natural service (MONTA) needs the bull itself: a semen-only bull can only serve by IA."""
+    availability = await session.scalar(
+        select(Animal.bull_availability).where(Animal.id == bull_id)
+    )
+    if availability is BullAvailability.SEMEN:
+        raise _invalid(
+            ("payload", "bull_id"),
+            "bull_semen_only",
+            "Este toro es solo semen: regístralo como inseminación (IA)",
+        )
+
+
 async def _check_group(session: AsyncSession, ranch_id: uuid.UUID, group_id: uuid.UUID) -> Group:
     group = await session.scalar(
         select(Group).where(Group.id == group_id, Group.ranch_id == ranch_id)
     )
     if group is None:
         raise _invalid(("payload", "to_group_id"), "group_not_found", "El potrero no existe")
+    if group.selection is GroupSelection.AUTO:  # Its rule picks its cows (groups card).
+        raise _invalid(
+            ("payload", "to_group_id"), "group_is_auto", "Ese potrero elige sus vacas solo"
+        )
     return group
 
 
 async def _check_refs(
-    session: AsyncSession, ranch_id: uuid.UUID, animal: Animal, payload: EventInput
+    session: AsyncSession,
+    ranch_id: uuid.UUID,
+    animal: Animal,
+    payload: EventInput,
+    old: EventPayload | None = None,
 ) -> None:
-    """Every id in the payload must name something of the active ranch."""
+    """Every id in the payload must name something of the active ranch. `old` is the payload an
+    edit replaces: a MONTA service it already recorded with this bull stays editable after the bull
+    became semen-only (sold, its semen kept)."""
     match payload:
-        case HeatPayload(bull_id=uuid.UUID() as bull):
+        case HeatPayload(bull_id=uuid.UUID() as bull, method=method):
             await _check_animal_ref(session, ranch_id, bull, ("payload", "bull_id"), Sex.MACHO)
+            kept = isinstance(old, HeatPayload) and (old.bull_id, old.method) == (bull, method)
+            if method is ServiceMethod.MONTA and not kept:
+                await _check_bull_on_ranch(session, bull)
         case CalvingPayload(calf_animal_id=uuid.UUID() as calf):
             if calf == animal.id:
                 raise _invalid(("payload", "calf_animal_id"), "calf_is_dam", "Elige la cría")
@@ -358,7 +387,11 @@ async def _apply_group_change(
     change = _group_change(payload)
     if change is None and auto and isinstance(payload, IllnessPayload):
         sick = await session.scalar(
-            select(Group.id).where(Group.ranch_id == ranch_id, Group.preset == GroupPreset.ENFERMAS)
+            select(Group.id).where(
+                Group.ranch_id == ranch_id,
+                Group.preset == GroupPreset.ENFERMAS,
+                Group.selection == GroupSelection.MANUAL,
+            )
         )
         if sick is not None and sick != animal.group_id:
             payload.group_change = GroupChangeDetails(
@@ -401,16 +434,52 @@ async def _move_again(
                 )
             return
     if old is not None:
-        _revert_group_change(animal, old)
+        await _revert_group_change(session, animal, old)
     if after is not None:
         await _apply_group_change(session, ranch_id, animal, new, auto=False)
 
 
-def _revert_group_change(animal: Animal, payload: EventPayload) -> None:
-    """Undoes a move, unless the animal has been moved again since."""
+async def move_to_group(
+    session: AsyncSession,
+    ranch_id: uuid.UUID,
+    user_id: uuid.UUID | None,
+    animal: Animal,
+    to_group_id: uuid.UUID,
+    today: dt.date,
+) -> bool:
+    """The groups card's moves: one GROUP_CHANGE on the animal's bitácora, no history entry
+    (the caller writes one for the whole batch). The caller holds the animal's row lock and has
+    checked the group is the ranch's. A move changes no projection or alert, so none re-runs.
+    Returns False when she is already there."""
+    if animal.group_id == to_group_id:
+        return False
+    payload = GroupChangePayload(from_group_id=animal.group_id, to_group_id=to_group_id)
+    session.add(
+        Event(
+            id=uuid.uuid4(),
+            ranch_id=ranch_id,
+            animal_id=animal.id,
+            type=EventType.GROUP_CHANGE,
+            occurred_on=today,
+            recorded_by=user_id,
+            payload=payload.model_dump(mode="json", exclude_none=True),
+        )
+    )
+    animal.group_id = to_group_id
+    return True
+
+
+async def _revert_group_change(
+    session: AsyncSession, animal: Animal, payload: EventPayload
+) -> None:
+    """Undoes a move, unless the animal has been moved again since. A group deleted since sent
+    its animals on (to General by default), so she goes to General: no group."""
     change = _group_change(payload)
     if change is not None and animal.group_id == change.to_group_id:
-        animal.group_id = change.from_group_id
+        back = change.from_group_id
+        if back is not None and await session.get(Group, back) is None:
+            back = None
+        animal.group_id = back
 
 
 # --- History -----------------------------------------------------------------------------------
@@ -569,7 +638,7 @@ async def edit_event(
             payload: EventInput | EventPayload = body.payload
             if payload.type is not event.type:
                 raise _invalid(("payload", "type"), "type_changed", "No se puede cambiar el tipo")
-            await _check_refs(session, ctx.ranch_id, animal, body.payload)
+            await _check_refs(session, ctx.ranch_id, animal, body.payload, old)
         elif old is not None:
             payload = old
         else:
@@ -628,9 +697,11 @@ async def delete_event(
         return request
     settings = await session.get_one(RanchSettings, ctx.ranch_id)
     try:
-        _revert_group_change(animal, validate_event_payload(event.type, event.payload))
+        stored = validate_event_payload(event.type, event.payload)
     except ValueError:
-        pass  # A payload that no longer parses moved nobody we can tell.
+        stored = None  # A payload that no longer parses moved nobody we can tell.
+    if stored is not None:
+        await _revert_group_change(session, animal, stored)
     reopen = await alert_sync.linked_to(session, event.id)
     await alert_sync.detach_event(session, event.id)
     await session.delete(event)

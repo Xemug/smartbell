@@ -1,7 +1,7 @@
 import type { TFunction } from 'i18next';
 
 import type { SelectOption } from '../../../ui/Select';
-import { BREEDS } from '../list/listState';
+import { BREEDS, BULL_AVAILABILITIES } from '../list/listState';
 import { CROSSBREED_LEVELS, NO_REPRO_STAGE, REPRO_STAGES, STAGES, type Sex } from './formModel';
 
 export const breedOptions = (t: TFunction): SelectOption[] =>
@@ -17,3 +17,9 @@ export const reproOptions = (t: TFunction): SelectOption[] => [
   { value: NO_REPRO_STAGE, label: t('animalForm.reproNone') },
   ...REPRO_STAGES.map((stage) => ({ value: stage, label: t(`animals.values.repro.${stage}`) })),
 ];
+
+export const availabilityOptions = (t: TFunction): SelectOption[] =>
+  BULL_AVAILABILITIES.map((value) => ({
+    value,
+    label: t(`animals.values.disponibilidad.${value}`),
+  }));

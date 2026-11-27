@@ -23,7 +23,7 @@ export interface NavItem {
 export const navItems: NavItem[] = [
   { id: 'tareas', path: '/', icon: iconCalendarCheck, built: true },
   { id: 'vacas', path: '/vacas', icon: iconCow, built: true },
-  { id: 'grupos', path: '/grupos', icon: iconGroups, built: false },
+  { id: 'grupos', path: '/grupos', icon: iconGroups, built: true },
   { id: 'reportes', path: '/reportes', icon: iconReport, built: false },
   { id: 'usuarios', path: '/usuarios', icon: iconUsers, built: false, webOnly: true },
   { id: 'ranchos', path: '/ranchos', icon: iconHome, built: false },

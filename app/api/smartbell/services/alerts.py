@@ -24,7 +24,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from smartbell.domain.repro import EventFact, Projection
 from smartbell.domain.vaccines import VaccineRule, due_dates
-from smartbell.enums import AlertKind, AlertStatus, AnimalStatus, EventType, VaccinationPlanStatus
+from smartbell.enums import (
+    AlertKind,
+    AlertStatus,
+    AnimalStatus,
+    BullAvailability,
+    EventType,
+    VaccinationPlanStatus,
+)
 from smartbell.models import Alert, Animal, Event, PlanVaccine, VaccinationPlan
 from smartbell.services.alert_sync import close_tasks
 
@@ -135,7 +142,12 @@ async def sync_vaccines(
     any vaccine counts: one alert per animal per date stands for every vaccine due that day.
     """
     facts = list(events)
-    active = animal.status is AnimalStatus.ACTIVE and not projection.removed
+    # A semen-only bull isn't a live animal of the ranch: nothing to vaccinate.
+    active = (
+        animal.status is AnimalStatus.ACTIVE
+        and not projection.removed
+        and animal.bull_availability is not BullAvailability.SEMEN
+    )
     dates = (
         due_dates(rules, animal.birth_date, facts, projection.dry_off_date, today)
         if active

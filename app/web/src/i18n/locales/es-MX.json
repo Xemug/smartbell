@@ -520,7 +520,8 @@
       "edad": "Edad",
       "grupo": "Grupo",
       "nombre": "Nombre",
-      "siniiga": "SINIIGA"
+      "siniiga": "SINIIGA",
+      "disponibilidad": "Disponibilidad"
     },
     "none": "—",
     "months_one": "{{count}} mes",
@@ -535,7 +536,8 @@
       "repro": "Reproducción",
       "salud": "Salud",
       "bajas": "Bajas",
-      "edad": "Edad"
+      "edad": "Edad",
+      "disponibilidad": "Disponibilidad"
     },
     "values": {
       "grupo": {
@@ -584,6 +586,11 @@
         "7": "7 años",
         "8": "8 años",
         "9+": "9 años o más"
+      },
+      "disponibilidad": {
+        "EN_RANCHO": "En rancho",
+        "SEMEN": "Solo semen",
+        "AMBOS": "Ambos"
       }
     },
     "emptyList": {
@@ -598,7 +605,8 @@
       "selected_one": "{{count}} seleccionado",
       "selected_other": "{{count}} seleccionados",
       "remove": "Dar de baja",
-      "clear": "Quitar selección"
+      "clear": "Quitar selección",
+      "move": "Cambiar de potrero"
     },
     "remove": {
       "one": "Dar de baja",
@@ -648,7 +656,8 @@
       "reproStageDate": "Fecha etapa reproductiva",
       "weightBirth": "Al nacer",
       "weightWeaning": "Destete",
-      "weightOneYear": "Al año"
+      "weightOneYear": "Al año",
+      "bullAvailability": "Disponibilidad"
     },
     "sex": {
       "MACHO": "Macho",
@@ -997,6 +1006,151 @@
         "ORAL": "Oral o tableta",
         "INYECCION": "Inyección"
       }
+    }
+  },
+  "groups": {
+    "title": {
+      "vacas": "¿Dónde están tus <b>vacas</b>?",
+      "vaquillas": "¿Dónde están tus <b>vaquillas</b>?"
+    },
+    "tabsLabel": "Tipo de potreros",
+    "tabs": {
+      "vacas": "Potreros vacas",
+      "vaquillas": "Potreros vaquillas"
+    },
+    "inSystem": "Potreros en sistema",
+    "add": "Agregar potrero",
+    "animalsIn": "Vacas en potrero",
+    "heifersIn": "Vaquillas en potrero",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "seeMore": "Ver más",
+    "loadError": "No pudimos cargar los potreros.",
+    "retry": "Reintentar",
+    "presets": {
+      "GENERAL": "General",
+      "ALTA_PRODUCCION": "Alta producción",
+      "SECAS_RETO": "Secas o en reto",
+      "RECIEN_PARIDAS": "Recién paridas",
+      "ENFERMAS": "Enfermas"
+    },
+    "presetDescriptions": {
+      "GENERAL": "Este es el grupo general... ¡Aquí están todas las vacas en tu rancho!",
+      "ALTA_PRODUCCION": "Vacas con la mayor producción de leche del hato.",
+      "SECAS_RETO": "Vacas secas o en reto, cerca del parto.",
+      "RECIEN_PARIDAS": "Vacas que acaban de parir.",
+      "ENFERMAS": "Vacas en tratamiento."
+    },
+    "kpi": {
+      "label": "Selección de indicador",
+      "none": "Sin indicador",
+      "noneHint": "Puedes elegir un indicador más tarde.",
+      "needsCows": "Agrega vacas al potrero para elegir un indicador.",
+      "EN_CELO": "Vacas en celo",
+      "PRENADAS": "Vacas preñadas",
+      "ENFERMAS": "Vacas enfermas",
+      "DIM": "Días en leche (DEL)",
+      "hints": {
+        "EN_CELO": "Indicador para seguimiento de las fechas de celo para la inseminación de las vacas",
+        "PRENADAS": "Indicador para seguimiento de las fechas posibles de parto",
+        "ENFERMAS": "Indicador para dar seguimiento a los tratamientos necesarios",
+        "DIM": "Indicador de seguimiento de el periodo entre partos y productividad del hato"
+      }
+    },
+    "heifers": {
+      "RECIEN_NACIDAS": "Recién nacidas",
+      "EN_DESARROLLO": "En desarrollo",
+      "SERVIDAS": "Servidas",
+      "PRENADAS": "Preñadas",
+      "ENFERMAS": "Enfermas",
+      "descriptions": {
+        "RECIEN_NACIDAS": "Grupo especial para vaquillas recién nacidas y hasta 6 meses, ¡Cuídalas mucho!",
+        "EN_DESARROLLO": "Vaquillas a partir de 6 meses, hasta haber tenido su primer servicio.",
+        "SERVIDAS": "Vaquillas que ya han tenido su primera monta o servicio registrado en sistema.",
+        "PRENADAS": "Vaquillas preñadas con éxito",
+        "ENFERMAS": "Todas las vaquillas enfermas"
+      },
+      "computed": "Este potrero se arma solo con la edad y el estado de cada vaquilla.",
+      "empty": "No hay vaquillas en este potrero."
+    },
+    "wizard": {
+      "title": "Crea un nuevo potrero para las vacas de tu rancho",
+      "steps": {
+        "general": "Datos generales",
+        "selection": "Método selección vacas",
+        "kpi": "Selección de indicador"
+      },
+      "type": "Tipo de potrero",
+      "preset": "Preconfigurado",
+      "custom": "Personalizado",
+      "name": "Nombre del potrero",
+      "namePlaceholder": "Ejemplo: Potrero norte",
+      "nameRequired": "Es necesario el nombre",
+      "presetsUsed": "Ya tienes todos los potreros preconfigurados.",
+      "description": "Descripción",
+      "method": "Selección de vacas",
+      "auto": "Automático",
+      "manual": "Manual",
+      "filterField": "Filtro a aplicar a la selección",
+      "fields": {
+        "AGE": "Edad (años)",
+        "BREED": "Raza",
+        "LACTATIONS": "# Lactancias"
+      },
+      "values": "Valores",
+      "more": "Más",
+      "pickOne": "Selecciona al menos una casilla",
+      "matches_one": "{{count}} vaca de General entra hoy.",
+      "matches_other": "{{count}} vacas de General entran hoy.",
+      "autoNote": "Solo se mueven vacas que están en General. El sistema revisa el filtro cada día.",
+      "pickHelp": "Selecciona las vacas a agregar al potrero",
+      "filtered": "Vacas filtradas",
+      "inGroup": "Vacas en potrero",
+      "search": "Buscar vaca por ID",
+      "noCows": "No se encontró ninguna vaca.",
+      "finish": "Agregar potrero",
+      "created": "¡Listo! Acabas de agregar el potrero {{name}} a tu rancho virtual.",
+      "error": "No pudimos crear el potrero. Inténtalo de nuevo."
+    },
+    "detail": {
+      "back": "Regresar a potreros",
+      "rename": "Cambiar nombre",
+      "save": "Guardar",
+      "saved": "Cambios guardados",
+      "rule": "Filtro automático",
+      "reevaluate": "Revisar filtro ahora",
+      "reevaluated": "Entraron {{in}} y salieron {{out}} vacas.",
+      "bring": "Traer vacas",
+      "move": "Cambiar de potrero",
+      "empty": "Este potrero no tiene vacas todavía.",
+      "notFound": "Este potrero ya no existe.",
+      "saveError": "No pudimos guardar los cambios.",
+      "nameTaken": "Ya hay un potrero con ese nombre"
+    },
+    "deleteDialog": {
+      "title": "El potrero {{name}} se eliminará",
+      "body": "Elige su nuevo potrero, tus vacas no se pueden quedar sin hogar:",
+      "target": "Nuevo potrero",
+      "confirm": "Eliminar potrero",
+      "done": "Potrero eliminado. Ahora tus vacas están en el potrero {{to}}.",
+      "error": "No pudimos eliminar el potrero."
+    },
+    "moveDialog": {
+      "title": "Movimiento de vacas",
+      "target": "Selecciona potrero destino",
+      "body_one": "Se moverá {{count}} vaca al potrero {{name}}.",
+      "body_other": "Se moverán {{count}} vacas al potrero {{name}}.",
+      "pickTarget": "Elige a qué potrero van.",
+      "confirm": "Mover",
+      "done_one": "{{count}} vaca movida al potrero {{name}}.",
+      "done_other": "{{count}} vacas movidas al potrero {{name}}.",
+      "error": "No pudimos mover las vacas."
+    },
+    "bringDialog": {
+      "title": "Traer vacas",
+      "help": "Selecciona las vacas a agregar al potrero",
+      "confirm_one": "Agregar {{count}} vaca",
+      "confirm_other": "Agregar {{count}} vacas"
     }
   }
 }

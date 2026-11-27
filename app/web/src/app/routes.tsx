@@ -15,6 +15,11 @@ import {
   RECORDS_ROUTE,
 } from '../features/animals/profile/AnimalProfilePage';
 import { FIRST_COW_PATH } from '../features/auth/guards';
+import { GroupDetailPage } from '../features/groups/GroupDetailPage';
+import { GroupsPage } from '../features/groups/GroupsPage';
+import { HeiferGroupPage } from '../features/groups/HeiferGroupPage';
+import { GROUPS_PATH, HEIFER_GROUPS_PATH, NEW_GROUP_PATH } from '../features/groups/labels';
+import { NewGroupPage } from '../features/groups/NewGroupPage';
 import { AccountPage } from '../features/config/account/AccountPage';
 import { RanchPage } from '../features/config/ranch/RanchPage';
 import { EditUserPage, NewUserPage } from '../features/config/users/UserFormPage';
@@ -33,7 +38,10 @@ export const shellRoute: RouteObject = {
     { path: NEW_ANIMAL_PATH, element: <NewAnimalPage /> },
     { path: PROFILE_ROUTE, element: <AnimalProfilePage /> },
     { path: RECORDS_ROUTE, element: <AnimalProfilePage records /> },
-    { path: '/grupos', element: <PlaceholderPage titleKey="nav.grupos" /> },
+    { path: GROUPS_PATH, element: <GroupsPage /> },
+    { path: NEW_GROUP_PATH, element: <NewGroupPage /> },
+    { path: `${HEIFER_GROUPS_PATH}/:key`, element: <HeiferGroupPage /> },
+    { path: `${GROUPS_PATH}/:id`, element: <GroupDetailPage /> },
     { path: '/reportes', element: <PlaceholderPage titleKey="nav.reportes" /> },
     { path: '/ranchos', element: <PlaceholderPage titleKey="nav.ranchos" /> },
     { path: '/usuarios', element: <PlaceholderPage titleKey="nav.usuarios" /> },

@@ -57,6 +57,14 @@ class AnimalKind(_Name):
     NOVILLO = auto()
 
 
+class BullAvailability(_Name):
+    """How a bull is available for service: on the ranch (MONTA), semen only (IA), or both."""
+
+    EN_RANCHO = auto()
+    SEMEN = auto()
+    AMBOS = auto()
+
+
 class DevelopmentStage(_Name):
     AUTO = auto()
     TERNERA = auto()
@@ -150,6 +158,25 @@ class GroupKpiIndicator(_Name):
     PRENADAS = auto()
     ENFERMAS = auto()
     DIM = auto()
+
+
+class GroupFilterField(_Name):
+    """What an AUTO group's filter reads (`Group.auto_filter["field"]`)."""
+
+    AGE = auto()  # whole years
+    BREED = auto()
+    LACTATIONS = auto()
+
+
+class HeiferGroup(_Name):
+    """The computed heifer potreros (§1 Group). Never stored; a heifer is in one stage group and,
+    while sick, in ENFERMAS too."""
+
+    RECIEN_NACIDAS = auto()  # under 6 months
+    EN_DESARROLLO = auto()  # 6 months on, not yet served
+    SERVIDAS = auto()
+    PRENADAS = auto()
+    ENFERMAS = auto()
 
 
 class EventType(_Name):

@@ -17,7 +17,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from smartbell.db import get_session
 from smartbell.domain.repro import Projection
-from smartbell.enums import AnimalKind, Breed, DamStatus, RemovalReason, ReproState, Sex
+from smartbell.enums import (
+    AnimalKind,
+    Breed,
+    BullAvailability,
+    DamStatus,
+    RemovalReason,
+    ReproState,
+    Sex,
+)
 from smartbell.models import Animal
 from smartbell.schemas.animals import (
     AnimalCreate,
@@ -152,6 +160,9 @@ async def list_animals(
         dt.date | None, Query(description="Born on or after this date (the bulls' Edad filter)")
     ] = None,
     born_to: Annotated[dt.date | None, Query(description="Born on or before this date")] = None,
+    availability: Annotated[
+        BullAvailability | None, Query(description="The bulls' Disponibilidad filter")
+    ] = None,
     removed_reason: Annotated[
         RemovalReason | None, Query(description="Lists the removed animals with this reason")
     ] = None,
@@ -169,6 +180,7 @@ async def list_animals(
         health=health,
         born_from=born_from,
         born_to=born_to,
+        availability=availability,
         removed_reason=removed_reason,
         sort=sort,
         page=page,
