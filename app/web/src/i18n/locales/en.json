@@ -842,7 +842,7 @@
       "error": "We couldn't create the group. Try again."
     },
     "detail": {
-      "back": "Back",
+      "back": "Go back to groups",
       "rename": "Rename",
       "save": "Save",
       "saved": "Changes saved",

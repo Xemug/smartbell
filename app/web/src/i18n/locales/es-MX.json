@@ -842,7 +842,7 @@
       "error": "No pudimos crear el potrero. Inténtalo de nuevo."
     },
     "detail": {
-      "back": "Regresar",
+      "back": "Regresar a potreros",
       "rename": "Cambiar nombre",
       "save": "Guardar",
       "saved": "Cambios guardados",

@@ -366,6 +366,10 @@ describe('New potrero wizard', () => {
     expect(
       await screen.findByText('¡Listo! Acabas de agregar el potrero Lote sur a tu rancho virtual.'),
     ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Regresar a potreros/ })).toHaveAttribute(
+      'href',
+      '/grupos',
+    );
   });
 
   it('needs a name before going on', async () => {
