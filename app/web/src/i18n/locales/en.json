@@ -605,7 +605,8 @@
       "selected_one": "{{count}} selected",
       "selected_other": "{{count}} selected",
       "remove": "Remove",
-      "clear": "Clear selection"
+      "clear": "Clear selection",
+      "move": "Move to group"
     },
     "remove": {
       "one": "Remove",
@@ -735,5 +736,150 @@
       "permission_denied": "You don't have permission to register animals."
     },
     "lactationRange": "Enter a whole number from 0 to 30"
+  },
+  "groups": {
+    "title": {
+      "vacas": "Where are your <b>cows</b>?",
+      "vaquillas": "Where are your <b>heifers</b>?"
+    },
+    "tabsLabel": "Group type",
+    "tabs": {
+      "vacas": "Cow groups",
+      "vaquillas": "Heifer groups"
+    },
+    "inSystem": "Groups in the system",
+    "add": "Add group",
+    "animalsIn": "Cows in group",
+    "heifersIn": "Heifers in group",
+    "edit": "Edit",
+    "delete": "Delete",
+    "seeMore": "See more",
+    "loadError": "We couldn't load the groups.",
+    "retry": "Retry",
+    "presets": {
+      "GENERAL": "General",
+      "ALTA_PRODUCCION": "High production",
+      "SECAS_RETO": "Dry or close-up",
+      "RECIEN_PARIDAS": "Fresh cows",
+      "ENFERMAS": "Sick"
+    },
+    "presetDescriptions": {
+      "GENERAL": "The general group... all the cows on your ranch!",
+      "ALTA_PRODUCCION": "The herd's highest-producing cows.",
+      "SECAS_RETO": "Dry or close-up cows, near calving.",
+      "RECIEN_PARIDAS": "Cows that just calved.",
+      "ENFERMAS": "Cows under treatment."
+    },
+    "kpi": {
+      "label": "Indicator",
+      "none": "No indicator",
+      "noneHint": "You can pick one later.",
+      "needsCows": "Add cows to the group to pick an indicator.",
+      "EN_CELO": "Cows in heat",
+      "PRENADAS": "Pregnant cows",
+      "ENFERMAS": "Sick cows",
+      "DIM": "Days in milk (DIM)",
+      "hints": {
+        "EN_CELO": "Tracks heat dates for insemination",
+        "PRENADAS": "Tracks expected calving dates",
+        "ENFERMAS": "Tracks the treatments needed",
+        "DIM": "Tracks the calving interval and herd productivity"
+      }
+    },
+    "heifers": {
+      "RECIEN_NACIDAS": "Newborns",
+      "EN_DESARROLLO": "Growing",
+      "SERVIDAS": "Served",
+      "PRENADAS": "Pregnant",
+      "ENFERMAS": "Sick",
+      "descriptions": {
+        "RECIEN_NACIDAS": "Newborn heifers up to 6 months. Take good care of them!",
+        "EN_DESARROLLO": "Heifers from 6 months until their first service.",
+        "SERVIDAS": "Heifers with a first service recorded.",
+        "PRENADAS": "Pregnant heifers",
+        "ENFERMAS": "All sick heifers"
+      },
+      "computed": "This group is built from each heifer's age and state.",
+      "empty": "No heifers in this group."
+    },
+    "wizard": {
+      "title": "Create a new group for your ranch's cows",
+      "steps": {
+        "general": "General details",
+        "selection": "Cow selection",
+        "kpi": "Indicator"
+      },
+      "type": "Group type",
+      "preset": "Preset",
+      "custom": "Custom",
+      "name": "Group name",
+      "namePlaceholder": "Example: North paddock",
+      "nameRequired": "A name is required",
+      "presetsUsed": "You already have every preset group.",
+      "description": "Description",
+      "method": "Cow selection",
+      "auto": "Automatic",
+      "manual": "Manual",
+      "filterField": "Filter",
+      "fields": {
+        "AGE": "Age (years)",
+        "BREED": "Breed",
+        "LACTATIONS": "# Lactations"
+      },
+      "values": "Values",
+      "more": "More",
+      "pickOne": "Pick at least one",
+      "matches_one": "{{count}} cow from General comes in today.",
+      "matches_other": "{{count}} cows from General come in today.",
+      "autoNote": "Only cows in General move. The filter is checked every day.",
+      "pickHelp": "Pick the cows to add to the group",
+      "filtered": "Filtered cows",
+      "inGroup": "Cows in group",
+      "search": "Search cow by ID",
+      "noCows": "No cows found.",
+      "finish": "Add group",
+      "created": "Done! You just added the group {{name}} to your ranch.",
+      "error": "We couldn't create the group. Try again."
+    },
+    "detail": {
+      "back": "Go back to groups",
+      "rename": "Rename",
+      "save": "Save",
+      "saved": "Changes saved",
+      "rule": "Automatic filter",
+      "reevaluate": "Check filter now",
+      "reevaluated": "{{in}} cows came in and {{out}} left.",
+      "bring": "Bring cows",
+      "move": "Move to group",
+      "empty": "This group has no cows yet.",
+      "notFound": "This group no longer exists.",
+      "saveError": "We couldn't save the changes.",
+      "nameTaken": "There is already a group with that name"
+    },
+    "deleteDialog": {
+      "title": "The group {{name}} will be deleted",
+      "body": "Pick their new group; your cows can't be left homeless:",
+      "target": "New group",
+      "confirm": "Delete group",
+      "done": "Group deleted. Your cows are now in {{to}}.",
+      "error": "We couldn't delete the group."
+    },
+    "moveDialog": {
+      "title": "Move cows",
+      "target": "Destination group",
+      "body_one": "{{count}} cow will move to {{name}}.",
+      "body_other": "{{count}} cows will move to {{name}}.",
+      "pickTarget": "Pick where they go.",
+      "confirm": "Move",
+      "done_one": "{{count}} cow moved to {{name}}.",
+      "done_other": "{{count}} cows moved to {{name}}.",
+      "error": "We couldn't move the cows."
+    },
+    "bringDialog": {
+      "title": "Bring cows",
+      "help": "Pick the cows to add to the group",
+      "confirm_one": "Add {{count}} cow",
+      "confirm_other": "Add {{count}} cows"
+    }
   }
 }

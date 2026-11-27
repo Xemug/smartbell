@@ -220,10 +220,13 @@ export function AnimalForm({
             // No group is the General potrero; a ranch may have no groups yet.
             placeholder={t('animals.values.grupo.GENERAL')}
             disabled={!groups.data?.length}
-            options={(groups.data ?? []).map((group) => ({
-              value: group.id,
-              label: group.preset ? t(`animals.values.grupo.${group.preset}`) : group.name,
-            }))}
+            // An AUTO potrero picks its own cows, so it isn't a place to register one into.
+            options={(groups.data ?? [])
+              .filter((group) => group.selection !== 'AUTO')
+              .map((group) => ({
+                value: group.id,
+                label: group.preset ? t(`animals.values.grupo.${group.preset}`) : group.name,
+              }))}
             className="col-span-2"
           />
         )}

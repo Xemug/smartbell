@@ -33,6 +33,7 @@ from smartbell.enums import (
     DevelopmentStage,
     EventType,
     GroupPreset,
+    GroupSelection,
     HistoryKey,
     RemovalReason,
     ReproState,
@@ -188,11 +189,13 @@ async def _check_bull_name(
 async def _check_group(
     session: AsyncSession, ranch_id: uuid.UUID, group_id: uuid.UUID, loc: tuple[str, ...]
 ) -> None:
-    found = await session.scalar(
-        select(Group.id).where(Group.id == group_id, Group.ranch_id == ranch_id)
+    selection = await session.scalar(
+        select(Group.selection).where(Group.id == group_id, Group.ranch_id == ranch_id)
     )
-    if found is None:
+    if selection is None:
         raise _invalid((*loc, "group_id"), "group_not_found", "El potrero no existe")
+    if selection is GroupSelection.AUTO:  # Its rule picks its cows (groups card).
+        raise _invalid((*loc, "group_id"), "group_is_auto", "Ese potrero elige sus vacas solo")
 
 
 def _check_crossbreed(
@@ -487,7 +490,7 @@ async def update_animal(
         await _check_siniiga(session, changes["siniiga"], (), exclude=animal.id)
     if animal.sex is Sex.MACHO and changes.get("name") not in (None, animal.name):
         await _check_bull_name(session, ctx.ranch_id, changes["name"], (), exclude=animal.id)
-    if changes.get("group_id") is not None:
+    if changes.get("group_id") not in (None, animal.group_id):  # Staying put is fine.
         await _check_group(session, ctx.ranch_id, changes["group_id"], ())
     level = changes.get("crossbreed_level", animal.crossbreed_level)
     contributing = changes.get("contributing_breed", animal.contributing_breed)

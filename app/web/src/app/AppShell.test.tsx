@@ -83,7 +83,6 @@ describe('AppShell', () => {
   });
 
   it.each([
-    [false, 'Grupos'],
     [false, 'Reportes'],
     [false, 'Ranchos'],
     [true, 'Usuarios'],
@@ -153,10 +152,10 @@ describe('AppShell', () => {
     expect(prefilled(soporte.getAttribute('href'))).toBe('Ayuda, por favor.');
     await userEvent.keyboard('{Escape}');
 
-    await userEvent.click(screen.getByRole('button', { name: 'Grupos' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Ranchos' }));
     const dialog = await screen.findByRole('dialog');
     const link = within(dialog).getByRole('link', { name: 'Contactar en WhatsApp' });
-    expect(prefilled(link.getAttribute('href'))).toBe('Quiero Grupos ya.');
+    expect(prefilled(link.getAttribute('href'))).toBe('Quiero Ranchos ya.');
   });
 
   it('avatar items route to their config pages', async () => {
@@ -213,14 +212,14 @@ describe('AppShell', () => {
   });
 
   it('sends unknown paths home, inside the shell', () => {
-    const { router } = renderShell({ desktop: true, path: '/grupos/12' });
+    const { router } = renderShell({ desktop: true, path: '/reportes/12' });
     expect(router.state.location.pathname).toBe('/');
     expect(screen.getByRole('navigation')).toBeInTheDocument();
   });
 
   it('holds deep links to unbuilt features on a placeholder page', () => {
-    renderShell({ desktop: true, path: '/grupos' });
-    expect(screen.getByRole('heading', { name: 'Grupos' })).toBeInTheDocument();
+    renderShell({ desktop: true, path: '/reportes' });
+    expect(screen.getByRole('heading', { name: 'Reportes' })).toBeInTheDocument();
   });
 });
 

@@ -392,10 +392,101 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** List Groups */
+    /**
+     * List Groups
+     * @description General is created here the first time a ranch's groups are read.
+     */
     get: operations['listGroups'];
     put?: never;
+    /** Create Group */
+    post: operations['createGroup'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/groups/heifers': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Heifer Groups */
+    get: operations['listHeiferGroups'];
+    put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/groups/preview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Preview Auto Group */
+    post: operations['previewAutoGroup'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/groups/{group_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Group */
+    get: operations['getGroup'];
+    put?: never;
+    post?: never;
+    /** Delete Group */
+    delete: operations['deleteGroup'];
+    options?: never;
+    head?: never;
+    /** Update Group */
+    patch: operations['updateGroup'];
+    trace?: never;
+  };
+  '/api/groups/{group_id}/animals': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Move Animals */
+    post: operations['moveAnimalsToGroup'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/groups/{group_id}/reevaluate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Reevaluate Group */
+    post: operations['reevaluateGroup'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1128,6 +1219,15 @@ export interface components {
       sire_id?: string | null;
     };
     /**
+     * AutoFilter
+     * @description An AUTO group's rule: the cows whose age, breed or lactation number is one of `values`.
+     */
+    AutoFilter: {
+      field: components['schemas']['GroupFilterField'];
+      /** Values */
+      values: string[];
+    };
+    /**
      * Breed
      * @enum {string}
      */
@@ -1550,7 +1650,53 @@ export interface components {
        */
       type: 'GROUP_CHANGE';
     };
-    /** GroupOut */
+    /**
+     * GroupCreate
+     * @description The wizard. A preset takes its name from the preset; a custom group needs `name`. MANUAL
+     *     moves `animal_ids` in; AUTO moves in the cows `auto_filter` matches.
+     */
+    GroupCreate: {
+      preset?: components['schemas']['GroupPreset'] | null;
+      /** Name */
+      name?: string | null;
+      /** Description */
+      description?: string | null;
+      /** @default MANUAL */
+      selection: components['schemas']['GroupSelection'];
+      auto_filter?: components['schemas']['AutoFilter'] | null;
+      /** Animal Ids */
+      animal_ids?: string[];
+      kpi_indicator?: components['schemas']['GroupKpiIndicator'] | null;
+    };
+    /** GroupDeleted */
+    GroupDeleted: {
+      /**
+       * To Group Id
+       * Format: uuid
+       */
+      to_group_id: string;
+      /** To Group */
+      to_group: string;
+      /** Moved */
+      moved: number;
+    };
+    /**
+     * GroupFilterField
+     * @description What an AUTO group's filter reads (`Group.auto_filter["field"]`).
+     * @enum {string}
+     */
+    GroupFilterField: 'AGE' | 'BREED' | 'LACTATIONS';
+    /**
+     * GroupKpiIndicator
+     * @enum {string}
+     */
+    GroupKpiIndicator: 'EN_CELO' | 'PRENADAS' | 'ENFERMAS' | 'DIM';
+    /**
+     * GroupOut
+     * @description A stored potrero with what its card shows. `animal_count` counts the active animals in it
+     *     (General also counts those with no group); `kpi_value` is the chosen indicator's figure:
+     *     a count, or for DIM the average days in milk of its milking cows (None with none milking).
+     */
     GroupOut: {
       /**
        * Id
@@ -1559,8 +1705,21 @@ export interface components {
       id: string;
       /** Name */
       name: string;
+      /** Description */
+      description?: string | null;
       type: components['schemas']['GroupType'];
       preset: components['schemas']['GroupPreset'] | null;
+      /** @default MANUAL */
+      selection: components['schemas']['GroupSelection'];
+      auto_filter?: components['schemas']['AutoFilter'] | null;
+      kpi_indicator?: components['schemas']['GroupKpiIndicator'] | null;
+      /**
+       * Animal Count
+       * @default 0
+       */
+      animal_count: number;
+      /** Kpi Value */
+      kpi_value?: number | null;
     };
     /**
      * GroupPreset
@@ -1568,10 +1727,28 @@ export interface components {
      */
     GroupPreset: 'GENERAL' | 'ALTA_PRODUCCION' | 'SECAS_RETO' | 'RECIEN_PARIDAS' | 'ENFERMAS';
     /**
+     * GroupSelection
+     * @enum {string}
+     */
+    GroupSelection: 'AUTO' | 'MANUAL';
+    /**
      * GroupType
      * @enum {string}
      */
     GroupType: 'PRESET' | 'CUSTOM';
+    /**
+     * GroupUpdate
+     * @description Edit: rename (custom groups only), describe, re-pick the indicator, or change the AUTO
+     *     rule (which re-evaluates the group). Fields left out stay as they are.
+     */
+    GroupUpdate: {
+      /** Name */
+      name?: string | null;
+      /** Description */
+      description?: string | null;
+      auto_filter?: components['schemas']['AutoFilter'] | null;
+      kpi_indicator?: components['schemas']['GroupKpiIndicator'] | null;
+    };
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
@@ -1607,6 +1784,38 @@ export interface components {
       bull_id?: string | null;
       method?: components['schemas']['ServiceMethod'] | null;
       treatment?: components['schemas']['Treatment'] | null;
+    };
+    /**
+     * HeiferGroup
+     * @description The computed heifer potreros (§1 Group). Never stored; a heifer is in one stage group and,
+     *     while sick, in ENFERMAS too.
+     * @enum {string}
+     */
+    HeiferGroup: 'RECIEN_NACIDAS' | 'EN_DESARROLLO' | 'SERVIDAS' | 'PRENADAS' | 'ENFERMAS';
+    /** HeiferGroupOut */
+    HeiferGroupOut: {
+      key: components['schemas']['HeiferGroup'];
+      /** Animals */
+      animals: components['schemas']['HeiferOut'][];
+    };
+    /** HeiferOut */
+    HeiferOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Control Id */
+      control_id: string;
+      breed: components['schemas']['Breed'];
+      /**
+       * Birth Date
+       * Format: date
+       */
+      birth_date: string;
+      repro_state: components['schemas']['ReproState'] | null;
+      /** Is Sick */
+      is_sick: boolean;
     };
     /** HerdLogIn */
     HerdLogIn: {
@@ -1838,6 +2047,22 @@ export interface components {
      * @enum {string}
      */
     MilkWarning: 'WITHDRAWAL_TO_TANK' | 'ANTIBIOTICS_OUTSIDE_WITHDRAWAL';
+    /** MoveAnimals */
+    MoveAnimals: {
+      /** Animal Ids */
+      animal_ids: string[];
+    };
+    /**
+     * MoveResult
+     * @description `moved`: animals now in the group. `unchanged`: already there. Animals not found or
+     *     dados de baja refuse the whole request (404 / 409) before anything moves.
+     */
+    MoveResult: {
+      /** Moved */
+      moved: string[];
+      /** Unchanged */
+      unchanged: string[];
+    };
     /**
      * ParentCreate
      * @description A dam or sire registered inline. Its sex comes from the slot it fills.
@@ -2047,6 +2272,13 @@ export interface components {
       latitude?: number | null;
       /** Longitude */
       longitude?: number | null;
+    };
+    /** Reevaluated */
+    Reevaluated: {
+      /** Came In */
+      came_in: string[];
+      /** Went Out */
+      went_out: string[];
     };
     /**
      * RemovalReason
@@ -3188,6 +3420,282 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['GroupOut'][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  createGroup: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['GroupCreate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GroupOut'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  listHeiferGroups: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HeiferGroupOut'][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  previewAutoGroup: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AutoFilter'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': string[];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  getGroup: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path: {
+        group_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GroupOut'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  deleteGroup: {
+    parameters: {
+      query?: {
+        to_group_id?: string | null;
+      };
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path: {
+        group_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GroupDeleted'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  updateGroup: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path: {
+        group_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['GroupUpdate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GroupOut'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  moveAnimalsToGroup: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path: {
+        group_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MoveAnimals'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MoveResult'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  reevaluateGroup: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path: {
+        group_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['Reevaluated'];
         };
       };
       /** @description Validation Error */
