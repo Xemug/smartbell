@@ -776,6 +776,7 @@
       "reproduccion": "Reproduction",
       "lastCalving": "Last calving",
       "lastService": "Last service",
+      "lastBullService": "Last service",
       "salud": "Health",
       "estado": "Status",
       "saludable": "Healthy",
@@ -800,6 +801,7 @@
       "tabs": "Records",
       "bitacora": "Event log",
       "produccion": "Production",
+      "servicios": "Services",
       "peso": "Weight",
       "toProfile": "General data"
     },
@@ -1006,6 +1008,20 @@
         "ORAL": "Oral or tablet",
         "INYECCION": "Injection"
       }
+    },
+    "services": {
+      "title": "Bull services",
+      "columns": {
+        "vaca": "Cow",
+        "metodo": "Method",
+        "fecha": "Date"
+      },
+      "methods": {
+        "IA": "Insemination",
+        "MONTA": "Natural service"
+      },
+      "empty": "This bull has no services yet. They are recorded from each cow’s heat.",
+      "loadError": "We couldn’t load the services."
     }
   },
   "groups": {

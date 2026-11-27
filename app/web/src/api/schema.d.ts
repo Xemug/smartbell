@@ -517,6 +517,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/animals/{animal_id}/services': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Bull Services
+     * @description The cows a bull served (IA or monta), newest first: his reproduction history.
+     */
+    get: operations['listBullServices'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/animals/{animal_id}/events/{event_id}': {
     parameters: {
       query?: never;
@@ -1272,6 +1292,30 @@ export interface components {
      * @enum {string}
      */
     BullAvailability: 'EN_RANCHO' | 'SEMEN' | 'AMBOS';
+    /**
+     * BullServiceOut
+     * @description A service the bull gave: the cow, the day and how (IA or MONTA).
+     */
+    BullServiceOut: {
+      /**
+       * Event Id
+       * Format: uuid
+       */
+      event_id: string;
+      /**
+       * Occurred On
+       * Format: date
+       */
+      occurred_on: string;
+      method: components['schemas']['ServiceMethod'];
+      /**
+       * Cow Id
+       * Format: uuid
+       */
+      cow_id: string;
+      /** Cow Control Id */
+      cow_control_id: string;
+    };
     /** CalvingInput */
     CalvingInput: {
       /**
@@ -3768,6 +3812,39 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['EventWritten'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  listBullServices: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-ranch-id'?: string | null;
+      };
+      path: {
+        animal_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BullServiceOut'][];
         };
       };
       /** @description Validation Error */

@@ -17,12 +17,13 @@ import {
 } from '../../../ui/icons/glyphs';
 import { Icon } from '../../../ui/icons/Icon';
 import { ANIMALS_PATH } from '../list/AnimalListPage';
-import type { AnimalDetail, AnimalEvent } from './api';
+import type { AnimalDetail, AnimalEvent, BullService } from './api';
 import {
   ageInMonths,
   currentWeight,
   dietHistory,
   reproMilestone,
+  semenOnly,
   showsDel,
   type EventCategory,
 } from './profileFacts';
@@ -32,6 +33,8 @@ interface ProfileSummaryProps {
   events: AnimalEvent[];
   /** Lts promedio; undefined while unknown or not visible to this user. */
   avgLiters?: number | null;
+  /** A bull's services, newest first: his Reproducción card. Undefined for a cow. */
+  services?: BullService[];
   today: Date;
   /** Where "Consultar historial" goes: the records, on a tab or filtered to a category. */
   recordsHref: (target: { tab?: string; tipo?: EventCategory }) => string;
@@ -123,13 +126,15 @@ function Parent({
   );
 }
 
-/** The V4 MVP profile (V 4000-10263, 4048-10361): photo, chips, tiles and the four cards. */
+/** The V4 MVP profile (V 4000-10263, 4048-10361): photo, chips, tiles and the four cards. A bull
+ * kept only as semen shows just his genealogy and the cows he served. */
 export function ProfileSummary({
   animal,
   events,
   avgLiters,
   today,
   recordsHref,
+  services,
   onRemove,
   registrosHref,
   parents,
@@ -143,7 +148,12 @@ export function ProfileSummary({
   const milking = cow && animal.lactation_state === 'LACTANDO';
   const del = animal.projection.dim;
   const diet = dietHistory(events)[0];
-  const milestone = reproMilestone(animal);
+  const bull = animal.sex === 'MACHO';
+  const strawsOnly = semenOnly(animal);
+  // A bull never calves: his card follows the cows he served (newest first).
+  const milestone = bull
+    ? services?.[0] && { key: 'lastBullService', date: services[0].occurred_on }
+    : reproMilestone(animal);
   const sickKey = animal.sex === 'MACHO' ? 'enfermo' : 'enferma';
 
   return (
@@ -178,8 +188,9 @@ export function ProfileSummary({
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        <Tile label={t('profile.tiles.peso')} value={kg(weight)} />
+      <div className={cx('grid gap-2', strawsOnly ? 'grid-cols-2' : 'grid-cols-3')}>
+        {/* Nobody weighs a bull kept only as semen. */}
+        {!strawsOnly && <Tile label={t('profile.tiles.peso')} value={kg(weight)} />}
         {milking ? (
           <>
             <Tile
@@ -220,37 +231,41 @@ export function ProfileSummary({
             <Parent label={t('profile.cards.madre')} id={animal.dam_id} controlId={parents.dam} />
           </div>
         </InfoCard>
-        <InfoCard
-          title={t('profile.cards.dieta')}
-          icon={iconDiet}
-          link={{ href: recordsHref({ tab: 'dieta' }), label: t('profile.cards.consultar') }}
-        >
-          <span className="text-secondary-text type-body-sm">{t('profile.cards.tipoDieta')}</span>
-          <span className="type-title-sm">{diet ? (diet.dietType ?? diet.diet) : dash}</span>
-        </InfoCard>
+        {!strawsOnly && (
+          <InfoCard
+            title={t('profile.cards.dieta')}
+            icon={iconDiet}
+            link={{ href: recordsHref({ tab: 'dieta' }), label: t('profile.cards.consultar') }}
+          >
+            <span className="text-secondary-text type-body-sm">{t('profile.cards.tipoDieta')}</span>
+            <span className="type-title-sm">{diet ? (diet.dietType ?? diet.diet) : dash}</span>
+          </InfoCard>
+        )}
         <InfoCard
           title={t('profile.cards.reproduccion')}
           icon={iconAnimalReproduction}
           link={{
-            href: recordsHref({ tipo: 'reproduccion' }),
+            href: recordsHref(bull ? { tab: 'servicios' } : { tipo: 'reproduccion' }),
             label: t('profile.cards.consultar'),
           }}
         >
           <span className="text-secondary-text type-body-sm">
-            {t(`profile.cards.${milestone?.key ?? 'lastCalving'}`)}
+            {t(`profile.cards.${milestone?.key ?? (bull ? 'lastBullService' : 'lastCalving')}`)}
           </span>
           <span className="type-title-sm">{milestone ? shortDate(milestone.date) : dash}</span>
         </InfoCard>
-        <InfoCard
-          title={t('profile.cards.salud')}
-          icon={iconHealth}
-          link={{ href: recordsHref({ tipo: 'salud' }), label: t('profile.cards.consultar') }}
-        >
-          <span className="text-secondary-text type-body-sm">{t('profile.cards.estado')}</span>
-          <span className={cx('type-title-sm', animal.is_sick && 'text-error')}>
-            {animal.is_sick ? t(`profile.cards.${sickKey}`) : t('profile.cards.saludable')}
-          </span>
-        </InfoCard>
+        {!strawsOnly && (
+          <InfoCard
+            title={t('profile.cards.salud')}
+            icon={iconHealth}
+            link={{ href: recordsHref({ tipo: 'salud' }), label: t('profile.cards.consultar') }}
+          >
+            <span className="text-secondary-text type-body-sm">{t('profile.cards.estado')}</span>
+            <span className={cx('type-title-sm', animal.is_sick && 'text-error')}>
+              {animal.is_sick ? t(`profile.cards.${sickKey}`) : t('profile.cards.saludable')}
+            </span>
+          </InfoCard>
+        )}
       </div>
 
       {(onRemove || registrosHref) && (

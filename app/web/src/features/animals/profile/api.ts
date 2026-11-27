@@ -8,6 +8,7 @@ import type { RemovalReason } from '../list/listState';
 export type AnimalDetail = components['schemas']['AnimalDetail'];
 export type AnimalEvent = components['schemas']['EventOut'];
 export type CowMilk = components['schemas']['CowMilkStats'];
+export type BullService = components['schemas']['BullServiceOut'];
 
 function fail(error: unknown, response: Response): never {
   const detail = (error as { detail?: unknown } | undefined)?.detail;
@@ -18,6 +19,7 @@ export const profileKeys = {
   animal: (id: string) => ['animals', 'detail', id] as const,
   events: (id: string) => ['animals', 'events', id] as const,
   milk: (id: string) => ['animals', 'milk', id] as const,
+  services: (id: string) => ['animals', 'services', id] as const,
 };
 
 export function useAnimal(id: string | undefined) {
@@ -56,6 +58,21 @@ export function useCowMilk(id: string | undefined, enabled: boolean) {
     enabled: Boolean(id) && enabled,
     queryFn: async () => {
       const { data, error, response } = await api.GET('/api/milk/cows/{animal_id}', {
+        params: { path: { animal_id: id ?? '' } },
+      });
+      if (!data) fail(error, response);
+      return data;
+    },
+  });
+}
+
+/** The cows a bull served, newest first: his reproduction history. Only asked for on a bull. */
+export function useBullServices(id: string | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: profileKeys.services(id ?? ''),
+    enabled: Boolean(id) && enabled,
+    queryFn: async () => {
+      const { data, error, response } = await api.GET('/api/animals/{animal_id}/services', {
         params: { path: { animal_id: id ?? '' } },
       });
       if (!data) fail(error, response);

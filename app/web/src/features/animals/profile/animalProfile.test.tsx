@@ -8,7 +8,7 @@ import { ActiveRanchProvider } from '../../../app/ActiveRanchProvider';
 import type { Permission } from '../../../app/useActiveRanch';
 import { SnackbarProvider } from '../../../ui/SnackbarProvider';
 import { AuthContext, type AuthApi } from '../../auth/useAuth';
-import type { AnimalDetail, AnimalEvent } from './api';
+import type { AnimalDetail, AnimalEvent, BullService } from './api';
 import { AnimalProfilePage } from './AnimalProfilePage';
 import { detail, event } from './testData';
 
@@ -24,6 +24,7 @@ let calls: Call[];
 let desktop: boolean;
 let cow: AnimalDetail;
 let events: AnimalEvent[];
+let services: BullService[];
 let deleteStatus: number;
 let removed: boolean;
 
@@ -110,6 +111,7 @@ beforeEach(() => {
   desktop = false;
   deleteStatus = 200;
   removed = false;
+  services = [];
   cow = detail({
     id: ID,
     is_sick: true,
@@ -163,6 +165,7 @@ beforeEach(() => {
         return Response.json({ detail: 'animal_not_found' }, { status: 404 });
       if (key === `GET /api/animals/${ID}`) return Response.json(cow);
       if (key === `GET /api/animals/${ID}/events`) return Response.json(events);
+      if (key === `GET /api/animals/${ID}/services`) return Response.json(services);
       if (key === `GET /api/milk/cows/${ID}`)
         return Response.json({
           animal_id: ID,
@@ -246,6 +249,76 @@ describe('the records', () => {
       'true',
     );
     expect(screen.queryByRole('tab', { name: 'Producción' })).not.toBeInTheDocument();
+  });
+});
+
+describe('a bull', () => {
+  const served = (cowId: string, controlId: string, on: string, method: 'IA' | 'MONTA') => ({
+    event_id: `s-${controlId}`,
+    occurred_on: on,
+    method,
+    cow_id: cowId,
+    cow_control_id: controlId,
+  });
+
+  beforeEach(() => {
+    cow = detail({
+      id: ID,
+      sex: 'MACHO',
+      kind: 'TORO',
+      control_id: 'TORO-1',
+      lactation_state: null,
+      bull_availability: 'EN_RANCHO',
+    });
+    services = [
+      served('c-2', '00020', '2026-11-06', 'MONTA'),
+      served('c-1', '00012', '2026-10-17', 'IA'),
+    ];
+  });
+
+  it('shows his last service, never a calving, and lists the cows he served', async () => {
+    renderAt(`/vacas/${ID}`);
+    const repro = await screen.findByRole('region', { name: 'Reproducción' });
+    expect(within(repro).getByText('Último servicio')).toBeInTheDocument();
+    expect(await within(repro).findByText('06/11/2026')).toBeInTheDocument();
+    expect(screen.queryByText('Último parto')).not.toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Dieta' })).toBeInTheDocument();
+
+    await userEvent.click(within(repro).getByRole('link', { name: 'Consultar historial' }));
+    expect(screen.getByTestId('where')).toHaveTextContent(`/vacas/${ID}/registros?tab=servicios`);
+    const table = await screen.findByRole('table', { name: 'Servicios del toro' });
+    expect(within(table).getByRole('link', { name: '00020' })).toHaveAttribute(
+      'href',
+      '/vacas/c-2',
+    );
+    expect(within(table).getByText('Monta')).toBeInTheDocument();
+    expect(within(table).getByText('Inseminación')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Bitácora' })).toBeInTheDocument();
+  });
+
+  it('kept only as semen shows his genealogy and services, nothing to log', async () => {
+    cow = { ...cow, bull_availability: 'SEMEN' };
+    renderAt(`/vacas/${ID}`);
+    await screen.findByRole('region', { name: 'Reproducción' });
+    expect(screen.getByRole('region', { name: 'Genealogía' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Dieta' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Salud' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Peso')).not.toBeInTheDocument();
+    expect(screen.getByText('Edad')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('link', { name: 'Registros' }));
+    expect(await screen.findByRole('tab', { name: 'Servicios' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.queryByRole('tab', { name: 'Bitácora' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '00012' })).toBeInTheDocument();
+  });
+
+  it('says so when he has served no cow yet', async () => {
+    services = [];
+    renderAt(`/vacas/${ID}/registros?tab=servicios`);
+    expect(await screen.findByText(/aún no tiene servicios/)).toBeInTheDocument();
   });
 });
 

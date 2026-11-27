@@ -225,6 +225,21 @@ export function filterEvents(events: AnimalEvent[], filter: BitacoraFilter): Ani
   );
 }
 
+/** A bull kept only as semen lives on the ranch as a name on the straws: no bitácora, diet or
+ * health to follow, only the cows he served. */
+export const semenOnly = (animal: AnimalDetail) => animal.bull_availability === 'SEMEN';
+
+export const RECORD_TABS = ['bitacora', 'produccion', 'servicios', 'peso', 'dieta'] as const;
+export type RecordTab = (typeof RECORD_TABS)[number];
+
+/** The tabs this animal has: litres are a cow's, services a bull's. */
+export function recordTabs(animal: AnimalDetail): RecordTab[] {
+  if (semenOnly(animal)) return ['servicios'];
+  return animal.sex === 'MACHO'
+    ? ['bitacora', 'servicios', 'peso', 'dieta']
+    : ['bitacora', 'produccion', 'peso', 'dieta'];
+}
+
 /** The last repro milestone the Reproducción card shows, by sex and state. */
 export function reproMilestone(
   animal: AnimalDetail,

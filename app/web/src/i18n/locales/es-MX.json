@@ -776,6 +776,7 @@
       "reproduccion": "Reproducción",
       "lastCalving": "Último parto",
       "lastService": "Última monta / Inseminación",
+      "lastBullService": "Último servicio",
       "salud": "Salud",
       "estado": "Estado",
       "saludable": "Saludable",
@@ -800,6 +801,7 @@
       "tabs": "Registros",
       "bitacora": "Bitácora",
       "produccion": "Producción",
+      "servicios": "Servicios",
       "peso": "Peso",
       "toProfile": "Datos generales"
     },
@@ -1006,6 +1008,20 @@
         "ORAL": "Oral o tableta",
         "INYECCION": "Inyección"
       }
+    },
+    "services": {
+      "title": "Servicios del toro",
+      "columns": {
+        "vaca": "Vaca",
+        "metodo": "Método",
+        "fecha": "Fecha"
+      },
+      "methods": {
+        "IA": "Inseminación",
+        "MONTA": "Monta"
+      },
+      "empty": "Este toro aún no tiene servicios. Se registran desde el celo de cada vaca.",
+      "loadError": "No pudimos cargar los servicios."
     }
   },
   "groups": {

@@ -16,6 +16,7 @@ from smartbell.models import DeletionRequest
 from smartbell.routes.animals import Today, animal_detail
 from smartbell.schemas.event_api import (
     AlertOut,
+    BullServiceOut,
     DeletionRequestOut,
     EventCreate,
     EventDeleted,
@@ -90,6 +91,20 @@ async def list_events(
         if event.recorded_by is not None:
             event.recorded_by_name = names.get(event.recorded_by)
     return out
+
+
+@router.get("/animals/{animal_id}/services", operation_id="listBullServices")
+async def list_bull_services(
+    animal_id: uuid.UUID,
+    ctx: Annotated[RanchContext, Depends(require(Permission.ANIMALS_VIEW))],
+    session: Session,
+) -> list[BullServiceOut]:
+    """The cows a bull served (IA or monta), newest first: his reproduction history."""
+    try:
+        rows = await events.list_bull_services(session, ctx.ranch_id, animal_id)
+    except AnimalNotFound as error:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="animal_not_found") from error
+    return [BullServiceOut.model_validate(row, from_attributes=True) for row in rows]
 
 
 @router.post(

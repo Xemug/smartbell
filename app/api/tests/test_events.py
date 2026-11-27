@@ -1027,3 +1027,54 @@ async def test_a_followup_withdrawal_follows_the_treatment_it_changes(
     # Heat sync keeps its 2 days (§3.14), not the corticoid's 21: 5 + 2 from today.
     assert body["derived"]["withdrawal_until"] == days(7)
     assert body["animal"]["milk_withdrawal_until"] == days(7)
+
+
+async def test_a_bulls_services_list_the_cows_he_served_newest_first(
+    tenant_api: AsyncClient, owner: Account
+) -> None:
+    async def bull(control_id: str, availability: str) -> str:
+        response = await tenant_api.post(
+            "/api/animals",
+            headers=owner.headers(),
+            json={
+                "control_id": control_id,
+                "sex": "MACHO",
+                "birth_date": "2020-01-01",
+                "bull_availability": availability,
+            },
+        )
+        assert response.status_code == 201, response.text
+        bull_id: str = response.json()["id"]
+        return bull_id
+
+    semen = await bull("T1", "SEMEN")
+    other = await bull("T2", "EN_RANCHO")
+    first = await new_cow(tenant_api, owner, "0100")
+    second = await new_cow(tenant_api, owner, "0101")
+
+    def served(by: str, method: str) -> dict[str, Any]:
+        return {
+            "type": "HEAT",
+            "outcome": "INSEMINATED",
+            "clean": True,
+            "bull_id": by,
+            "method": method,
+        }
+
+    await recorded(tenant_api, owner, first, served(semen, "IA"), on=days(-30))
+    await recorded(tenant_api, owner, second, served(semen, "IA"), on=days(-2))
+    await recorded(tenant_api, owner, first, served(other, "MONTA"), on=days(-1))
+
+    response = await tenant_api.get(f"/api/animals/{semen}/services", headers=owner.headers())
+    stranger = await sign_up(tenant_api, "stranger")
+    foreign = await tenant_api.get(f"/api/animals/{semen}/services", headers=stranger.headers())
+
+    assert response.status_code == 200
+    assert [
+        (row["cow_control_id"], row["occurred_on"], row["method"]) for row in response.json()
+    ] == [
+        ("0101", days(-2), "IA"),
+        ("0100", days(-30), "IA"),
+    ]
+    assert response.json()[0]["cow_id"] == second
+    assert foreign.status_code == 404

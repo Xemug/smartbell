@@ -9,6 +9,7 @@ export function detail(
   return {
     id: 'a-1',
     sex: 'HEMBRA',
+    bull_availability: null,
     kind: 'VACA',
     control_id: '00001',
     name: null,

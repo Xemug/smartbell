@@ -1,26 +1,32 @@
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 
 import { Banner } from '../../../ui/Banner';
+import { cx, focusRing } from '../../../ui/cx';
 import { DataTable } from '../../../ui/DataTable';
 import { toDisplay } from '../../../ui/dates';
 import { Tabs } from '../../../ui/Tabs';
-import type { AnimalDetail, AnimalEvent, CowMilk } from './api';
+import { ANIMALS_PATH } from '../list/AnimalListPage';
+import type { AnimalDetail, AnimalEvent, BullService, CowMilk } from './api';
 import { Bitacora } from './Bitacora';
 import {
   dietHistory,
   weighings,
   type BitacoraFilter,
   type Diet,
+  recordTabs,
+  type RecordTab,
   type Weighing,
 } from './profileFacts';
-
-export const RECORD_TABS = ['bitacora', 'produccion', 'peso', 'dieta'] as const;
-export type RecordTab = (typeof RECORD_TABS)[number];
 
 interface RecordsPanelProps {
   animal: AnimalDetail;
   events: AnimalEvent[];
   milk: CowMilk | undefined;
+  /** A bull's services; undefined while loading or for a cow. */
+  services: BullService[] | undefined;
+  servicesFailed: boolean;
   /** False when the user may not see litres (no REPORTS_VIEW). */
   milkVisible: boolean;
   tab: RecordTab;
@@ -150,11 +156,50 @@ function Diets({ events }: { events: AnimalEvent[] }) {
   );
 }
 
+function Services({ services, failed }: { services: BullService[] | undefined; failed: boolean }) {
+  const { t } = useTranslation();
+  if (failed) return <Banner tone="error">{t('profile.services.loadError')}</Banner>;
+  return (
+    <DataTable<BullService>
+      label={t('profile.services.title')}
+      rows={services ?? []}
+      getRowId={(row) => row.event_id}
+      columns={[
+        {
+          key: 'vaca',
+          header: t('profile.services.columns.vaca'),
+          cell: (row) => (
+            <Link
+              to={`${ANIMALS_PATH}/${row.cow_id}`}
+              className={cx('text-primary underline', focusRing)}
+            >
+              {row.cow_control_id}
+            </Link>
+          ),
+        },
+        {
+          key: 'metodo',
+          header: t('profile.services.columns.metodo'),
+          cell: (row) => t(`profile.services.methods.${row.method}`),
+        },
+        {
+          key: 'fecha',
+          header: t('profile.services.columns.fecha'),
+          cell: (row) => toDisplay(row.occurred_on),
+        },
+      ]}
+      empty={<Banner tone="info">{t('profile.services.empty')}</Banner>}
+    />
+  );
+}
+
 /** Registros (V 3850-10981 / 3850-10850, diet history V 4027-10314) plus the bitácora. */
 export function RecordsPanel({
   animal,
   events,
   milk,
+  services,
+  servicesFailed,
   milkVisible,
   tab,
   onTabChange,
@@ -162,41 +207,33 @@ export function RecordsPanel({
   onFilterChange,
 }: RecordsPanelProps) {
   const { t } = useTranslation();
+  const contents: Record<RecordTab, { label: string; content: ReactNode }> = {
+    bitacora: {
+      label: t('profile.records.bitacora'),
+      content: (
+        <Bitacora animal={animal} events={events} filter={filter} onFilterChange={onFilterChange} />
+      ),
+    },
+    produccion: {
+      label: t('profile.records.produccion'),
+      content: <Production milk={milk} visible={milkVisible} />,
+    },
+    servicios: {
+      label: t('profile.records.servicios'),
+      content: <Services services={services} failed={servicesFailed} />,
+    },
+    peso: {
+      label: t('profile.records.peso'),
+      content: <Weights animal={animal} events={events} />,
+    },
+    dieta: { label: t('profile.cards.dieta'), content: <Diets events={events} /> },
+  };
   return (
     <Tabs
       label={t('profile.records.tabs')}
       value={tab}
       onChange={(value) => onTabChange(value as RecordTab)}
-      items={[
-        {
-          value: 'bitacora',
-          label: t('profile.records.bitacora'),
-          content: (
-            <Bitacora
-              animal={animal}
-              events={events}
-              filter={filter}
-              onFilterChange={onFilterChange}
-            />
-          ),
-        },
-        // Litres are a cow's; a bull or steer has none to show.
-        ...(animal.sex === 'MACHO'
-          ? []
-          : [
-              {
-                value: 'produccion',
-                label: t('profile.records.produccion'),
-                content: <Production milk={milk} visible={milkVisible} />,
-              },
-            ]),
-        {
-          value: 'peso',
-          label: t('profile.records.peso'),
-          content: <Weights animal={animal} events={events} />,
-        },
-        { value: 'dieta', label: t('profile.cards.dieta'), content: <Diets events={events} /> },
-      ]}
+      items={recordTabs(animal).map((value) => ({ value, ...contents[value] }))}
     />
   );
 }

@@ -7,6 +7,7 @@ import {
   eventLabel,
   filterEvents,
   profileBanners,
+  recordTabs,
   reproMilestone,
   treatmentOf,
   windowText,
@@ -175,5 +176,14 @@ describe('treatmentOf', () => {
   it('is null for events without one', () => {
     expect(treatmentOf(event('HEAT', { outcome: 'DIRTY_NOT_MEDICATED', clean: false }))).toBeNull();
     expect(treatmentOf(event('WEIGHT', { kg: 350 }))).toBeNull();
+  });
+});
+
+describe('recordTabs', () => {
+  it('gives a cow litres, a bull his services, and a semen-only bull nothing else', () => {
+    expect(recordTabs(detail())).toEqual(['bitacora', 'produccion', 'peso', 'dieta']);
+    const bull = detail({ sex: 'MACHO', kind: 'TORO', bull_availability: 'AMBOS' });
+    expect(recordTabs(bull)).toEqual(['bitacora', 'servicios', 'peso', 'dieta']);
+    expect(recordTabs({ ...bull, bull_availability: 'SEMEN' })).toEqual(['servicios']);
   });
 });

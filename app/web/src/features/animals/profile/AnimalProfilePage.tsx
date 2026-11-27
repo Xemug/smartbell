@@ -12,16 +12,25 @@ import { Icon } from '../../../ui/icons/Icon';
 import { Spinner } from '../../../ui/Spinner';
 import { ANIMALS_PATH } from '../list/AnimalListPage';
 import { ApiError } from '../list/api';
-import { useAnimal, useAnimalEvents, useCowMilk, useForgetAnimal, type AnimalDetail } from './api';
+import {
+  useAnimal,
+  useAnimalEvents,
+  useBullServices,
+  useCowMilk,
+  useForgetAnimal,
+  type AnimalDetail,
+} from './api';
 import {
   EVENT_CATEGORIES,
   longDate,
   profileBanners,
+  recordTabs,
   type BitacoraFilter,
+  type RecordTab,
   type EventCategory,
 } from './profileFacts';
 import { ProfileSummary } from './ProfileSummary';
-import { RECORD_TABS, RecordsPanel, type RecordTab } from './RecordsPanel';
+import { RecordsPanel } from './RecordsPanel';
 import { RemoveAnimalFlow } from './RemoveAnimalFlow';
 
 export const PROFILE_ROUTE = `${ANIMALS_PATH}/:id`;
@@ -88,15 +97,14 @@ export function AnimalProfilePage({ records = false }: { records?: boolean }) {
   const animal = animalQuery.data;
   const milkVisible = can('REPORTS_VIEW');
   const milkQuery = useCowMilk(id, milkVisible && animal?.sex === 'HEMBRA');
+  const servicesQuery = useBullServices(id, animal?.sex === 'MACHO');
   const dam = useAnimal(animal?.dam_id ?? undefined);
   const sire = useAnimal(animal?.sire_id ?? undefined);
 
   const tabParam = params.get('tab');
-  const offered = (value: string | null): value is RecordTab =>
-    (RECORD_TABS as readonly string[]).includes(value ?? '') &&
-    // A bull has no Producción tab.
-    !(value === 'produccion' && animal?.sex === 'MACHO');
-  const tab: RecordTab = offered(tabParam) ? tabParam : 'bitacora';
+  // A tab this animal lacks (a bull's Producción, a cow's Servicios) falls back to its first.
+  const tabs: RecordTab[] = animal ? recordTabs(animal) : ['bitacora'];
+  const tab: RecordTab = tabs.find((value) => value === tabParam) ?? tabs[0] ?? 'bitacora';
   const filter = readFilter(params);
   const profileHref = `${ANIMALS_PATH}/${id}`;
   const recordsHref = (target: { tab?: string; tipo?: EventCategory }) => {
@@ -196,6 +204,7 @@ export function AnimalProfilePage({ records = false }: { records?: boolean }) {
             }
             today={today}
             recordsHref={recordsHref}
+            services={servicesQuery.data}
             parents={{ dam: dam.data?.control_id, sire: sire.data?.control_id }}
             onRemove={active && can('ANIMALS_DELETE') ? () => setRemoving(true) : null}
             registrosHref={desktop ? null : `${profileHref}/registros`}
@@ -211,6 +220,8 @@ export function AnimalProfilePage({ records = false }: { records?: boolean }) {
                 animal={animal}
                 events={events}
                 milk={milkQuery.data}
+                services={servicesQuery.data}
+                servicesFailed={servicesQuery.isError}
                 milkVisible={milkVisible}
                 tab={tab}
                 onTabChange={(next) => setParams(filterParams(filter, next), { replace: true })}
