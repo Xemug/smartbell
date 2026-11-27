@@ -2,6 +2,7 @@
 id: edit-group-and-bull-availability-from-the-animal-profile
 title: Edit group and bull availability from the animal profile
 summary: From a cow's profile, move her to another potrero; from a bull's profile, change his availability, with a confirmation that freezes his records when he goes to Solo semen.
+verifiedAt: 2026-11-27
 ---
 
 # Edit group and bull availability from the animal profile
