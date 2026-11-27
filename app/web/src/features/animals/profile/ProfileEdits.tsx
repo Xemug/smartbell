@@ -60,15 +60,7 @@ function currentGroup(animal: AnimalDetail, groups: GroupOut[]): GroupOut | unde
 }
 
 /** A cow's potrero; Cambiar moves her to another MANUAL one with a GROUP_CHANGE. */
-export function GroupFact({
-  animal,
-  editable,
-  today,
-}: {
-  animal: AnimalDetail;
-  editable: boolean;
-  today: Date;
-}) {
+export function GroupFact({ animal, editable }: { animal: AnimalDetail; editable: boolean }) {
   const { t } = useTranslation();
   const snackbar = useSnackbar();
   const groups = useGroupList();
@@ -107,7 +99,7 @@ export function GroupFact({
   const confirm = () => {
     if (!target || !name) return;
     move.mutate(
-      { toGroupId: target, on: format(today, 'yyyy-MM-dd') },
+      { toGroupId: target, on: format(new Date(), 'yyyy-MM-dd') },
       {
         onSuccess: () => {
           snackbar.show({
@@ -159,7 +151,10 @@ export function GroupFact({
           error={failed ? t('profile.potrero.error') : undefined}
           options={options}
           value={target}
-          onChange={setTarget}
+          onChange={(value) => {
+            setTarget(value);
+            setFailed(false);
+          }}
         />
       </Modal>
     </>
@@ -182,13 +177,15 @@ export function AvailabilityFact({
   const [confirming, setConfirming] = useState(false);
   const [choice, setChoice] = useState<BullAvailability>(current);
   const [failed, setFailed] = useState(false);
+  // Reset when the picker opens only: the refetch after saving must not reopen it.
   useEffect(() => {
     if (open) {
       setChoice(current);
       setConfirming(false);
       setFailed(false);
     }
-  }, [open, current]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const label = (value: BullAvailability) => t(`animals.values.disponibilidad.${value}`);
   const close = () => {

@@ -157,7 +157,8 @@ export function ProfileSummary({
   const diet = dietHistory(events)[0];
   const bull = animal.sex === 'MACHO';
   const strawsOnly = semenOnly(animal);
-  const availability = animal.kind === 'TORO' ? animal.bull_availability : null;
+  // Every male carries one, and any of them can be kept only as semen.
+  const availability = bull ? animal.bull_availability : null;
   // A bull never calves: his card follows the cows he served (newest first).
   const milestone = bull
     ? services?.[0] && { key: 'lastBullService', date: services[0].occurred_on }
@@ -235,7 +236,7 @@ export function ProfileSummary({
       {/* Cows live in potreros; heifers go by age and bulls have none. */}
       {(animal.kind === 'VACA' || availability) && (
         <div className="flex flex-col divide-y divide-secondary-background rounded-moon-i-sm bg-neutral-1 shadow-moon-sm">
-          {animal.kind === 'VACA' && <GroupFact animal={animal} editable={canMove} today={today} />}
+          {animal.kind === 'VACA' && <GroupFact animal={animal} editable={canMove} />}
           {availability && (
             <AvailabilityFact
               animal={{ ...animal, bull_availability: availability }}

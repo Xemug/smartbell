@@ -487,6 +487,9 @@ async def move_to_group(
     Returns False when she is already there."""
     if animal.group_id == to_group_id:
         return False
+    if animal.bull_availability is BullAvailability.SEMEN:  # Frozen records: no new event.
+        animal.group_id = to_group_id
+        return True
     payload = GroupChangePayload(from_group_id=animal.group_id, to_group_id=to_group_id)
     session.add(
         Event(
