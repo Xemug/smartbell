@@ -1,16 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 
 import { useActiveRanch } from '../../../app/useActiveRanch';
 import { Banner } from '../../../ui/Banner';
 import { Button } from '../../../ui/Button';
 import { ConfirmDialog } from '../../../ui/ConfirmDialog';
+import { cx, focusRing } from '../../../ui/cx';
 import { toDisplay } from '../../../ui/dates';
 import { iconPencil, iconTrash } from '../../../ui/icons/glyphs';
 import { Modal } from '../../../ui/Modal';
 import { TextArea } from '../../../ui/TextArea';
 import { useSnackbar } from '../../../ui/useSnackbar';
-import { useDeleteEvent, useEditEventComments, type AnimalDetail, type AnimalEvent } from './api';
+import { ANIMALS_PATH } from '../list/AnimalListPage';
+import {
+  useAnimal,
+  useDeleteEvent,
+  useEditEventComments,
+  type AnimalDetail,
+  type AnimalEvent,
+} from './api';
 import { useEventText } from './eventText';
 import { categoryOf, treatmentOf, type Treatment } from './profileFacts';
 
@@ -79,6 +88,12 @@ export function EventDetailDialog({ animal, event, onClose }: EventDetailDialogP
   const [editing, setEditing] = useState(false);
   const [comments, setComments] = useState('');
   const [confirming, setConfirming] = useState(false);
+  // A service names the bull (IA or monta): show who, linked to his profile.
+  const service =
+    event?.type === 'HEAT' && typeof event.payload.bull_id === 'string'
+      ? { bullId: event.payload.bull_id, method: String(event.payload.method ?? '') }
+      : null;
+  const bull = useAnimal(service?.bullId);
 
   useEffect(() => {
     setEditing(false);
@@ -122,10 +137,27 @@ export function EventDetailDialog({ animal, event, onClose }: EventDetailDialogP
       },
     });
 
-  const rows: [string, string][] = [
+  const rows: [string, ReactNode][] = [
     [t('profile.detail.tipoRegistro'), t(`profile.categories.${categoryOf(event)}`)],
     [t('profile.detail.fecha'), toDisplay(event.occurred_on)],
     [t('profile.detail.tipoEvento'), text(event)],
+    ...(service
+      ? ([
+          [
+            t('profile.detail.toro'),
+            <Link
+              key="toro"
+              to={`${ANIMALS_PATH}/${service.bullId}`}
+              className={cx('text-primary underline', focusRing)}
+            >
+              {bull.data
+                ? [bull.data.control_id, bull.data.name].filter(Boolean).join(' · ')
+                : t('profile.cards.noRecord')}
+            </Link>,
+          ],
+          [t('profile.detail.metodo'), t(`profile.services.methods.${service.method}`)],
+        ] as [string, ReactNode][])
+      : []),
     [t('profile.detail.realizo'), event.recorded_by_name || t('profile.detail.unknownUser')],
   ];
 

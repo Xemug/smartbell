@@ -919,6 +919,8 @@
       "tipoRegistro": "Record type",
       "fecha": "Date",
       "tipoEvento": "Event type",
+      "toro": "Bull",
+      "metodo": "Method",
       "realizo": "Recorded by",
       "comentarios": "Comments",
       "sinComentarios": "No comments",
@@ -1017,7 +1019,7 @@
         "fecha": "Date"
       },
       "methods": {
-        "IA": "Insemination",
+        "IA": "Artificial insemination",
         "MONTA": "Natural service"
       },
       "empty": "This bull has no services yet. They are recorded from each cow’s heat.",

@@ -919,6 +919,8 @@
       "tipoRegistro": "Tipo de registro",
       "fecha": "Fecha",
       "tipoEvento": "Tipo de evento",
+      "toro": "Toro",
+      "metodo": "Método",
       "realizo": "Realizó registro",
       "comentarios": "Comentarios",
       "sinComentarios": "Sin comentarios",
@@ -1017,8 +1019,8 @@
         "fecha": "Fecha"
       },
       "methods": {
-        "IA": "Inseminación",
-        "MONTA": "Monta"
+        "IA": "Inseminación artificial",
+        "MONTA": "Monta natural"
       },
       "empty": "Este toro aún no tiene servicios. Se registran desde el celo de cada vaca.",
       "loadError": "No pudimos cargar los servicios."

@@ -166,6 +166,16 @@ beforeEach(() => {
       if (key === `GET /api/animals/${ID}`) return Response.json(cow);
       if (key === `GET /api/animals/${ID}/events`) return Response.json(events);
       if (key === `GET /api/animals/${ID}/services`) return Response.json(services);
+      if (key === 'GET /api/animals/b-1')
+        return Response.json(
+          detail({
+            id: 'b-1',
+            sex: 'MACHO',
+            kind: 'TORO',
+            control_id: 'TORO-1',
+            name: 'Emperador',
+          }),
+        );
       if (key === `GET /api/milk/cows/${ID}`)
         return Response.json({
           animal_id: ID,
@@ -291,8 +301,8 @@ describe('a bull', () => {
       'href',
       '/vacas/c-2',
     );
-    expect(within(table).getByText('Monta')).toBeInTheDocument();
-    expect(within(table).getByText('Inseminación')).toBeInTheDocument();
+    expect(within(table).getByText('Monta natural')).toBeInTheDocument();
+    expect(within(table).getByText('Inseminación artificial')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Bitácora' })).toBeInTheDocument();
   });
 
@@ -323,6 +333,26 @@ describe('a bull', () => {
 });
 
 describe('the bitácora', () => {
+  it('names the bull and the method of a service', async () => {
+    events = [
+      event(
+        'HEAT',
+        { outcome: 'INSEMINATED', clean: true, bull_id: 'b-1', method: 'IA' },
+        { id: 'e-service', occurred_on: '2026-10-02' },
+      ),
+    ];
+    renderAt(`/vacas/${ID}/registros`);
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Celo confirmado: Inseminación' }),
+    );
+    const dialog = await screen.findByRole('dialog', { name: 'Detalle del evento' });
+    expect(await within(dialog).findByRole('link', { name: 'TORO-1 · Emperador' })).toHaveAttribute(
+      'href',
+      '/vacas/b-1',
+    );
+    expect(within(dialog).getByText('Inseminación artificial')).toBeInTheDocument();
+  });
+
   it('shows no Eliminar on a repro event', async () => {
     renderAt(`/vacas/${ID}/registros`);
     await userEvent.click(
