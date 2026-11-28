@@ -12,11 +12,22 @@ export type HeiferGroup = components['schemas']['HeiferGroupOut'];
 export type KpiIndicator = components['schemas']['GroupKpiIndicator'];
 export type GroupPreset = components['schemas']['GroupPreset'];
 
+/** A 409 `group_name_taken`, with the clashing potrero's name as saved. */
+export class GroupNameTaken extends ApiError {
+  constructor(readonly existingName: string) {
+    super('group_name_taken');
+  }
+}
+
 /** The API's error code: `detail` when it's a string, the first field error's type otherwise. */
 function fail(error: unknown, response: Response): never {
   const detail = (error as { detail?: unknown } | undefined)?.detail;
   if (typeof detail === 'string') throw new ApiError(detail);
   if (Array.isArray(detail) && typeof detail[0]?.type === 'string') {
+    const existing = (detail[0] as { ctx?: { existing_name?: unknown } }).ctx?.existing_name;
+    if (detail[0].type === 'group_name_taken' && typeof existing === 'string') {
+      throw new GroupNameTaken(existing);
+    }
     throw new ApiError(detail[0].type as string);
   }
   throw new ApiError(`http_${response.status}`);

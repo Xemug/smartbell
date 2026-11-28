@@ -30,9 +30,9 @@ legacy import runs for real, because that is when old duplicates show up.
 
 - `app/api/smartbell/models/animals.py`: `Group.__table_args__` gets a unique index on
   `(ranch_id, lower(name))`, next to `uq_groups_ranch_id_preset`.
-- `app/api/migrations/versions/0009_…`: creates the index. It first fails with a clear message
-  if any ranch already has duplicate names. New-app data can't have duplicates unless the race
-  already happened. If it did, rename the later ones with the import's " (2)" rule.
+- `app/api/migrations/versions/0009_group_name_unique.py`: creates the index. New-app data can't
+  have duplicates unless the race already happened. If it did, the migration renames the later
+  ones with the import's " (2)" rule first (see Decisions below).
 - `app/api/smartbell/services/groups.py`: `create_group` and `update_group` turn the index's
   `IntegrityError` into the same 409 `group_name_taken` the pre-check returns. A savepoint
   around the flush keeps the session usable. Keep the pre-check, because it gives the usual
@@ -84,6 +84,24 @@ ranch at a time:
 5. **Report:** the dry run and the real run list every rename and merge, one line per ranch in
    plain Spanish that support can pass on: «Rancho X: el potrero "Secas" se importó como
    "Secas (2)" porque ya había uno con ese nombre.»
+
+### Decisions while building (2026-11-27)
+
+- **Migration 0009 renames rather than fails.** Failing on a duplicate would block a deploy on
+  data nobody can fix from the app, so the upgrade renames the later duplicates with the import's
+  rule 1 (" (2)", " (3)", skipping taken suffixes, cut to fit the 60-character column). One
+  exception: a **preset keeps its name** even when a custom potrero with that name is older,
+  because a preset can't be renamed in the app. Downgrade drops the index and leaves the names.
+- **The index matches `_check_name`:** `(ranch_id, lower(name))` over every group, presets
+  included. Names are already trimmed by the schema, so the index doesn't trim again.
+- **The 409 body:** the field error keeps `type: group_name_taken` and adds
+  `ctx: {"existing_name": "<as saved>"}`, the shape FastAPI uses for validation details. `msg`
+  is the Spanish message above.
+- **Savepoint:** the insert or rename runs inside `session.begin_nested()` (as `ensure_general`
+  does), so after the index refuses it the service can still read the existing potrero's name.
+- **Web:** the wizard goes back to its first step and shows the message under the name field (or
+  the preset select); the detail page shows it under the name field. Other save errors still use
+  the banner.
 
 ### Out of scope
 

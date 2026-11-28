@@ -1172,7 +1172,7 @@
       "empty": "Este potrero no tiene vacas todavía.",
       "notFound": "Este potrero ya no existe.",
       "saveError": "No pudimos guardar los cambios.",
-      "nameTaken": "Ya hay un potrero con ese nombre"
+      "nameTaken": "Ya hay un potrero llamado «{{name}}» en este rancho. Elige otro nombre."
     },
     "deleteDialog": {
       "title": "El potrero {{name}} se eliminará",

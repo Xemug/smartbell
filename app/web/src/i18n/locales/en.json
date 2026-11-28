@@ -1172,7 +1172,7 @@
       "empty": "This group has no cows yet.",
       "notFound": "This group no longer exists.",
       "saveError": "We couldn't save the changes.",
-      "nameTaken": "There is already a group with that name"
+      "nameTaken": "There is already a group called “{{name}}” on this ranch. Choose another name."
     },
     "deleteDialog": {
       "title": "The group {{name}} will be deleted",

@@ -100,12 +100,20 @@ def ranch_today() -> dt.date:
 class FieldError(Exception):
     """A refusal tied to one field of the body. `status` is 409 for a taken ID, else 422."""
 
-    def __init__(self, status: int, loc: Sequence[str], code: str, msg: str | None = None):
+    def __init__(
+        self,
+        status: int,
+        loc: Sequence[str],
+        code: str,
+        msg: str | None = None,
+        ctx: dict[str, str] | None = None,
+    ):
         super().__init__(code)
         self.status = status
         self.loc = tuple(loc)
         self.code = code
         self.msg = msg or MESSAGES.get(code, code)
+        self.ctx = ctx  # Facts the client shows with the message, such as the clashing name.
 
 
 class AnimalNotFound(Exception):

@@ -250,7 +250,12 @@ async def test_a_name_taken_after_the_check_is_409_not_500(
 
     for response in (created, renamed):
         assert response.status_code == 409, response.text
-        assert response.json()["detail"][0]["type"] == "group_name_taken"
+        assert response.json()["detail"][0] == {
+            "loc": ["body", "name"],
+            "type": "group_name_taken",
+            "msg": "Ya hay un potrero llamado «Lote» en este rancho. Elige otro nombre.",
+            "ctx": {"existing_name": "Lote"},
+        }
     assert sorted(await groups_by_name(tenant_api, owner)) == ["General", "Lote", "Otro"]
 
 
@@ -283,6 +288,7 @@ async def test_concurrent_creates_with_one_name_make_one_group(
         await second.rollback()
 
     assert (refused.value.status, refused.value.code) == (409, "group_name_taken")
+    assert refused.value.ctx == {"existing_name": "Lote"}
     assert sorted(await groups_by_name(tenant_api, owner)) == ["General", "Lote"]
 
 

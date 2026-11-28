@@ -1,3 +1,4 @@
+import datetime as dt
 import uuid
 from pathlib import Path
 
@@ -151,8 +152,10 @@ async def test_0008_puts_existing_males_on_the_ranch(
 
 
 async def test_0009_renames_duplicate_group_names_then_refuses_new_ones(
-    db_conn: AsyncConnection,
+    db_conn: AsyncConnection, db_backend: str
 ) -> None:
+    if db_backend != "postgresql":
+        pytest.skip("checked on Postgres, as CI runs it")
     await db_conn.run_sync(lambda c: command.upgrade(_config(c), "0008"))
     owner_id = uuid.uuid4()
     await db_conn.execute(
@@ -192,7 +195,7 @@ async def test_0009_renames_duplicate_group_names_then_refuses_new_ones(
                 "name": name,
                 "type": "PRESET" if preset else "CUSTOM",
                 "preset": preset,
-                "created_at": f"{created_at}T00:00:00Z",
+                "created_at": dt.datetime.fromisoformat(f"{created_at}T00:00:00+00:00"),
             },
         )
 
