@@ -796,6 +796,7 @@
     },
     "eliminar": "Eliminar",
     "registros": "Registros",
+    "cambiar": "Cambiar",
     "records": {
       "title": "Registros {{kind}} ID {{id}}",
       "tabs": "Registros",
@@ -921,6 +922,10 @@
       "tipoEvento": "Tipo de evento",
       "toro": "Toro",
       "metodo": "Método",
+      "dePotrero": "De potrero",
+      "aPotrero": "A potrero",
+      "deletedPotrero": "Potrero eliminado",
+      "deletedPotreroNamed": "{{name}} (Potrero eliminado)",
       "realizo": "Realizó registro",
       "comentarios": "Comentarios",
       "sinComentarios": "Sin comentarios",
@@ -1024,6 +1029,30 @@
       },
       "empty": "Este toro aún no tiene servicios. Se registran desde el celo de cada vaca.",
       "loadError": "No pudimos cargar los servicios."
+    },
+    "potrero": {
+      "label": "Potrero",
+      "change": "Cambiar potrero",
+      "title": "Cambiar de potrero",
+      "body": "La vaca {{id}} se moverá al potrero {{name}}.",
+      "pick": "Elige el potrero al que se moverá la vaca {{id}}.",
+      "target": "Potrero",
+      "current": "{{name}} (actual)",
+      "save": "Mover",
+      "done": "La vaca {{id}} se movió al potrero {{name}}",
+      "error": "No pudimos moverla. Intenta de nuevo."
+    },
+    "availability": {
+      "label": "Disponibilidad",
+      "change": "Cambiar disponibilidad",
+      "title": "Disponibilidad del toro",
+      "pick": "Elige dónde está el toro {{id}}.",
+      "save": "Guardar",
+      "done": "El toro {{id}} ahora está como {{value}}",
+      "error": "No pudimos guardarlo. Intenta de nuevo.",
+      "confirmTitle": "¿Dejar al toro {{id}} solo como semen?",
+      "confirmBody": "Saldrá del conteo de cabezas del rancho, sus alertas y tareas abiertas se cerrarán y sus registros quedarán congelados: no podrás registrar nada nuevo sobre él. Lo que ya tiene registrado se conserva y puedes seguir usándolo como padre en inseminaciones (IA). Si lo cambias de nuevo a En rancho o Ambos, sus registros se descongelan.",
+      "confirm": "Sí, solo semen"
     }
   },
   "groups": {

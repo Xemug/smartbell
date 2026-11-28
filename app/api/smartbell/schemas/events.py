@@ -73,6 +73,9 @@ class DietChangeDetails(_Strict):
 class GroupChangeDetails(_Strict):
     from_group_id: UUID | None = None  # None: the animal had no group yet.
     to_group_id: UUID
+    # Set by the server only, when that potrero is deleted, so the move still names it.
+    from_group_name: ShortText | None = None
+    to_group_name: ShortText | None = None
 
     @model_validator(mode="after")
     def _groups_differ(self) -> Self:

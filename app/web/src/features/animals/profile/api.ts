@@ -147,3 +147,43 @@ export function useRemoveAnimal(animalId: string) {
       }),
   });
 }
+
+export type BullAvailability = NonNullable<AnimalDetail['bull_availability']>;
+
+/** Moves a cow to another potrero from her profile: a GROUP_CHANGE on her bitácora, which the
+ * API refuses for an AUTO potrero and records in the ranch history. */
+export function useChangeGroup(animalId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ toGroupId, on }: { toGroupId: string; on: string }) => {
+      const { data, error, response } = await api.POST('/api/animals/{animal_id}/events', {
+        params: { path: { animal_id: animalId } },
+        body: { occurred_on: on, payload: { type: 'GROUP_CHANGE', to_group_id: toGroupId } },
+      });
+      if (!data) fail(error, response);
+      return data;
+    },
+    // Her profile, her bitácora and every potrero list name her group.
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: animalKeys.all }),
+        queryClient.invalidateQueries({ queryKey: animalKeys.groups }),
+      ]),
+  });
+}
+
+/** A bull's availability, through the animal's PATCH so the history records it. */
+export function useSetBullAvailability(animalId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (value: BullAvailability) => {
+      const { data, error, response } = await api.PATCH('/api/animals/{animal_id}', {
+        params: { path: { animal_id: animalId } },
+        body: { bull_availability: value },
+      });
+      if (!data) fail(error, response);
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: animalKeys.all }),
+  });
+}

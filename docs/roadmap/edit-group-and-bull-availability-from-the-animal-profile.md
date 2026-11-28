@@ -9,8 +9,10 @@ verifiedAt: 2026-11-27
 
 ## Problem
 
-On the animal profile (PR #37), the founder can see a cow's potrero and a
-bull's availability but can't change either there. To move one cow or switch
+On the animal profile (PR #37), the founder can't change a cow's potrero or a
+bull's availability. (Groomed 2026-11-27: the profile didn't show either fact
+yet, so this card adds a Potrero row for cows and a Disponibilidad row for
+bulls, each with its Cambiar.) To move one cow or switch
 one bull, they have to leave the profile and go through the potrero screens or
 the full edit form. (The founder asked for this while testing staging.)
 
@@ -57,8 +59,21 @@ this is mostly screens on top of existing services.
   confirmation.
 - The change is saved through `PATCH`, so history records it.
 
-**Permissions.** Both actions follow the existing edit permissions. A viewer
-doesn't see the actions.
+**Permissions.** Both actions follow the permission the API already checks:
+the potrero move is a `GROUP_CHANGE` event, so it needs `EVENTS_RECORD`; the
+availability goes through `PATCH`, so it needs `ANIMALS_EDIT`. A viewer, or a
+removed animal, doesn't get the actions.
+
+**Groomed assumptions (2026-11-27).**
+- The web has no "record an event" action anywhere yet, so "no record action
+  in the UI" holds by construction; the API rule is what enforces it.
+- Freezing refuses *new* events only (`POST …/events` answers 409
+  `bull_semen_only`). Editing or deleting his past records is unchanged.
+- A Solo semen bull keeps the reduced profile #37 shipped (genealogy and
+  Servicios, no Bitácora tab); the founder asked for it. His records aren't
+  deleted and show again when he's switched back (orchestrator, 2026-11-27).
+- Cancelling the Solo semen confirmation returns to the picker with nothing
+  saved.
 
 **Out of scope.** Bull groups; editing other fields from the profile.
 
@@ -72,10 +87,10 @@ S–M. It's two profile actions plus one API rule, with tests.
 
 ## Acceptance
 
-- [ ] From a cow's profile, the user moves her to another manual potrero. The profile, the potrero lists and her bitácora reflect it. AUTO potreros aren't offered.
-- [ ] From a bull's profile, the user changes availability. Switching to Solo semen shows a confirmation first, and cancelling leaves him unchanged.
-- [ ] A Solo semen bull can't have new events recorded on him (API `bull_semen_only`, and no record action in the UI). His past records stay visible, and he can still be picked as the sire for IA.
-- [ ] Switching him back to En rancho or Ambos lets events be recorded again.
-- [ ] Users without edit permission don't see either action.
-- [ ] API and web tests cover the above, and CI is green.
+- [x] From a cow's profile, the user moves her to another manual potrero. The profile, the potrero lists and her bitácora reflect it. AUTO potreros aren't offered.
+- [x] From a bull's profile, the user changes availability. Switching to Solo semen shows a confirmation first, and cancelling leaves him unchanged.
+- [x] A Solo semen bull can't have new events recorded on him (API `bull_semen_only`, and no record action in the UI). His past records are kept, not deleted, and show again when he's switched back; he can still be picked as the sire for IA.
+- [x] Switching him back to En rancho or Ambos lets events be recorded again.
+- [x] Users without edit permission don't see either action.
+- [x] API and web tests cover the above, and CI is green.
 - [ ] The founder moves a cow, and switches a bull to Solo semen and back, on staging (human).
