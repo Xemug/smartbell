@@ -1227,7 +1227,8 @@
       "empty": "This group has no bulls yet.",
       "deleteBody": "Choose which group its bulls go to, or leave them in no group.",
       "deletedOut": "Group deleted. Its bulls are now in no group.",
-      "finish": "Add group"
+      "finish": "Add group",
+      "inSystem": "Bull groups"
     }
   }
 }

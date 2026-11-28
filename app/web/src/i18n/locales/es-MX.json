@@ -1227,7 +1227,8 @@
       "empty": "Este grupo aún no tiene toros.",
       "deleteBody": "Elige a qué grupo se enviarán sus toros, o déjalos sin grupo.",
       "deletedOut": "Grupo eliminado. Sus toros quedaron sin grupo.",
-      "finish": "Agregar grupo"
+      "finish": "Agregar grupo",
+      "inSystem": "Grupos de toros"
     }
   }
 }

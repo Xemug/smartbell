@@ -104,7 +104,10 @@ function StoredGroups({ bulls }: { bulls: boolean }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-between">
-        <SplitIndicator label={t('groups.inSystem')} count={rows.length} />
+        <SplitIndicator
+          label={t(bulls ? 'groups.bulls.inSystem' : 'groups.inSystem')}
+          count={rows.length}
+        />
         {can('GROUPS_CREATE') && (
           <Button
             leadingIcon={iconGroups}
