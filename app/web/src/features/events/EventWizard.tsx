@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UNSAFE_DataRouterContext, useBlocker } from 'react-router-dom';
 
@@ -17,8 +17,11 @@ interface EventWizardProps {
   kind: EventKind;
   /** Opened from a task: the snackbar names the animal. */
   fromTask?: boolean;
-  /** `recorded` is true once the event was saved. */
+  /** `recorded` is true once the event was saved. Also called when a save started before the form
+   * was closed ends: true if it was saved, false if it failed. */
   onClose: (recorded: boolean) => void;
+  /** Told when a save starts and ends, so whoever closes the form mid-save can wait for it. */
+  onSavingChange?: (saving: boolean) => void;
   /** The flow to run; by default the registered one for `kind`. */
   flow?: EventFlow;
 }
@@ -84,12 +87,40 @@ function FlowBody({
   requestClose: () => void;
   setBusy: (busy: boolean) => void;
 }) {
-  const save = useRecordEvent(animal, kind, { fromTask });
-  useEffect(() => setBusy(save.isPending), [save.isPending, setBusy]);
+  const mounted = useRef(true);
+  useEffect(
+    () => () => {
+      mounted.current = false;
+    },
+    [],
+  );
+  // Set on the tap itself: `isPending` only shows on the next render, too late for a double tap.
+  const inFlight = useRef(false);
+  const save = useRecordEvent(animal, kind, {
+    fromTask,
+    // Hook-level callbacks: they still run if the page changed mid-save, so the opener (a task)
+    // hears that the event was recorded.
+    onRecorded: () => {
+      inFlight.current = false;
+      setBusy(false);
+      onClose(true);
+    },
+    onFailed: () => {
+      inFlight.current = false;
+      setBusy(false);
+      // Still open: the user can try again. Already closed: nothing was recorded.
+      if (!mounted.current) onClose(false);
+    },
+  });
   return (
     <flow.Component
       animal={animal}
-      record={(body) => save.mutate(body, { onSuccess: () => onClose(true) })}
+      record={(body) => {
+        if (inFlight.current) return;
+        inFlight.current = true;
+        setBusy(true);
+        save.mutate(body);
+      }}
       recording={save.isPending}
       setDirty={setDirty}
       cancel={requestClose}
@@ -108,13 +139,18 @@ export function EventWizard({
   kind,
   fromTask = false,
   onClose,
+  onSavingChange,
   flow = EVENT_FLOWS[kind],
 }: EventWizardProps) {
   const { t } = useTranslation();
   const desktop = useIsDesktop();
   const animal = useAnimal(animalId);
   const [dirty, setDirty] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusyState] = useState(false);
+  const setBusy = (next: boolean) => {
+    setBusyState(next);
+    onSavingChange?.(next);
+  };
   const [confirming, setConfirming] = useState(false);
   const inDataRouter = useContext(UNSAFE_DataRouterContext) !== null;
 

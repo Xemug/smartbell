@@ -13,6 +13,10 @@ export type EventCreate = components['schemas']['EventCreate'];
 interface Options {
   /** Opened from a task or alert: the snackbar names the animal, as there is no profile behind. */
   fromTask?: boolean;
+  /** After the snackbar and the refresh. Runs even if the form was closed meanwhile. */
+  onRecorded?: () => void;
+  /** After the error snackbar. Runs even if the form was closed meanwhile. */
+  onFailed?: () => void;
 }
 
 /**
@@ -20,7 +24,11 @@ interface Options {
  * also on phones) and a refresh of everything that shows the animal. A failure shows the
  * connection-error snackbar and leaves the form as it was, so the user can try again.
  */
-export function useRecordEvent(animal: AnimalDetail, kind: EventKind, { fromTask }: Options = {}) {
+export function useRecordEvent(
+  animal: AnimalDetail,
+  kind: EventKind,
+  { fromTask, onRecorded, onFailed }: Options = {},
+) {
   const { t } = useTranslation();
   const snackbar = useSnackbar();
   const queryClient = useQueryClient();
@@ -55,7 +63,11 @@ export function useRecordEvent(animal: AnimalDetail, kind: EventKind, { fromTask
         queryClient.invalidateQueries({ queryKey: animalKeys.all }),
         queryClient.invalidateQueries({ queryKey: animalKeys.groups }),
       ]);
+      onRecorded?.();
     },
-    onError: () => snackbar.show({ kind: 'error', message: t('events.connectionError') }),
+    onError: () => {
+      snackbar.show({ kind: 'error', message: t('events.connectionError') });
+      onFailed?.();
+    },
   });
 }

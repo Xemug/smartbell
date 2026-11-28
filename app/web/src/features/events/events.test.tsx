@@ -2,7 +2,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { Link, MemoryRouter, RouterProvider, createMemoryRouter } from 'react-router-dom';
+import {
+  Link,
+  MemoryRouter,
+  Route,
+  RouterProvider,
+  Routes,
+  createMemoryRouter,
+} from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SnackbarProvider } from '../../ui/SnackbarProvider';
@@ -17,6 +24,8 @@ import { useEventLauncher } from './launcherContext';
 const TODAY = new Date(2026, 10, 26, 9);
 let cow: AnimalDetail;
 let posts: unknown[];
+/** When set, the POST waits for it. */
+let holdPost: Promise<void> | null;
 
 function providers(children: React.ReactNode) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -62,6 +71,7 @@ beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true, toFake: ['Date'] });
   vi.setSystemTime(TODAY);
   posts = [];
+  holdPost = null;
   cow = detail({
     id: 'a-1',
     projection: { next_heat: { start: '2026-11-24', end: '2026-11-30' } },
@@ -78,6 +88,7 @@ beforeEach(() => {
         return Response.json(cow);
       if (request.method === 'POST' && url.pathname === '/api/animals/a-1/events') {
         posts.push(JSON.parse(await request.text()));
+        if (holdPost) await holdPost;
         return Response.json({ animal: cow, open_alerts: [] }, { status: 201 });
       }
       return Response.json({ detail: 'not_mocked' }, { status: 404 });
@@ -247,5 +258,47 @@ describe('openEvent', () => {
     );
     expect(screen.getByText('Tarea abierta')).toBeInTheDocument();
     expect(posts).toEqual([]);
+  });
+
+  it('saves once on a double tap', async () => {
+    renderTask();
+    await userEvent.click(screen.getByRole('button', { name: 'Observar el celo de vaca 00001' }));
+    await userEvent.dblClick(await screen.findByRole('button', { name: 'No entró' }));
+    expect(await screen.findByText('Tarea cerrada')).toBeInTheDocument();
+    expect(posts).toHaveLength(1);
+  });
+
+  it('still closes the task when the page changes mid-save', async () => {
+    let release = () => {};
+    holdPost = new Promise((resolve) => {
+      release = resolve;
+    });
+    render(
+      providers(
+        <MemoryRouter initialEntries={['/tareas']}>
+          <EventLauncherProvider>
+            <FakeHeatTask />
+            <Link to="/vacas">Vacas</Link>
+            <Routes>
+              <Route path="/tareas" element={<p>tareas</p>} />
+              <Route path="/vacas" element={<p>vacas</p>} />
+            </Routes>
+          </EventLauncherProvider>
+        </MemoryRouter>,
+      ),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Observar el celo de vaca 00001' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'No entró' }));
+    await waitFor(() => expect(posts).toHaveLength(1));
+    // A back gesture while the POST is in flight: the form goes, the save does not.
+    await userEvent.click(screen.getByRole('link', { name: 'Vacas', hidden: true }), {
+      pointerEventsCheck: 0,
+    });
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Registro de celo' })).not.toBeInTheDocument(),
+    );
+    expect(screen.getByText('Tarea abierta')).toBeInTheDocument();
+    release();
+    expect(await screen.findByText('Tarea cerrada')).toBeInTheDocument();
   });
 });

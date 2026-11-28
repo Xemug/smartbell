@@ -17,7 +17,7 @@ import {
   type Glyph,
 } from '../../../ui/icons/glyphs';
 import { Icon } from '../../../ui/icons/Icon';
-import type { LauncherGroup } from '../../events/eventTypes';
+import { launcherGroups, type LauncherGroup } from '../../events/eventTypes';
 import { ANIMALS_PATH } from '../list/AnimalListPage';
 import type { AnimalDetail, AnimalEvent, BullService } from './api';
 import { AvailabilityFact, GroupFact } from './ProfileEdits';
@@ -291,7 +291,7 @@ export function ProfileSummary({
             label: t('profile.cards.consultar'),
           }}
           action={
-            onRecord && !bull
+            onRecord && launcherGroups(animal).includes('reproduccion')
               ? { label: t('events.registrar'), onClick: () => onRecord('reproduccion') }
               : undefined
           }

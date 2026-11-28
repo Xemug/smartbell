@@ -72,9 +72,18 @@ export function EventLauncher({ animal, group, onPick, onClose }: EventLauncherP
   );
 }
 
-type State =
-  | { mode: 'launcher'; animal: AnimalDetail; group: LauncherGroup }
-  | { mode: 'event'; animalId: string; kind: EventKind; fromTask: boolean };
+/** One open form. `settle` answers its opener; `saving` is set by the form while a save runs. */
+interface OpenEvent {
+  mode: 'event';
+  id: number;
+  animalId: string;
+  kind: EventKind;
+  fromTask: boolean;
+  settle: (recorded: boolean) => void;
+  saving: { current: boolean };
+}
+
+type State = { mode: 'launcher'; animal: AnimalDetail; group: LauncherGroup } | OpenEvent;
 
 /**
  * Holds the one launcher or event form that can be open, so a profile card and a task open the
@@ -82,29 +91,43 @@ type State =
  */
 export function EventLauncherProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State | null>(null);
-  const settle = useRef<((recorded: boolean) => void) | null>(null);
+  const current = useRef<State | null>(null);
+  current.current = state;
+  const nextId = useRef(1);
 
-  const finish = useCallback((recorded: boolean) => {
-    settle.current?.(recorded);
-    settle.current = null;
+  /** Closes what is open. A form mid-save is only hidden: its save still answers the opener. */
+  const dismiss = useCallback(() => {
+    const open = current.current;
+    if (open?.mode === 'event' && !open.saving.current) open.settle(false);
     setState(null);
   }, []);
+
+  const startEvent = useCallback(
+    (animalId: string, kind: EventKind, fromTask: boolean, settle: OpenEvent['settle']) => {
+      dismiss();
+      setState({
+        mode: 'event',
+        id: nextId.current++,
+        animalId,
+        kind,
+        fromTask,
+        settle,
+        saving: { current: false },
+      });
+    },
+    [dismiss],
+  );
 
   const api = useMemo<EventLauncherApi>(
     () => ({
       openLauncher: (animal, group) => {
-        settle.current?.(false);
-        settle.current = null;
+        dismiss();
         setState({ mode: 'launcher', animal, group });
       },
       openEvent: (animalId, kind, taskId) =>
-        new Promise<boolean>((resolve) => {
-          settle.current?.(false);
-          settle.current = resolve;
-          setState({ mode: 'event', animalId, kind, fromTask: Boolean(taskId) });
-        }),
+        new Promise<boolean>((resolve) => startEvent(animalId, kind, Boolean(taskId), resolve)),
     }),
-    [],
+    [dismiss, startEvent],
   );
 
   // The forms float over whatever page opened them; a new page is a new context.
@@ -113,10 +136,11 @@ export function EventLauncherProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (shownOn.current !== pathname) {
       shownOn.current = pathname;
-      finish(false);
+      dismiss();
     }
-  }, [pathname, finish]);
+  }, [pathname, dismiss]);
 
+  const open = state?.mode === 'event' ? state : null;
   return (
     <EventLauncherContext.Provider value={api}>
       {children}
@@ -124,19 +148,24 @@ export function EventLauncherProvider({ children }: { children: ReactNode }) {
         <EventLauncher
           animal={state.animal}
           group={state.group}
-          onClose={() => finish(false)}
-          onPick={(kind) =>
-            setState({ mode: 'event', animalId: state.animal.id, kind, fromTask: false })
-          }
+          onClose={dismiss}
+          onPick={(kind) => startEvent(state.animal.id, kind, false, () => {})}
         />
       )}
-      {state?.mode === 'event' && (
+      {open && (
         <EventWizard
-          key={`${state.animalId}-${state.kind}`}
-          animalId={state.animalId}
-          kind={state.kind}
-          fromTask={state.fromTask}
-          onClose={finish}
+          key={open.id}
+          animalId={open.animalId}
+          kind={open.kind}
+          fromTask={open.fromTask}
+          onSavingChange={(saving) => {
+            open.saving.current = saving;
+          }}
+          onClose={(recorded) => {
+            open.settle(recorded);
+            // Only this form: another may have been opened since.
+            setState((now) => (now?.mode === 'event' && now.id === open.id ? null : now));
+          }}
         />
       )}
     </EventLauncherContext.Provider>
