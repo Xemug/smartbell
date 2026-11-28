@@ -1675,11 +1675,8 @@ export interface components {
     GroupChangeDetails: {
       /** From Group Id */
       from_group_id?: string | null;
-      /**
-       * To Group Id
-       * Format: uuid
-       */
-      to_group_id: string;
+      /** To Group Id */
+      to_group_id?: string | null;
       /** From Group Name */
       from_group_name?: string | null;
       /** To Group Name */
@@ -1689,11 +1686,8 @@ export interface components {
     GroupChangePayload: {
       /** From Group Id */
       from_group_id?: string | null;
-      /**
-       * To Group Id
-       * Format: uuid
-       */
-      to_group_id: string;
+      /** To Group Id */
+      to_group_id?: string | null;
       /** From Group Name */
       from_group_name?: string | null;
       /** To Group Name */
@@ -1707,9 +1701,16 @@ export interface components {
     /**
      * GroupCreate
      * @description The wizard. A preset takes its name from the preset; a custom group needs `name`. MANUAL
-     *     moves `animal_ids` in; AUTO moves in the cows `auto_filter` matches.
+     *     moves `animal_ids` in; AUTO moves in the cows `auto_filter` matches. `type: TORO` makes a
+     *     bull group: named, MANUAL, no indicator, and only bulls on the ranch go in.
      */
     GroupCreate: {
+      /**
+       * Type
+       * @default CUSTOM
+       * @enum {string}
+       */
+      type: 'CUSTOM' | 'TORO';
       preset?: components['schemas']['GroupPreset'] | null;
       /** Name */
       name?: string | null;
@@ -1722,15 +1723,16 @@ export interface components {
       animal_ids?: string[];
       kpi_indicator?: components['schemas']['GroupKpiIndicator'] | null;
     };
-    /** GroupDeleted */
+    /**
+     * GroupDeleted
+     * @description Where the animals went. None for a bull group deleted with no other bull group picked:
+     *     its bulls are left out of any group.
+     */
     GroupDeleted: {
-      /**
-       * To Group Id
-       * Format: uuid
-       */
-      to_group_id: string;
+      /** To Group Id */
+      to_group_id: string | null;
       /** To Group */
-      to_group: string;
+      to_group: string | null;
       /** Moved */
       moved: number;
     };
@@ -1789,7 +1791,7 @@ export interface components {
      * GroupType
      * @enum {string}
      */
-    GroupType: 'PRESET' | 'CUSTOM';
+    GroupType: 'PRESET' | 'CUSTOM' | 'TORO';
     /**
      * GroupUpdate
      * @description Edit: rename (custom groups only), describe, re-pick the indicator, or change the AUTO
@@ -3263,6 +3265,8 @@ export interface operations {
         born_to?: string | null;
         /** @description The bulls' Disponibilidad filter */
         availability?: components['schemas']['BullAvailability'] | null;
+        /** @description Only bulls on the ranch, EN_RANCHO or AMBOS (bull groups) */
+        on_ranch?: boolean;
         /** @description Lists the removed animals with this reason */
         removed_reason?: components['schemas']['RemovalReason'] | null;
         sort?:

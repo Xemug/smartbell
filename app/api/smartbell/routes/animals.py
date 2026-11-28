@@ -163,6 +163,9 @@ async def list_animals(
     availability: Annotated[
         BullAvailability | None, Query(description="The bulls' Disponibilidad filter")
     ] = None,
+    on_ranch: Annotated[
+        bool, Query(description="Only bulls on the ranch, EN_RANCHO or AMBOS (bull groups)")
+    ] = False,
     removed_reason: Annotated[
         RemovalReason | None, Query(description="Lists the removed animals with this reason")
     ] = None,
@@ -181,6 +184,7 @@ async def list_animals(
         born_from=born_from,
         born_to=born_to,
         availability=availability,
+        on_ranch=on_ranch,
         removed_reason=removed_reason,
         sort=sort,
         page=page,

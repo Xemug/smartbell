@@ -83,6 +83,7 @@ export function NewGroupPage() {
     setError(null);
     create.mutate(
       {
+        type: 'CUSTOM',
         ...(kind === 'preset' && preset ? { preset } : { name: name.trim() }),
         description: description.trim() || null,
         selection: method,

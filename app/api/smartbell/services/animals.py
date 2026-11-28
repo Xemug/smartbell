@@ -703,6 +703,7 @@ class AnimalFilters:
     born_from: dt.date | None = None
     born_to: dt.date | None = None
     availability: BullAvailability | None = None
+    on_ranch: bool = False  # Bulls on the ranch only: what a bull group can hold.
     removed_reason: RemovalReason | None = None
     sort: SortKey = "control_id"
     page: int = 1
@@ -756,6 +757,9 @@ def _filters(ranch_id: uuid.UUID, filters: AnimalFilters) -> list[ColumnElement[
         conditions.append(Animal.birth_date <= filters.born_to)
     if filters.availability is not None:
         conditions.append(Animal.bull_availability == filters.availability)
+    if filters.on_ranch:
+        on_ranch = (BullAvailability.EN_RANCHO, BullAvailability.AMBOS)
+        conditions.append(Animal.bull_availability.in_(on_ranch))
     return conditions
 
 

@@ -1040,7 +1040,15 @@
       "current": "{{name}} (current)",
       "save": "Move",
       "done": "Cow {{id}} moved to {{name}}",
-      "error": "We couldn't move her. Try again."
+      "error": "We couldn't move her. Try again.",
+      "bull": {
+        "label": "Bull group",
+        "change": "Change group",
+        "title": "Move to another group",
+        "body": "Bull {{id}} will be moved to {{name}}.",
+        "pick": "Choose the group bull {{id}} moves to.",
+        "done": "Bull {{id}} moved to {{name}}"
+      }
     },
     "availability": {
       "label": "Availability",
@@ -1058,12 +1066,14 @@
   "groups": {
     "title": {
       "vacas": "Where are your <b>cows</b>?",
-      "vaquillas": "Where are your <b>heifers</b>?"
+      "vaquillas": "Where are your <b>heifers</b>?",
+      "toros": "Where are your <b>bulls</b>?"
     },
     "tabsLabel": "Group type",
     "tabs": {
       "vacas": "Cow groups",
-      "vaquillas": "Heifer groups"
+      "vaquillas": "Heifer groups",
+      "toros": "Bulls"
     },
     "inSystem": "Groups in the system",
     "add": "Add group",
@@ -1198,6 +1208,26 @@
       "help": "Pick the cows to add to the group",
       "confirm_one": "Add {{count}} cow",
       "confirm_other": "Add {{count}} cows"
+    },
+    "bullsIn": "Bulls in group",
+    "bulls": {
+      "add": "Add bull group",
+      "onRanchOnly": "Only bulls on the ranch (On ranch or Both) go in a group. A semen-only bull is in none.",
+      "none": "No bull groups yet.",
+      "noGroup": "No group",
+      "pickHelp": "Select the bulls on the ranch that go in this group.",
+      "noBulls": "There are no bulls on the ranch.",
+      "wizardTitle": "New bull group",
+      "pickStep": "Bull selection",
+      "namePlaceholder": "e.g. Service bulls",
+      "semenOnly": "A semen-only bull can't be in a group.",
+      "semenOnlyHint": "A semen-only bull is in no group.",
+      "bring": "Add bulls",
+      "bringTitle": "Add bulls to the group",
+      "empty": "This group has no bulls yet.",
+      "deleteBody": "Choose which group its bulls go to, or leave them in no group.",
+      "deletedOut": "Group deleted. Its bulls are now in no group.",
+      "finish": "Add group"
     }
   }
 }

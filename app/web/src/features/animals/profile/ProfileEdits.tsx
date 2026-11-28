@@ -10,7 +10,7 @@ import { RadioGroup } from '../../../ui/RadioGroup';
 import { Select } from '../../../ui/Select';
 import { useSnackbar } from '../../../ui/useSnackbar';
 import { useGroupList, type GroupOut } from '../../groups/api';
-import { groupName } from '../../groups/labels';
+import { groupName, movableGroups } from '../../groups/labels';
 import {
   useChangeGroup,
   useSetBullAvailability,
@@ -52,14 +52,18 @@ function Fact({
   );
 }
 
-/** The group she is in: none is General (domain-model §7). */
-function currentGroup(animal: AnimalDetail, groups: GroupOut[]): GroupOut | undefined {
-  return animal.group_id
-    ? groups.find((g) => g.id === animal.group_id)
-    : groups.find((g) => g.preset === 'GENERAL');
+/** The group she is in: none is General (domain-model §7). A bull with none is in no group. */
+function currentGroup(
+  animal: AnimalDetail,
+  groups: GroupOut[],
+  bull: boolean,
+): GroupOut | undefined {
+  if (animal.group_id) return groups.find((g) => g.id === animal.group_id);
+  return bull ? undefined : groups.find((g) => g.preset === 'GENERAL');
 }
 
-/** A cow's potrero; Cambiar moves her to another MANUAL one with a GROUP_CHANGE. */
+/** A cow's potrero, or a bull's bull group; Cambiar moves the animal to another MANUAL group of
+ * its own kind with a GROUP_CHANGE. */
 export function GroupFact({ animal, editable }: { animal: AnimalDetail; editable: boolean }) {
   const { t } = useTranslation();
   const snackbar = useSnackbar();
@@ -75,25 +79,27 @@ export function GroupFact({ animal, editable }: { animal: AnimalDetail; editable
     }
   }, [open]);
 
+  const bull = animal.kind === 'TORO';
+  const copy = bull ? 'profile.potrero.bull' : 'profile.potrero';
   const list = groups.data ?? [];
-  const current = currentGroup(animal, list);
+  const current = currentGroup(animal, list, bull);
   const value = current
     ? groupName(current, t)
     : animal.group_id
       ? t('animals.none')
-      : t('animals.values.grupo.GENERAL');
-  // AUTO potreros pick their own cows, so they aren't offered.
-  const options = list
-    .filter((g) => g.selection !== 'AUTO')
-    .map((g) =>
-      g.id === current?.id
-        ? {
-            value: g.id,
-            label: t('profile.potrero.current', { name: groupName(g, t) }),
-            disabled: true,
-          }
-        : { value: g.id, label: groupName(g, t) },
-    );
+      : bull
+        ? t('groups.bulls.noGroup')
+        : t('animals.values.grupo.GENERAL');
+  // AUTO potreros pick their own cows, so they aren't offered; kinds never mix.
+  const options = movableGroups(list, bull).map((g) =>
+    g.id === current?.id
+      ? {
+          value: g.id,
+          label: t('profile.potrero.current', { name: groupName(g, t) }),
+          disabled: true,
+        }
+      : { value: g.id, label: groupName(g, t) },
+  );
   const name = list.find((g) => g.id === target);
 
   const confirm = () => {
@@ -104,7 +110,7 @@ export function GroupFact({ animal, editable }: { animal: AnimalDetail; editable
         onSuccess: () => {
           snackbar.show({
             kind: 'success',
-            message: t('profile.potrero.done', { id: animal.control_id, name: groupName(name, t) }),
+            message: t(`${copy}.done`, { id: animal.control_id, name: groupName(name, t) }),
           });
           setOpen(false);
         },
@@ -116,24 +122,20 @@ export function GroupFact({ animal, editable }: { animal: AnimalDetail; editable
   return (
     <>
       <Fact
-        label={t('profile.potrero.label')}
+        label={t(`${copy}.label`)}
         value={value}
-        action={
-          editable
-            ? { label: t('profile.potrero.change'), onClick: () => setOpen(true) }
-            : undefined
-        }
+        action={editable ? { label: t(`${copy}.change`), onClick: () => setOpen(true) } : undefined}
       />
       <Modal
         open={open}
         onOpenChange={(next) => {
           if (!next && !move.isPending) setOpen(false);
         }}
-        title={t('profile.potrero.title')}
+        title={t(`${copy}.title`)}
         description={
           name
-            ? t('profile.potrero.body', { id: animal.control_id, name: groupName(name, t) })
-            : t('profile.potrero.pick', { id: animal.control_id })
+            ? t(`${copy}.body`, { id: animal.control_id, name: groupName(name, t) })
+            : t(`${copy}.pick`, { id: animal.control_id })
         }
         footer={
           <>

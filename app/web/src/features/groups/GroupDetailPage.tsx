@@ -13,7 +13,14 @@ import {
   type DataTableColumn,
   type DataTableRowAction,
 } from '../../ui/DataTable';
-import { iconArrowRight, iconCow, iconRefresh, iconTrash, iconX } from '../../ui/icons/glyphs';
+import {
+  iconArrowRight,
+  iconBull,
+  iconCow,
+  iconRefresh,
+  iconTrash,
+  iconX,
+} from '../../ui/icons/glyphs';
 import { IconButton } from '../../ui/IconButton';
 import { Modal } from '../../ui/Modal';
 import { Select } from '../../ui/Select';
@@ -35,7 +42,14 @@ import {
 import { CowPicker } from './CowPicker';
 import { DeleteGroupDialog } from './DeleteGroupDialog';
 import { MoveToGroupDialog } from './MoveToGroupDialog';
-import { GROUPS_PATH, KPI_INDICATORS, groupDescription, groupName } from './labels';
+import {
+  BULL_GROUPS_PATH,
+  GROUPS_PATH,
+  KPI_INDICATORS,
+  groupDescription,
+  groupName,
+  isBullGroup,
+} from './labels';
 
 const NO_KPI = 'NONE';
 
@@ -57,11 +71,11 @@ export function GroupDetailPage() {
   return <Detail group={group.data} />;
 }
 
-function BackLink() {
+function BackLink({ bulls = false }: { bulls?: boolean }) {
   const { t } = useTranslation();
   return (
     <Link
-      to={GROUPS_PATH}
+      to={bulls ? BULL_GROUPS_PATH : GROUPS_PATH}
       className={cx(
         'inline-flex items-center gap-1 rounded-sm text-primary type-label-md',
         focusRing,
@@ -79,6 +93,8 @@ function Detail({ group }: { group: GroupOut }) {
   const { can } = useActiveRanch();
   const canEdit = can('GROUPS_VIEW_EDIT');
   const isAuto = group.selection === 'AUTO';
+  // A bull group lists bulls on the ranch and has no indicator (no design: it follows C5).
+  const bulls = isBullGroup(group);
 
   const update = useUpdateGroup(group.id);
   const reevaluate = useReevaluate(group.id);
@@ -109,8 +125,8 @@ function Detail({ group }: { group: GroupOut }) {
   // General also holds the animals with no group, which only its preset filter finds.
   const members = useAnimalPage({
     group: group.preset === 'GENERAL' ? 'GENERAL' : group.id,
-    // A cow potrero lists cows: heifers have their own groups and bulls have none.
-    kind: 'VACA',
+    // A cow potrero lists cows (heifers have their own groups); a bull group, its bulls.
+    ...(bulls ? { kind: 'TORO' as const, on_ranch: true } : { kind: 'VACA' as const }),
     page,
     page_size: PAGE_SIZE,
   });
@@ -121,7 +137,7 @@ function Detail({ group }: { group: GroupOut }) {
   const [toMove, setToMove] = useState<string[] | null>(null);
   const [bringing, setBringing] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
-  const [bringFailed, setBringFailed] = useState(false);
+  const [bringFailed, setBringFailed] = useState<'semen' | 'other' | null>(null);
   const [deleting, setDeleting] = useState(false);
   const moveFrom = useRef<HTMLElement | null>(null);
 
@@ -137,7 +153,7 @@ function Detail({ group }: { group: GroupOut }) {
       {
         ...(group.preset ? {} : { name: name.trim() }),
         description: description.trim() || null,
-        kpi_indicator: kpi === NO_KPI ? null : (kpi as KpiIndicator),
+        ...(bulls ? {} : { kpi_indicator: kpi === NO_KPI ? null : (kpi as KpiIndicator) }),
       },
       {
         onSuccess: () => snackbar.show({ kind: 'success', message: t('groups.detail.saved') }),
@@ -154,7 +170,7 @@ function Detail({ group }: { group: GroupOut }) {
   const columns: DataTableColumn<Animal>[] = [
     {
       key: 'id',
-      header: t('animals.columns.id.vacas'),
+      header: t(`animals.columns.id.${bulls ? 'toros' : 'vacas'}`),
       cell: (a) => (
         <Link
           to={`${ANIMALS_PATH}/${a.id}`}
@@ -172,12 +188,19 @@ function Detail({ group }: { group: GroupOut }) {
       header: t('animals.columns.raza'),
       cell: (a) => t(`animals.values.raza.${a.breed}`),
     },
-    {
-      key: 'dim',
-      header: t('animals.columns.dim'),
-      align: 'right',
-      cell: (a) => daysInMilk(a, today) ?? '—',
-    },
+    bulls
+      ? {
+          key: 'disponibilidad',
+          header: t('animals.columns.disponibilidad'),
+          cell: (a) =>
+            a.bull_availability ? t(`animals.values.disponibilidad.${a.bull_availability}`) : '—',
+        }
+      : {
+          key: 'dim',
+          header: t('animals.columns.dim'),
+          align: 'right',
+          cell: (a) => daysInMilk(a, today) ?? '—',
+        },
   ];
   const rowActions: DataTableRowAction<Animal>[] | undefined = canEdit
     ? [
@@ -206,18 +229,19 @@ function Detail({ group }: { group: GroupOut }) {
           });
           setBringing(false);
           setPicked([]);
-          setBringFailed(false);
+          setBringFailed(null);
         },
         // Shown in the dialog, which covers the page's own banner.
-        onError: () => setBringFailed(true),
+        onError: (failure) =>
+          setBringFailed(failure.message === 'bull_semen_only' ? 'semen' : 'other'),
       },
     );
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <BackLink />
-        <SplitIndicator label={t('groups.animalsIn')} count={total} />
+        <BackLink bulls={bulls} />
+        <SplitIndicator label={t(bulls ? 'groups.bullsIn' : 'groups.animalsIn')} count={total} />
       </div>
 
       <Card
@@ -260,17 +284,19 @@ function Detail({ group }: { group: GroupOut }) {
               value={description}
               onChange={(event) => setDescription(event.target.value)}
             />
-            <Select
-              label={t('groups.kpi.label')}
-              hint={total === 0 ? t('groups.kpi.needsCows') : undefined}
-              disabled={!canEdit || (total === 0 && kpi === NO_KPI)}
-              options={[
-                { value: NO_KPI, label: t('groups.kpi.none') },
-                ...KPI_INDICATORS.map((value) => ({ value, label: t(`groups.kpi.${value}`) })),
-              ]}
-              value={kpi}
-              onChange={setKpi}
-            />
+            {!bulls && (
+              <Select
+                label={t('groups.kpi.label')}
+                hint={total === 0 ? t('groups.kpi.needsCows') : undefined}
+                disabled={!canEdit || (total === 0 && kpi === NO_KPI)}
+                options={[
+                  { value: NO_KPI, label: t('groups.kpi.none') },
+                  ...KPI_INDICATORS.map((value) => ({ value, label: t(`groups.kpi.${value}`) })),
+                ]}
+                value={kpi}
+                onChange={setKpi}
+              />
+            )}
             {canEdit && (
               <Button
                 onClick={save}
@@ -323,8 +349,12 @@ function Detail({ group }: { group: GroupOut }) {
               </div>
             )}
             {canEdit && !isAuto && (
-              <Button variant="outline" leadingIcon={iconCow} onClick={() => setBringing(true)}>
-                {t('groups.detail.bring')}
+              <Button
+                variant="outline"
+                leadingIcon={bulls ? iconBull : iconCow}
+                onClick={() => setBringing(true)}
+              >
+                {t(bulls ? 'groups.bulls.bring' : 'groups.detail.bring')}
               </Button>
             )}
             {can('GROUPS_DELETE') && group.preset !== 'GENERAL' && (
@@ -376,7 +406,11 @@ function Detail({ group }: { group: GroupOut }) {
               page={page}
               onPageChange={setPage}
               loading={members.isFetching && !members.data}
-              empty={<p className="text-center text-secondary-text">{t('groups.detail.empty')}</p>}
+              empty={
+                <p className="text-center text-secondary-text">
+                  {t(bulls ? 'groups.bulls.empty' : 'groups.detail.empty')}
+                </p>
+              }
             />
           </div>
         </div>
@@ -385,6 +419,7 @@ function Detail({ group }: { group: GroupOut }) {
       <MoveToGroupDialog
         animalIds={toMove}
         fromGroupId={group.id}
+        bulls={bulls}
         onClose={() => setToMove(null)}
         onMoved={(ids) => setSelected((current) => current.filter((x) => !ids.includes(x)))}
         returnFocus={moveFrom}
@@ -394,7 +429,7 @@ function Detail({ group }: { group: GroupOut }) {
         onOpenChange={(open) => {
           if (!open && !bring.isPending) setBringing(false);
         }}
-        title={t('groups.bringDialog.title')}
+        title={t(bulls ? 'groups.bulls.bringTitle' : 'groups.bringDialog.title')}
         className="lg:max-w-3xl"
         footer={
           <>
@@ -408,17 +443,17 @@ function Detail({ group }: { group: GroupOut }) {
         }
       >
         {bringFailed && (
-          <Banner tone="error" onClose={() => setBringFailed(false)} className="mb-3">
-            {t('groups.moveDialog.error')}
+          <Banner tone="error" onClose={() => setBringFailed(null)} className="mb-3">
+            {t(bringFailed === 'semen' ? 'groups.bulls.semenOnly' : 'groups.moveDialog.error')}
           </Banner>
         )}
-        <CowPicker selected={picked} onChange={setPicked} />
+        <CowPicker bulls={bulls} selected={picked} onChange={setPicked} />
       </Modal>
       {deleting && (
         <DeleteGroupDialog
           group={group}
           onClose={() => setDeleting(false)}
-          onDeleted={() => navigate(GROUPS_PATH, { replace: true })}
+          onDeleted={() => navigate(bulls ? BULL_GROUPS_PATH : GROUPS_PATH, { replace: true })}
         />
       )}
     </div>

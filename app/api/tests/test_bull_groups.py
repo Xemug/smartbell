@@ -288,3 +288,18 @@ async def test_deleting_a_bull_group_leaves_its_bulls_in_none_or_another_bull_gr
     texts = await history_texts(tenant_db, owner)
     assert "Se eliminó el grupo Toros 1 y los toros se enviaron a grupo B" in texts
     assert "Se eliminó el grupo B y sus toros quedaron sin grupo" in texts
+
+
+async def test_the_bull_picker_lists_bulls_on_the_ranch_only(
+    tenant_api: AsyncClient, owner: Account
+) -> None:
+    on = await bull(tenant_api, owner, "T1")
+    both = await bull(tenant_api, owner, "T2", bull_availability="AMBOS")
+    await bull(tenant_api, owner, "T3", bull_availability="SEMEN")
+
+    listed = await tenant_api.get(
+        "/api/animals", headers=owner.headers(), params={"kind": "TORO", "on_ranch": "true"}
+    )
+
+    assert listed.status_code == 200, listed.text
+    assert {a["id"] for a in listed.json()["items"]} == {on, both}

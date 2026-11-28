@@ -13,6 +13,8 @@ const SEARCH_DELAY_MS = 300;
 interface CowPickerProps {
   selected: string[];
   onChange: (ids: string[]) => void;
+  /** Pick bulls on the ranch (EN_RANCHO or AMBOS) for a bull group instead of cows. */
+  bulls?: boolean;
 }
 
 /**
@@ -20,7 +22,7 @@ interface CowPickerProps {
  * checkboxes that survive paging and a running "Vacas en potrero" count. The designs also drag rows
  * across on the web; checkboxes do the same job on every screen and with a keyboard.
  */
-export function CowPicker({ selected, onChange }: CowPickerProps) {
+export function CowPicker({ selected, onChange, bulls = false }: CowPickerProps) {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [q, setQ] = useState('');
@@ -33,7 +35,12 @@ export function CowPicker({ selected, onChange }: CowPickerProps) {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const query = { kind: 'VACA' as const, page, page_size: PAGE_SIZE, ...(q ? { q } : {}) };
+  const query = {
+    ...(bulls ? { kind: 'TORO' as const, on_ranch: true } : { kind: 'VACA' as const }),
+    page,
+    page_size: PAGE_SIZE,
+    ...(q ? { q } : {}),
+  };
   const cows = useAnimalPage(query);
   const groups = useGroupList();
   const names = useMemo(() => {
@@ -42,20 +49,31 @@ export function CowPicker({ selected, onChange }: CowPickerProps) {
     return map;
   }, [groups.data, t]);
   const general = groups.data?.find((g) => g.preset === 'GENERAL');
-  const generalName = general ? groupName(general, t) : t('groups.presets.GENERAL');
+  // A cow with no group is in General; a bull with none is in no group.
+  const noGroup = bulls
+    ? t('groups.bulls.noGroup')
+    : general
+      ? groupName(general, t)
+      : t('groups.presets.GENERAL');
 
   const columns: DataTableColumn<Animal>[] = [
-    { key: 'id', header: t('animals.columns.id.vacas'), cell: (a) => a.control_id },
+    {
+      key: 'id',
+      header: t(`animals.columns.id.${bulls ? 'toros' : 'vacas'}`),
+      cell: (a) => a.control_id,
+    },
     {
       key: 'grupo',
       header: t('animals.columns.grupo'),
-      cell: (a) => (a.group_id ? (names.get(a.group_id) ?? '—') : generalName),
+      cell: (a) => (a.group_id ? (names.get(a.group_id) ?? '—') : noGroup),
     },
   ];
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-primary type-body-md">{t('groups.wizard.pickHelp')}</p>
+      <p className="text-primary type-body-md">
+        {t(bulls ? 'groups.bulls.pickHelp' : 'groups.wizard.pickHelp')}
+      </p>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <TextField
           type="search"
@@ -66,7 +84,10 @@ export function CowPicker({ selected, onChange }: CowPickerProps) {
           onChange={(event) => setSearch(event.target.value)}
           className="w-full min-w-0 sm:w-auto sm:flex-1 lg:max-w-72"
         />
-        <SplitIndicator label={t('groups.wizard.inGroup')} count={selected.length} />
+        <SplitIndicator
+          label={t(bulls ? 'groups.bullsIn' : 'groups.wizard.inGroup')}
+          count={selected.length}
+        />
       </div>
       <DataTable
         label={t('groups.wizard.filtered')}
@@ -80,7 +101,11 @@ export function CowPicker({ selected, onChange }: CowPickerProps) {
         page={page}
         onPageChange={setPage}
         loading={cows.isFetching && !cows.data}
-        empty={<p className="text-center text-secondary-text">{t('groups.wizard.noCows')}</p>}
+        empty={
+          <p className="text-center text-secondary-text">
+            {t(bulls ? 'groups.bulls.noBulls' : 'groups.wizard.noCows')}
+          </p>
+        }
       />
     </div>
   );

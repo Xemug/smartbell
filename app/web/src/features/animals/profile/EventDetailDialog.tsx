@@ -107,9 +107,11 @@ export function EventDetailDialog({ animal, event, onClose }: EventDetailDialogP
   }, [event]);
 
   if (!event) return null;
-  /** No group yet is General. A potrero deleted since shows the name the API kept for it. */
+  /** No group yet is General, or for a bull no group at all (he left his bull group, say on
+   * going semen-only). A potrero deleted since shows the name the API kept for it. */
   const potrero = (id: unknown, kept: unknown) => {
     const list = groups.data ?? [];
+    if (typeof id !== 'string' && animal.kind === 'TORO') return t('groups.bulls.noGroup');
     const group =
       typeof id === 'string'
         ? list.find((g) => g.id === id)

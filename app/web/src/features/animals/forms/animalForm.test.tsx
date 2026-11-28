@@ -160,6 +160,12 @@ beforeEach(() => {
             preset: null,
           },
           {
+            id: 'c0c0c0c0-0000-4000-8000-00000000000c',
+            name: 'Toros de monta',
+            type: 'TORO',
+            preset: null,
+          },
+          {
             id: 'b0b0b0b0-0000-4000-8000-00000000000c',
             name: 'Jerseys',
             type: 'CUSTOM',
@@ -236,6 +242,19 @@ describe('quick registration', () => {
     await user().click(potrero);
     expect(await screen.findByRole('option', { name: 'Lote 7' })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Jerseys' })).not.toBeInTheDocument();
+    // A cow never goes into a bull group.
+    expect(screen.queryByRole('option', { name: 'Toros de monta' })).not.toBeInTheDocument();
+  });
+
+  it('offers a male bull groups only, starting on none', async () => {
+    renderAt('/vacas/nueva?tipo=toros');
+    const potrero = await screen.findByRole('combobox', { name: 'Potrero' });
+    await waitFor(() => expect(potrero).toBeEnabled());
+    expect(potrero).toHaveTextContent('Sin grupo');
+    await user().click(potrero);
+    expect(await screen.findByRole('option', { name: 'Toros de monta' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'General' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Lote 7' })).not.toBeInTheDocument();
   });
 
   it('registers a male, and goes to the bulls list', async () => {

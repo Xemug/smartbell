@@ -6,13 +6,15 @@ import { Modal } from '../../ui/Modal';
 import { Select } from '../../ui/Select';
 import { useSnackbar } from '../../ui/useSnackbar';
 import { useGroupList, useMoveAnimals } from './api';
-import { groupName } from './labels';
+import { groupName, movableGroups } from './labels';
 
 interface MoveToGroupDialogProps {
   /** The animals to move; `null` keeps the dialog closed. */
   animalIds: string[] | null;
   /** Left out of the destinations: the group they are being moved from. */
   fromGroupId?: string;
+  /** Moving bulls: only bull groups are offered. Otherwise only cow potreros. */
+  bulls?: boolean;
   onClose: () => void;
   onMoved?: (moved: string[]) => void;
   returnFocus?: RefObject<HTMLElement>;
@@ -23,6 +25,7 @@ interface MoveToGroupDialogProps {
 export function MoveToGroupDialog({
   animalIds,
   fromGroupId,
+  bulls = false,
   onClose,
   onMoved,
   returnFocus,
@@ -32,17 +35,17 @@ export function MoveToGroupDialog({
   const groups = useGroupList();
   const move = useMoveAnimals();
   const [target, setTarget] = useState('');
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
   const open = animalIds !== null;
   useEffect(() => {
     if (open) {
       setTarget('');
-      setFailed(false);
+      setFailed(null);
     }
   }, [open]);
 
-  const options = (groups.data ?? [])
-    .filter((g) => g.id !== fromGroupId && g.selection !== 'AUTO')
+  const options = movableGroups(groups.data ?? [], bulls)
+    .filter((g) => g.id !== fromGroupId)
     .map((g) => ({ value: g.id, label: groupName(g, t) }));
   const count = animalIds?.length ?? 0;
   const name = options.find((o) => o.value === target)?.label ?? '';
@@ -60,7 +63,7 @@ export function MoveToGroupDialog({
           onClose();
           onMoved?.([...result.moved, ...result.unchanged]);
         },
-        onError: () => setFailed(true),
+        onError: (failure) => setFailed(failure.message),
       },
     );
   };
@@ -89,7 +92,13 @@ export function MoveToGroupDialog({
     >
       <Select
         label={t('groups.moveDialog.target')}
-        error={failed ? t('groups.moveDialog.error') : undefined}
+        error={
+          failed === 'bull_semen_only'
+            ? t('groups.bulls.semenOnly')
+            : failed
+              ? t('groups.moveDialog.error')
+              : undefined
+        }
         options={options}
         value={target}
         onChange={setTarget}
