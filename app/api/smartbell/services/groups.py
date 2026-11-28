@@ -353,7 +353,9 @@ async def _taken_by(
 ) -> str | None:
     """The name, as saved, of the ranch's potrero that already has `name` ignoring case."""
     query = select(Group.name).where(
-        Group.ranch_id == ranch_id, func.lower(Group.name) == name.lower()
+        # The database's lower() on both sides, as the unique index compares them.
+        Group.ranch_id == ranch_id,
+        func.lower(Group.name) == func.lower(name),
     )
     if exclude is not None:
         query = query.where(Group.id != exclude)
