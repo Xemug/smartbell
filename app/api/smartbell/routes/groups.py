@@ -6,7 +6,8 @@
     POST   /groups                      the wizard: create, pick cows, pick the indicator
     GET    /groups/{id}                 one group
     PATCH  /groups/{id}                 rename, describe, indicator, AUTO rule
-    DELETE /groups/{id}?to_group_id=    send its animals to General (or the group given), delete
+    DELETE /groups/{id}?to_group_id=    send its animals to General (or the group given), delete;
+                                        a bull group's bulls go to no group by default
     POST   /groups/{id}/animals         move animals in (GROUP_CHANGE events, one history entry)
     POST   /groups/{id}/reevaluate      apply an AUTO group's rule now
 
@@ -134,7 +135,11 @@ async def delete_group(
         target, moved = await groups.delete_group(
             session, ctx.ranch_id, ctx.user.id, group_id, to_group_id, today
         )
-        result = GroupDeleted(to_group_id=target.id, to_group=target.name, moved=moved)
+        result = GroupDeleted(
+            to_group_id=target.id if target else None,
+            to_group=target.name if target else None,
+            moved=moved,
+        )
     return result
 
 

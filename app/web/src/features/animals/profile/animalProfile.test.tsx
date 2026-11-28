@@ -410,7 +410,9 @@ describe('a bull', () => {
   it('switches to Solo semen only after confirming, and back without asking', async () => {
     renderAt(`/vacas/${ID}`);
     expect(await screen.findByText('En rancho')).toBeInTheDocument();
-    expect(screen.queryByText('Potrero')).not.toBeInTheDocument();
+    // On the ranch he can be in a bull group; this one is in none yet.
+    expect(screen.getByText('Grupo de toros')).toBeInTheDocument();
+    expect(screen.getByText('Sin grupo')).toBeInTheDocument();
     const patches = () => calls.filter((c) => c.method === 'PATCH');
 
     await userEvent.click(screen.getByRole('button', { name: 'Cambiar disponibilidad' }));
@@ -432,6 +434,8 @@ describe('a bull', () => {
     expect(patches()[0]?.body).toEqual({ bull_availability: 'SEMEN' });
     expect(await screen.findByText('Solo semen')).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Salud' })).not.toBeInTheDocument();
+    // A semen-only bull is in no group, so the row goes.
+    expect(screen.queryByText('Grupo de toros')).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Cambiar disponibilidad' }));
     picker = await screen.findByRole('dialog', { name: 'Disponibilidad del toro' });

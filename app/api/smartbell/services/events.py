@@ -12,10 +12,12 @@ from dataclasses import dataclass
 from sqlalchemy import String, cast, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from smartbell.domain.groups import REFUSAL_MESSAGES, membership_refusal
 from smartbell.domain.repro import PREGNANT_STATES, Projection, classify_loss, project
 from smartbell.domain.withdrawal import separates_milk, withdrawal_until
 from smartbell.enums import (
     NON_DELETABLE_EVENT_TYPES,
+    AnimalKind,
     AnimalStatus,
     BullAvailability,
     CalvingTiming,
@@ -243,7 +245,11 @@ async def _check_bull_on_ranch(session: AsyncSession, bull_id: uuid.UUID) -> Non
         )
 
 
-async def _check_group(session: AsyncSession, ranch_id: uuid.UUID, group_id: uuid.UUID) -> Group:
+async def _check_group(
+    session: AsyncSession, ranch_id: uuid.UUID, group_id: uuid.UUID | None, animal: Animal
+) -> Group:
+    if group_id is None:  # Leaving every group is the server's to record, never an input.
+        raise _invalid(("payload", "to_group_id"), "required", "Elige un potrero")
     group = await session.scalar(
         select(Group).where(Group.id == group_id, Group.ranch_id == ranch_id)
     )
@@ -253,6 +259,9 @@ async def _check_group(session: AsyncSession, ranch_id: uuid.UUID, group_id: uui
         raise _invalid(
             ("payload", "to_group_id"), "group_is_auto", "Ese potrero elige sus vacas solo"
         )
+    refusal = membership_refusal(group.type, animal.kind, animal.bull_availability)
+    if refusal is not None:
+        raise _invalid(("payload", "to_group_id"), refusal, REFUSAL_MESSAGES[refusal])
     return group
 
 
@@ -419,7 +428,9 @@ async def _apply_group_change(
 ) -> None:
     """Moves the animal. An ILLNESS with no move sends her to ENFERMAS, if the ranch has it."""
     change = _group_change(payload)
-    if change is None and auto and isinstance(payload, IllnessPayload):
+    # A sick bull stays with the bulls: ENFERMAS is a cow potrero.
+    sick_cow = animal.kind is not AnimalKind.TORO
+    if change is None and auto and sick_cow and isinstance(payload, IllnessPayload):
         sick = await session.scalar(
             select(Group.id).where(
                 Group.ranch_id == ranch_id,
@@ -435,7 +446,7 @@ async def _apply_group_change(
         return
     if change is None:
         return
-    await _check_group(session, ranch_id, change.to_group_id)
+    await _check_group(session, ranch_id, change.to_group_id, animal)
     if change.to_group_id == animal.group_id:
         raise _invalid(("payload", "to_group_id"), "same_group", "La vaca ya está en ese potrero")
     change.from_group_id = animal.group_id
@@ -466,7 +477,7 @@ async def _move_again(
         if before.to_group_id == after.to_group_id:
             return
         if animal.group_id != before.to_group_id:  # Moved on since: only the record changes.
-            await _check_group(session, ranch_id, after.to_group_id)
+            await _check_group(session, ranch_id, after.to_group_id, animal)
             if after.to_group_id == after.from_group_id:
                 raise _invalid(
                     ("payload", "to_group_id"), "same_group", "La vaca ya está en ese potrero"
@@ -483,13 +494,14 @@ async def move_to_group(
     ranch_id: uuid.UUID,
     user_id: uuid.UUID | None,
     animal: Animal,
-    to_group_id: uuid.UUID,
+    to_group_id: uuid.UUID | None,
     today: dt.date,
 ) -> bool:
     """The groups card's moves: one GROUP_CHANGE on the animal's bitácora, no history entry
     (the caller writes one for the whole batch). The caller holds the animal's row lock and has
     checked the group is the ranch's. A move changes no projection or alert, so none re-runs.
-    Returns False when she is already there."""
+    `to_group_id` None takes a bull out of his bull group. Returns False when she is already
+    there."""
     if animal.group_id == to_group_id:
         return False
     if animal.bull_availability is BullAvailability.SEMEN:  # Frozen records: no new event.
@@ -519,7 +531,9 @@ async def _revert_group_change(
     change = _group_change(payload)
     if change is not None and animal.group_id == change.to_group_id:
         back = change.from_group_id
-        if back is not None and await session.get(Group, back) is None:
+        group = await session.get(Group, back) if back is not None else None
+        # Gone since, or no longer his kind of group (a bull gone semen-only): no group.
+        if group is None or membership_refusal(group.type, animal.kind, animal.bull_availability):
             back = None
         animal.group_id = back
 
@@ -559,9 +573,11 @@ async def _record_history(
 ) -> None:
     refs = HistoryRefs(animal_ids=[animal.id])
     if isinstance(payload, GroupChangePayload):
-        to = await session.get_one(Group, payload.to_group_id)
-        refs = HistoryRefs(animal_ids=[animal.id], group_id=to.id, to_group=to.name)
-        key = HistoryKey.GROUP_ANIMALS_SENT
+        if payload.to_group_id is not None:  # Recorded moves always name one (_check_group).
+            to = await session.get_one(Group, payload.to_group_id)
+            refs = HistoryRefs(animal_ids=[animal.id], group_id=to.id, to_group=to.name)
+        bull = animal.kind is AnimalKind.TORO
+        key = HistoryKey.GROUP_BULLS_SENT if bull else HistoryKey.GROUP_ANIMALS_SENT
     else:
         key = _history_key(payload)
     await history.record(session, ctx.ranch_id, ctx.user.id, key, refs)

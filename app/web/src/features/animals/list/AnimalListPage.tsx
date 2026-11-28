@@ -36,6 +36,7 @@ import { Icon } from '../../../ui/icons/Icon';
 import { Tabs } from '../../../ui/Tabs';
 import { TextField } from '../../../ui/TextField';
 import { useSnackbar } from '../../../ui/useSnackbar';
+import { isBullGroup } from '../../groups/labels';
 import { MoveToGroupDialog } from '../../groups/MoveToGroupDialog';
 import { ageInMonths, daysInMilk } from './animalFacts';
 import { useAnimalPage, useGroups, useKindCount, useRemoveAnimals, type Animal } from './api';
@@ -147,7 +148,10 @@ export function AnimalListPage() {
     }
     return names;
   }, [groups.data, t]);
-  const customGroups = (groups.data ?? []).filter((g) => !g.preset);
+  // The Toros list filters by bull group; the others by cow potrero.
+  const customGroups = (groups.data ?? []).filter(
+    (g) => !g.preset && isBullGroup(g) === (state.kind === 'toros'),
+  );
 
   const categories = useMemo(() => {
     const result: Record<string, FilterCategory> = {};
@@ -180,8 +184,11 @@ export function AnimalListPage() {
   const showingRemoved = state.filter?.category === 'bajas';
   const canRemove = can('ANIMALS_DELETE') && !showingRemoved;
   // Bulk "Cambiar de potrero" (groups card); a baja has no potrero to change.
-  // Only cows change potrero by hand: heifers are grouped by age and bulls have none.
-  const canMove = can('GROUPS_VIEW_EDIT') && !showingRemoved && state.kind === 'vacas';
+  // Cows change potrero and bulls change bull group by hand; heifers are grouped by age.
+  const canMove =
+    can('GROUPS_VIEW_EDIT') &&
+    !showingRemoved &&
+    (state.kind === 'vacas' || state.kind === 'toros');
   const selectable = canRemove || canMove;
 
   const kindNoun = t(`animals.nouns.${state.kind}`);
@@ -533,6 +540,7 @@ export function AnimalListPage() {
       />
       <MoveToGroupDialog
         animalIds={toMove}
+        bulls={state.kind === 'toros'}
         onClose={() => setToMove(null)}
         onMoved={() => setSelected([])}
         returnFocus={removeFrom}

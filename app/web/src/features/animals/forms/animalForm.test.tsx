@@ -8,7 +8,7 @@ import { ActiveRanchProvider } from '../../../app/ActiveRanchProvider';
 import type { Permission } from '../../../app/useActiveRanch';
 import { SnackbarProvider } from '../../../ui/SnackbarProvider';
 import { AuthContext, type AuthApi } from '../../auth/useAuth';
-import { isHeifer, showsRepro, toCreateBody, defaultValues } from './formModel';
+import { isBull, isHeifer, showsRepro, toCreateBody, defaultValues } from './formModel';
 import { NewAnimalPage } from './NewAnimalPage';
 
 const TODAY = new Date(2026, 10, 21, 9);
@@ -160,6 +160,12 @@ beforeEach(() => {
             preset: null,
           },
           {
+            id: 'c0c0c0c0-0000-4000-8000-00000000000c',
+            name: 'Toros de monta',
+            type: 'TORO',
+            preset: null,
+          },
+          {
             id: 'b0b0b0b0-0000-4000-8000-00000000000c',
             name: 'Jerseys',
             type: 'CUSTOM',
@@ -236,6 +242,19 @@ describe('quick registration', () => {
     await user().click(potrero);
     expect(await screen.findByRole('option', { name: 'Lote 7' })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Jerseys' })).not.toBeInTheDocument();
+    // A cow never goes into a bull group.
+    expect(screen.queryByRole('option', { name: 'Toros de monta' })).not.toBeInTheDocument();
+  });
+
+  it('offers a male bull groups only, starting on none', async () => {
+    renderAt('/vacas/nueva?tipo=toros');
+    const potrero = await screen.findByRole('combobox', { name: 'Potrero' });
+    await waitFor(() => expect(potrero).toBeEnabled());
+    expect(potrero).toHaveTextContent('Sin grupo');
+    await user().click(potrero);
+    expect(await screen.findByRole('option', { name: 'Toros de monta' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'General' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Lote 7' })).not.toBeInTheDocument();
   });
 
   it('registers a male, and goes to the bulls list', async () => {
@@ -544,6 +563,16 @@ describe('review cases', () => {
 });
 
 describe('form model', () => {
+  it('takes a male for a bull, who goes in bull groups, from 24 months or his stage', () => {
+    expect(isBull('MACHO', 'AUTO', '2020-01-01', TODAY)).toBe(true);
+    expect(isBull('MACHO', 'AUTO', '', TODAY)).toBe(true);
+    expect(isBull('MACHO', 'TORO', '2026-01-01', TODAY)).toBe(true);
+    // A young male keeps the cow potreros, as before bull groups.
+    expect(isBull('MACHO', 'AUTO', '2026-01-01', TODAY)).toBe(false);
+    expect(isBull('MACHO', 'NOVILLO', '2020-01-01', TODAY)).toBe(false);
+    expect(isBull('HEMBRA', 'AUTO', '2020-01-01', TODAY)).toBe(false);
+  });
+
   it('shows the reproductive section by sex, stage and age', () => {
     expect(showsRepro('MACHO', 'AUTO', '2018-01-01', TODAY)).toBe(false);
     expect(showsRepro('HEMBRA', 'NOVILLA', '2018-01-01', TODAY)).toBe(false);

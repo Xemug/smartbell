@@ -69,10 +69,12 @@ class GroupOut(BaseModel):
 
 class GroupCreate(BaseModel):
     """The wizard. A preset takes its name from the preset; a custom group needs `name`. MANUAL
-    moves `animal_ids` in; AUTO moves in the cows `auto_filter` matches."""
+    moves `animal_ids` in; AUTO moves in the cows `auto_filter` matches. `type: TORO` makes a
+    bull group: named, MANUAL, no indicator, and only bulls on the ranch go in."""
 
     model_config = ConfigDict(extra="forbid")
 
+    type: Literal[GroupType.CUSTOM, GroupType.TORO] = GroupType.CUSTOM
     preset: GroupPreset | None = None
     name: GroupName | None = None
     description: GroupDescription | None = None
@@ -85,6 +87,13 @@ class GroupCreate(BaseModel):
     def _consistent(self) -> Self:
         if self.preset is None and not self.name:
             raise ValueError("a custom group needs a name")
+        if self.type is GroupType.TORO:
+            if self.preset is not None:
+                raise ValueError("a bull group is never a preset")
+            if self.selection is GroupSelection.AUTO:
+                raise ValueError("a bull group is picked by hand")
+            if self.kpi_indicator is not None:
+                raise ValueError("a bull group has no indicator")
         if self.selection is GroupSelection.AUTO:
             if self.auto_filter is None:
                 raise ValueError("an AUTO group needs auto_filter")
@@ -127,8 +136,11 @@ class Reevaluated(BaseModel):
 
 
 class GroupDeleted(BaseModel):
-    to_group_id: uuid.UUID
-    to_group: str
+    """Where the animals went. None for a bull group deleted with no other bull group picked:
+    its bulls are left out of any group."""
+
+    to_group_id: uuid.UUID | None
+    to_group: str | None
     moved: int
 
 

@@ -1040,7 +1040,15 @@
       "current": "{{name}} (actual)",
       "save": "Mover",
       "done": "La vaca {{id}} se movió al potrero {{name}}",
-      "error": "No pudimos moverla. Intenta de nuevo."
+      "error": "No pudimos moverla. Intenta de nuevo.",
+      "bull": {
+        "label": "Grupo de toros",
+        "change": "Cambiar grupo",
+        "title": "Cambiar de grupo",
+        "body": "El toro {{id}} se moverá al grupo {{name}}.",
+        "pick": "Elige el grupo al que se moverá el toro {{id}}.",
+        "done": "El toro {{id}} se movió al grupo {{name}}"
+      }
     },
     "availability": {
       "label": "Disponibilidad",
@@ -1058,12 +1066,14 @@
   "groups": {
     "title": {
       "vacas": "¿Dónde están tus <b>vacas</b>?",
-      "vaquillas": "¿Dónde están tus <b>vaquillas</b>?"
+      "vaquillas": "¿Dónde están tus <b>vaquillas</b>?",
+      "toros": "¿Dónde están tus <b>toros</b>?"
     },
     "tabsLabel": "Tipo de potreros",
     "tabs": {
       "vacas": "Potreros vacas",
-      "vaquillas": "Potreros vaquillas"
+      "vaquillas": "Potreros vaquillas",
+      "toros": "Toros"
     },
     "inSystem": "Potreros en sistema",
     "add": "Agregar potrero",
@@ -1198,6 +1208,27 @@
       "help": "Selecciona las vacas a agregar al potrero",
       "confirm_one": "Agregar {{count}} vaca",
       "confirm_other": "Agregar {{count}} vacas"
+    },
+    "bullsIn": "Toros en grupo",
+    "bulls": {
+      "add": "Agregar grupo de toros",
+      "onRanchOnly": "Solo los toros en rancho (En rancho o Ambos) van en un grupo. Un toro Solo semen no está en ninguno.",
+      "none": "Aún no hay grupos de toros.",
+      "noGroup": "Sin grupo",
+      "pickHelp": "Selecciona los toros en rancho que irán en este grupo.",
+      "noBulls": "No hay toros en rancho.",
+      "wizardTitle": "Nuevo grupo de toros",
+      "pickStep": "Selección de toros",
+      "namePlaceholder": "Ej. Toros de monta",
+      "semenOnly": "Un toro Solo semen no puede estar en un grupo.",
+      "semenOnlyHint": "Un toro Solo semen no está en ningún grupo.",
+      "bring": "Agregar toros",
+      "bringTitle": "Agregar toros al grupo",
+      "empty": "Este grupo aún no tiene toros.",
+      "deleteBody": "Elige a qué grupo se enviarán sus toros, o déjalos sin grupo.",
+      "deletedOut": "Grupo eliminado. Sus toros quedaron sin grupo.",
+      "finish": "Agregar grupo",
+      "inSystem": "Grupos de toros"
     }
   }
 }

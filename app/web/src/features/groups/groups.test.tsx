@@ -12,10 +12,12 @@ import { AuthContext, type AuthApi } from '../auth/useAuth';
 import { GroupDetailPage } from './GroupDetailPage';
 import { GroupsPage } from './GroupsPage';
 import { HeiferGroupPage } from './HeiferGroupPage';
+import { NewBullGroupPage } from './NewBullGroupPage';
 import { NewGroupPage } from './NewGroupPage';
 
 const GENERAL = 'a0a0a0a0-0000-4000-8000-000000000001';
 const LOTE = 'a0a0a0a0-0000-4000-8000-000000000002';
+const TOROS = 'a0a0a0a0-0000-4000-8000-000000000003';
 const ALL: Permission[] = [
   'ANIMALS_VIEW',
   'ANIMALS_CREATE',
@@ -51,6 +53,7 @@ const groups = [
     kpi_value: 2,
   }),
   group(LOTE, { animal_count: 3, kpi_indicator: 'DIM', kpi_value: 120 }),
+  group(TOROS, { name: 'Toros de monta', type: 'TORO', animal_count: 2 }),
 ];
 
 function cow(id: string, groupId: string | null = null) {
@@ -92,6 +95,17 @@ function cow(id: string, groupId: string | null = null) {
   };
 }
 const herd = [cow('v-001'), cow('v-002'), cow('v-003'), cow('v-004', LOTE)];
+function bull(id: string, groupId: string | null = null) {
+  return {
+    ...cow(id, groupId),
+    sex: 'MACHO',
+    kind: 'TORO',
+    bull_availability: 'EN_RANCHO',
+    repro_state: null,
+    lactation_state: null,
+  };
+}
+const bulls = [bull('t-001', TOROS), bull('t-002')];
 
 interface Call {
   method: string;
@@ -166,6 +180,7 @@ function renderAt(path: string, permissions: Permission[] = ALL) {
                 <Route path="/vacas" element={<AnimalListPage />} />
                 <Route path="/grupos" element={<GroupsPage />} />
                 <Route path="/grupos/nuevo" element={<NewGroupPage />} />
+                <Route path="/grupos/toros/nuevo" element={<NewBullGroupPage />} />
                 <Route path="/grupos/vaquillas/:key" element={<HeiferGroupPage />} />
                 <Route path="/grupos/:id" element={<GroupDetailPage />} />
               </Routes>
@@ -268,12 +283,13 @@ beforeEach(() => {
       }
       if (key === 'GET /api/animals') {
         const inGroup = url.searchParams.get('group');
+        const kind = url.searchParams.get('kind') === 'TORO' ? bulls : herd;
         const items =
           inGroup === 'GENERAL'
-            ? herd.filter((a) => a.group_id === null)
+            ? kind.filter((a) => a.group_id === null)
             : inGroup
-              ? herd.filter((a) => a.group_id === inGroup)
-              : herd;
+              ? kind.filter((a) => a.group_id === inGroup)
+              : kind;
         const size = Number(url.searchParams.get('page_size') ?? 10);
         return Response.json({ items: items.slice(0, size), total: items.length, page: 1 });
       }
@@ -376,6 +392,7 @@ describe('New potrero wizard', () => {
 
     await waitFor(() => expect(writes()).toHaveLength(1));
     expect(writes()[0]?.body).toEqual({
+      type: 'CUSTOM',
       name: 'Lote sur',
       description: null,
       selection: 'MANUAL',
@@ -513,5 +530,75 @@ describe('Animal lists bulk move', () => {
     await userEvent.click(await screen.findByRole('checkbox', { name: /V-001/ }));
     expect(screen.queryByRole('button', { name: 'Cambiar de potrero' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Dar de baja' })).toBeInTheDocument();
+  });
+});
+
+describe('Bull groups', () => {
+  it('lists the bull groups in their own tab, counting the bulls on the ranch', async () => {
+    renderAt('/grupos?tipo=toros');
+
+    const cards = await screen.findAllByRole('listitem');
+    expect(cards).toHaveLength(1);
+    const toros = within(card(cards, 0));
+    expect(toros.getByText('Toros de monta')).toBeInTheDocument();
+    expect(toros.getByRole('group', { name: 'Toros en grupo: 002' })).toBeInTheDocument();
+    expect(toros.getByRole('button', { name: 'Eliminar Toros de monta' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Agregar grupo de toros' }));
+    expect(screen.getByTestId('where')).toHaveTextContent('/grupos/toros/nuevo');
+  });
+
+  it('creates a bull group with the bulls on the ranch picked', async () => {
+    renderAt('/grupos/toros/nuevo');
+    await userEvent.type(await screen.findByLabelText(/Nombre del potrero/), 'Toros sur');
+    await userEvent.click(screen.getByRole('button', { name: /Continuar/ }));
+    await userEvent.click(await screen.findByRole('checkbox', { name: /T-002/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Agregar grupo/ }));
+
+    await waitFor(() => expect(writes()).toHaveLength(1));
+    expect(writes()[0]?.body).toEqual({
+      type: 'TORO',
+      name: 'Toros sur',
+      description: null,
+      selection: 'MANUAL',
+      animal_ids: ['t-002'],
+      kpi_indicator: null,
+    });
+    const picker = calls.find((c) => c.path === '/api/animals');
+    expect(picker?.query.get('kind')).toBe('TORO');
+    expect(picker?.query.get('on_ranch')).toBe('true');
+  });
+
+  it('deletes a bull group, leaving its bulls in no group by default', async () => {
+    renderAt('/grupos?tipo=toros');
+    await userEvent.click(await screen.findByRole('button', { name: 'Eliminar Toros de monta' }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('combobox')).toHaveTextContent('Sin grupo');
+    await userEvent.click(within(dialog).getByRole('combobox'));
+    // Cow potreros are never offered for bulls.
+    expect(screen.queryByRole('option', { name: 'General' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Lote norte' })).not.toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Eliminar potrero' }));
+
+    await waitFor(() => expect(writes()).toHaveLength(1));
+    expect(writes()[0]?.method).toBe('DELETE');
+    expect(writes()[0]?.query.has('to_group_id')).toBe(false);
+  });
+
+  it('moves bulls from the Toros list into a bull group only', async () => {
+    renderAt('/vacas?tipo=toros');
+    await userEvent.click(await screen.findByRole('checkbox', { name: /T-002/ }));
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cambiar de potrero' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Movimiento de vacas' });
+    await userEvent.click(within(dialog).getByRole('combobox'));
+    expect(screen.queryByRole('option', { name: 'Lote norte' })).not.toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('option', { name: 'Toros de monta' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Mover' }));
+
+    await waitFor(() => expect(writes()).toHaveLength(1));
+    expect(writes()[0]?.path).toBe(`/api/groups/${TOROS}/animals`);
+    expect(writes()[0]?.body).toEqual({ animal_ids: ['t-002'] });
   });
 });

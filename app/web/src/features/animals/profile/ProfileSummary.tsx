@@ -233,10 +233,13 @@ export function ProfileSummary({
         )}
       </div>
 
-      {/* Cows live in potreros; heifers go by age and bulls have none. */}
+      {/* Cows live in potreros and bulls on the ranch in bull groups; heifers go by age. A
+          semen-only bull is in no group. */}
       {(animal.kind === 'VACA' || availability) && (
         <div className="flex flex-col divide-y divide-secondary-background rounded-moon-i-sm bg-neutral-1 shadow-moon-sm">
-          {animal.kind === 'VACA' && <GroupFact animal={animal} editable={canMove} />}
+          {(animal.kind === 'VACA' || (animal.kind === 'TORO' && !strawsOnly)) && (
+            <GroupFact animal={animal} editable={canMove} />
+          )}
           {availability && (
             <AvailabilityFact
               animal={{ ...animal, bull_availability: availability }}

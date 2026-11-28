@@ -15,6 +15,7 @@ import { RadioGroup } from '../../../ui/RadioGroup';
 import { Select } from '../../../ui/Select';
 import { TextField } from '../../../ui/TextField';
 import { useSnackbar } from '../../../ui/useSnackbar';
+import { movableGroups } from '../../groups/labels';
 import { useGroups } from '../list/api';
 import { CreateError, useCreateAnimal, type AnimalCreated } from './api';
 import { BullSection } from './BullSection';
@@ -27,6 +28,7 @@ import {
   isHeifer,
   NO_REPRO_STAGE,
   parentLabel,
+  isBull,
   showsRepro,
   toCreateBody,
   type AnimalValues,
@@ -80,16 +82,31 @@ export function AnimalForm({
     resolver: zodResolver(animalSchema),
     defaultValues: defaultValues(initialSex),
   });
-  const [sex, level, stage, birthDate, reproStage] = useWatch({
+  const [sex, level, stage, birthDate, reproStage, bullAvailability] = useWatch({
     control,
-    name: ['sex', 'crossbreedLevel', 'developmentStage', 'birthDate', 'reproStage'],
+    name: [
+      'sex',
+      'crossbreedLevel',
+      'developmentStage',
+      'birthDate',
+      'reproStage',
+      'bullAvailability',
+    ],
   });
 
-  // Potrero starts on the ranch's General group once the groups are in.
+  // Kinds never mix: a cow goes into a cow potrero, a bull into a bull group, and a semen-only
+  // male into none. A young male keeps the cow potreros. Everyone but a bull starts on General
+  // once the groups are in; a bull on no group.
+  const male = isBull(sex, stage, birthDate);
+  const semenOnly = sex === 'MACHO' && bullAvailability === 'SEMEN';
+  const groupChoices = semenOnly ? [] : movableGroups(groups.data ?? [], male);
   const generalId = groups.data?.find((group) => group.preset === 'GENERAL')?.id;
+  const groupIds = groupChoices.map((group) => group.id).join();
   useEffect(() => {
-    if (generalId && !getValues('groupId')) setValue('groupId', generalId);
-  }, [generalId, getValues, setValue]);
+    const current = getValues('groupId');
+    if (current && !groupIds.split(',').includes(current)) setValue('groupId', '');
+    if (!male && generalId && !getValues('groupId')) setValue('groupId', generalId);
+  }, [male, generalId, groupIds, getValues, setValue]);
 
   const repro = detailed && showsRepro(sex, stage, birthDate);
 
@@ -217,16 +234,15 @@ export function AnimalForm({
           <Select
             {...field}
             label={t('animalForm.fields.group')}
-            // No group is the General potrero; a ranch may have no groups yet.
-            placeholder={t('animals.values.grupo.GENERAL')}
-            disabled={!groups.data?.length}
+            // No group is the General potrero for a cow, and no group at all for a bull.
+            placeholder={t(male ? 'groups.bulls.noGroup' : 'animals.values.grupo.GENERAL')}
+            hint={semenOnly ? t('groups.bulls.semenOnlyHint') : undefined}
+            disabled={groupChoices.length === 0}
             // An AUTO potrero picks its own cows, so it isn't a place to register one into.
-            options={(groups.data ?? [])
-              .filter((group) => group.selection !== 'AUTO')
-              .map((group) => ({
-                value: group.id,
-                label: group.preset ? t(`animals.values.grupo.${group.preset}`) : group.name,
-              }))}
+            options={groupChoices.map((group) => ({
+              value: group.id,
+              label: group.preset ? t(`animals.values.grupo.${group.preset}`) : group.name,
+            }))}
             className="col-span-2"
           />
         )}

@@ -7,6 +7,7 @@ import { useIsDesktop } from '../../app/useIsDesktop';
 import { Banner } from '../../ui/Banner';
 import { Button } from '../../ui/Button';
 import {
+  iconBull,
   iconCow,
   iconEye,
   iconGroups,
@@ -22,21 +23,25 @@ import { GroupCard } from './GroupCard';
 import {
   HEIFER_GROUPS_PATH,
   KPI_ICONS,
+  NEW_BULL_GROUP_PATH,
   NEW_GROUP_PATH,
   groupDescription,
   groupName,
   groupPath,
+  isBullGroup,
   kpiFigure,
 } from './labels';
 
-type Tab = 'vacas' | 'vaquillas';
+type Tab = 'vacas' | 'vaquillas' | 'toros';
+const TABS: Tab[] = ['vacas', 'vaquillas', 'toros'];
 
-/** The Grupos tab (C1, C2, 1.12): cow potreros with their indicator, and computed heifer ones. */
+/** The Grupos tab (C1, C2, 1.12): cow potreros with their indicator, computed heifer ones, and
+ * bull groups for the bulls on the ranch. No design has bull groups: they follow the cow screens. */
 export function GroupsPage() {
   const { t } = useTranslation();
   const desktop = useIsDesktop();
   const [params, setParams] = useSearchParams();
-  const tab: Tab = params.get('tipo') === 'vaquillas' ? 'vaquillas' : 'vacas';
+  const tab: Tab = TABS.find((value) => value === params.get('tipo')) ?? 'vacas';
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 p-4">
@@ -51,13 +56,13 @@ export function GroupsPage() {
         type="solid"
         size={desktop ? 'md' : 'sm'}
         value={tab}
-        onChange={(value) => setParams(value === 'vaquillas' ? { tipo: 'vaquillas' } : {})}
+        onChange={(value) => setParams(value === 'vacas' ? {} : { tipo: value })}
         items={[
           {
             value: 'vacas',
             icon: iconCow,
             label: t('groups.tabs.vacas'),
-            content: tab === 'vacas' ? <CowGroups /> : null,
+            content: tab === 'vacas' ? <StoredGroups bulls={false} /> : null,
           },
           {
             value: 'vaquillas',
@@ -65,13 +70,20 @@ export function GroupsPage() {
             label: t('groups.tabs.vaquillas'),
             content: tab === 'vaquillas' ? <HeiferGroups /> : null,
           },
+          {
+            value: 'toros',
+            icon: iconBull,
+            label: t('groups.tabs.toros'),
+            content: tab === 'toros' ? <StoredGroups bulls /> : null,
+          },
         ]}
       />
     </div>
   );
 }
 
-function CowGroups() {
+/** The stored groups of one kind: cow potreros, or bull groups. */
+function StoredGroups({ bulls }: { bulls: boolean }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { can } = useActiveRanch();
@@ -87,18 +99,32 @@ function CowGroups() {
       </Banner>
     );
   }
-  const rows = groups.data ?? [];
+  const rows = (groups.data ?? []).filter((group) => isBullGroup(group) === bulls);
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-between">
-        <SplitIndicator label={t('groups.inSystem')} count={rows.length} />
+        <SplitIndicator
+          label={t(bulls ? 'groups.bulls.inSystem' : 'groups.inSystem')}
+          count={rows.length}
+        />
         {can('GROUPS_CREATE') && (
-          <Button leadingIcon={iconGroups} onClick={() => navigate(NEW_GROUP_PATH)}>
-            {t('groups.add')}
+          <Button
+            leadingIcon={iconGroups}
+            onClick={() => navigate(bulls ? NEW_BULL_GROUP_PATH : NEW_GROUP_PATH)}
+          >
+            {t(bulls ? 'groups.bulls.add' : 'groups.add')}
           </Button>
         )}
       </div>
+      {bulls && (
+        <p className="text-center text-secondary-text type-body-sm lg:text-left">
+          {t('groups.bulls.onRanchOnly')}
+        </p>
+      )}
+      {bulls && groups.data && rows.length === 0 && (
+        <p className="text-center text-secondary-text">{t('groups.bulls.none')}</p>
+      )}
       <ul
         className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
         aria-busy={groups.isPending}
@@ -108,7 +134,7 @@ function CowGroups() {
             <GroupCard
               title={groupName(group, t)}
               description={groupDescription(group, t)}
-              countLabel={t('groups.animalsIn')}
+              countLabel={t(bulls ? 'groups.bullsIn' : 'groups.animalsIn')}
               count={group.animal_count ?? 0}
               kpi={
                 group.kpi_indicator

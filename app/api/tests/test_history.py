@@ -52,6 +52,22 @@ COPY: dict[HistoryKey, tuple[str, str | None]] = {
         "Se cambiaron 5 vacas a potrero Secas",
     ),
     HistoryKey.GROUP_CREATED: ("Se creó el potrero General", None),
+    HistoryKey.GROUP_BULLS_MOVED: (
+        "Se cambió 1 toro de grupo General a grupo Secas",
+        "Se cambiaron 5 toros de grupo General a grupo Secas",
+    ),
+    HistoryKey.GROUP_BULLS_SENT: (
+        "Se cambió 1 toro a grupo Secas",
+        "Se cambiaron 5 toros a grupo Secas",
+    ),
+    HistoryKey.GROUP_BULLS_DELETED: (
+        "Se eliminó el grupo General y los toros se enviaron a grupo Secas",
+        None,
+    ),
+    HistoryKey.GROUP_BULLS_DELETED_OUT: (
+        "Se eliminó el grupo General y sus toros quedaron sin grupo",
+        None,
+    ),
     HistoryKey.USERS_ADDED: ("Se dio de alta 1 usuario", "Se dieron de alta 5 usuarios"),
     HistoryKey.USERS_REMOVED: ("Se dio de baja 1 usuario", "Se dieron de baja 5 usuarios"),
     HistoryKey.USERS_EDITED: ("Se editó 1 usuario", "Se editaron 5 usuarios"),

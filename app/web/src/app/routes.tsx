@@ -18,7 +18,13 @@ import { FIRST_COW_PATH } from '../features/auth/guards';
 import { GroupDetailPage } from '../features/groups/GroupDetailPage';
 import { GroupsPage } from '../features/groups/GroupsPage';
 import { HeiferGroupPage } from '../features/groups/HeiferGroupPage';
-import { GROUPS_PATH, HEIFER_GROUPS_PATH, NEW_GROUP_PATH } from '../features/groups/labels';
+import {
+  GROUPS_PATH,
+  HEIFER_GROUPS_PATH,
+  NEW_BULL_GROUP_PATH,
+  NEW_GROUP_PATH,
+} from '../features/groups/labels';
+import { NewBullGroupPage } from '../features/groups/NewBullGroupPage';
 import { NewGroupPage } from '../features/groups/NewGroupPage';
 import { AccountPage } from '../features/config/account/AccountPage';
 import { RanchPage } from '../features/config/ranch/RanchPage';
@@ -40,6 +46,7 @@ export const shellRoute: RouteObject = {
     { path: RECORDS_ROUTE, element: <AnimalProfilePage records /> },
     { path: GROUPS_PATH, element: <GroupsPage /> },
     { path: NEW_GROUP_PATH, element: <NewGroupPage /> },
+    { path: NEW_BULL_GROUP_PATH, element: <NewBullGroupPage /> },
     { path: `${HEIFER_GROUPS_PATH}/:key`, element: <HeiferGroupPage /> },
     { path: `${GROUPS_PATH}/:id`, element: <GroupDetailPage /> },
     { path: '/reportes', element: <PlaceholderPage titleKey="nav.reportes" /> },

@@ -15,6 +15,7 @@ from sqlalchemy import ColumnElement, Select, String, case, cast, delete, func, 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from smartbell.domain.groups import REFUSAL_MESSAGES, membership_refusal
 from smartbell.domain.repro import (
     EPOCH,
     EventFact,
@@ -195,15 +196,37 @@ async def _check_bull_name(
 
 
 async def _check_group(
-    session: AsyncSession, ranch_id: uuid.UUID, group_id: uuid.UUID, loc: tuple[str, ...]
+    session: AsyncSession,
+    animal: Animal,
+    group_id: uuid.UUID,
+    loc: tuple[str, ...],
+    availability: BullAvailability | None = None,
 ) -> None:
-    selection = await session.scalar(
-        select(Group.selection).where(Group.id == group_id, Group.ranch_id == ranch_id)
+    """`availability`: the one the animal will have, when the same request changes it."""
+    group = await session.scalar(
+        select(Group).where(Group.id == group_id, Group.ranch_id == animal.ranch_id)
     )
-    if selection is None:
+    if group is None:
         raise _invalid((*loc, "group_id"), "group_not_found", "El potrero no existe")
-    if selection is GroupSelection.AUTO:  # Its rule picks its cows (groups card).
+    if group.selection is GroupSelection.AUTO:  # Its rule picks its cows (groups card).
         raise _invalid((*loc, "group_id"), "group_is_auto", "Ese potrero elige sus vacas solo")
+    refusal = membership_refusal(group.type, animal.kind, availability or animal.bull_availability)
+    if refusal is not None:
+        raise _invalid((*loc, "group_id"), refusal, REFUSAL_MESSAGES[refusal])
+
+
+async def _leave_misfit_group(
+    session: AsyncSession, ctx: RanchContext, animal: Animal, today: dt.date
+) -> None:
+    """The kind follows the stage and age: an animal whose new kind doesn't fit its group (a bull
+    re-staged a novillo, or a bull from before bull groups still in a cow potrero) leaves it."""
+    from smartbell.services.events import move_to_group  # events imports this module
+
+    if animal.group_id is None:
+        return
+    group = await session.get(Group, animal.group_id)
+    if group and membership_refusal(group.type, animal.kind, animal.bull_availability):
+        await move_to_group(session, ctx.ranch_id, ctx.user.id, animal, None, today)
 
 
 def _check_crossbreed(
@@ -340,8 +363,6 @@ async def _register(
     _check_past(body.birth_date, today, loc, "birth_date")
     _check_crossbreed(body.crossbreed_level, body.contributing_breed, loc)
     _check_stage(reg.sex, body.development_stage, loc)
-    if body.group_id is not None:
-        await _check_group(session, ctx.ranch_id, body.group_id, loc)
     await _check_control_id(session, ctx.ranch_id, body.control_id, loc)
     if body.siniiga is not None:
         await _check_siniiga(session, body.siniiga, loc)
@@ -388,6 +409,8 @@ async def _register(
     fact = EventFact(EventType.ALTA, today, alta, event.id, EPOCH)
     projection = project(animal_facts(animal), [fact], repro_settings(settings), today)
     write_projection(animal, projection)
+    if body.group_id is not None:  # After the projection: which groups fit depends on `kind`.
+        await _check_group(session, animal, body.group_id, loc)
     session.add(animal)
     session.add(event)
     await session.flush()
@@ -463,10 +486,13 @@ async def create_animal(
 # --- Edit --------------------------------------------------------------------------------------
 
 
-async def get_animal(session: AsyncSession, ranch_id: uuid.UUID, animal_id: uuid.UUID) -> Animal:
-    animal = await session.scalar(
-        select(Animal).where(Animal.id == animal_id, Animal.ranch_id == ranch_id)
-    )
+async def get_animal(
+    session: AsyncSession, ranch_id: uuid.UUID, animal_id: uuid.UUID, *, lock: bool = False
+) -> Animal:
+    query = select(Animal).where(Animal.id == animal_id, Animal.ranch_id == ranch_id)
+    if lock:  # An edit can move him between groups, as the groups card's moves do.
+        query = query.with_for_update().execution_options(populate_existing=True)
+    animal = await session.scalar(query)
     if animal is None:
         raise AnimalNotFound
     return animal
@@ -484,7 +510,7 @@ async def update_animal(
     body: AnimalUpdate,
     today: dt.date,
 ) -> tuple[Animal, Projection]:
-    animal = await get_animal(session, ctx.ranch_id, animal_id)
+    animal = await get_animal(session, ctx.ranch_id, animal_id, lock=True)
     if animal.status is AnimalStatus.REMOVED:
         raise AnimalRemoved
     changes = {name: getattr(body, name) for name in body.model_fields_set}
@@ -498,8 +524,12 @@ async def update_animal(
         await _check_siniiga(session, changes["siniiga"], (), exclude=animal.id)
     if animal.sex is Sex.MACHO and changes.get("name") not in (None, animal.name):
         await _check_bull_name(session, ctx.ranch_id, changes["name"], (), exclude=animal.id)
-    if changes.get("group_id") not in (None, animal.group_id):  # Staying put is fine.
-        await _check_group(session, ctx.ranch_id, changes["group_id"], ())
+    availability = changes.get("bull_availability", animal.bull_availability)
+    to_group = changes.pop("group_id", animal.group_id)
+    if to_group is not None and to_group != animal.group_id:  # Staying put is fine.
+        if availability is BullAvailability.SEMEN and animal.kind is AnimalKind.TORO:
+            raise _invalid(("group_id",), "bull_semen_only", REFUSAL_MESSAGES["bull_semen_only"])
+        await _check_group(session, animal, to_group, (), availability=availability)
     level = changes.get("crossbreed_level", animal.crossbreed_level)
     contributing = changes.get("contributing_breed", animal.contributing_breed)
     if level is CrossbreedLevel.FB and "contributing_breed" not in changes:
@@ -540,10 +570,22 @@ async def update_animal(
                 "El último parto debe ser al menos 660 días después del nacimiento",
             )
 
+    # A move is a GROUP_CHANGE on the bitácora. Leaving for Solo semen is logged before the new
+    # availability freezes his records; any other move after the edit lands, so a bull coming
+    # back on the ranch logs his. A cow sent to no group (General) keeps the old plain update.
+    from smartbell.services.events import move_to_group  # events imports this module
+
+    if availability is BullAvailability.SEMEN and animal.group_id is not None:
+        await move_to_group(session, ctx.ranch_id, ctx.user.id, animal, None, today)
+        to_group = None
     for name, value in changes.items():
         setattr(animal, name, value)
+    if to_group != animal.group_id and (to_group is not None or animal.kind is AnimalKind.TORO):
+        await move_to_group(session, ctx.ranch_id, ctx.user.id, animal, to_group, today)
+    animal.group_id = to_group
     settings = await session.get_one(RanchSettings, ctx.ranch_id)
     projection = await reproject_animal(session, animal, settings, today)
+    await _leave_misfit_group(session, ctx, animal, today)
     await alert_sync.sync_animal(session, animal, projection, today)
     await history.record(
         session,
@@ -693,6 +735,7 @@ class AnimalFilters:
     born_from: dt.date | None = None
     born_to: dt.date | None = None
     availability: BullAvailability | None = None
+    on_ranch: bool = False  # Bulls on the ranch only: what a bull group can hold.
     removed_reason: RemovalReason | None = None
     sort: SortKey = "control_id"
     page: int = 1
@@ -746,6 +789,9 @@ def _filters(ranch_id: uuid.UUID, filters: AnimalFilters) -> list[ColumnElement[
         conditions.append(Animal.birth_date <= filters.born_to)
     if filters.availability is not None:
         conditions.append(Animal.bull_availability == filters.availability)
+    if filters.on_ranch:
+        on_ranch = (BullAvailability.EN_RANCHO, BullAvailability.AMBOS)
+        conditions.append(Animal.bull_availability.in_(on_ranch))
     return conditions
 
 

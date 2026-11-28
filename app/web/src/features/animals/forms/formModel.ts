@@ -1,4 +1,4 @@
-import { differenceInCalendarDays, parseISO } from 'date-fns';
+import { differenceInCalendarDays, differenceInMonths, parseISO } from 'date-fns';
 import { z } from 'zod';
 
 import type { components } from '../../../api/schema';
@@ -132,6 +132,17 @@ export function showsRepro(
     return ageInDays(birthDate, today) >= MIN_CALVING_AGE_DAYS;
   }
   return true;
+}
+
+/** A male is a bull (kind TORO) from 24 months, or when his stage says so (§7.1). Only a bull
+ * goes into a bull group; a younger male keeps the cow potreros, as before bull groups. With no
+ * birth date yet, an AUTO male counts as a bull, the usual case on this form. */
+export const MALE_TORO_FROM_MONTHS = 24;
+export function isBull(sex: Sex, stage: string, birthDate: string, today: Date = new Date()) {
+  if (sex !== 'MACHO') return false;
+  if (stage !== 'AUTO') return stage === 'TORO';
+  if (!birthDate) return true;
+  return differenceInMonths(today, parseISO(birthDate)) >= MALE_TORO_FROM_MONTHS;
 }
 
 /**

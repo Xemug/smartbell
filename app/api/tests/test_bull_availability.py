@@ -412,28 +412,3 @@ async def test_a_semen_only_bull_has_his_records_frozen(
         assert back.status_code == 200, back.text
         thawed = await weigh(tenant_api, owner, toro["id"])
         assert thawed.status_code == 201, thawed.text
-
-
-async def test_deleting_his_potrero_moves_a_semen_only_bull_without_a_new_event(
-    tenant_api: AsyncClient, owner: Account
-) -> None:
-    lote = await tenant_api.post(
-        "/api/groups", headers=owner.headers(), json={"name": "Lote toros", "selection": "MANUAL"}
-    )
-    assert lote.status_code == 201, lote.text
-    toro = await bull(
-        tenant_api, owner, "T1", group_id=lote.json()["id"], bull_availability="SEMEN"
-    )
-
-    async def logged() -> list[str]:
-        response = await tenant_api.get(
-            f"/api/animals/{toro['id']}/events", headers=owner.headers()
-        )
-        return [e["type"] for e in response.json()]
-
-    before = await logged()
-    deleted = await tenant_api.delete(f"/api/groups/{lote.json()['id']}", headers=owner.headers())
-    assert deleted.status_code == 200, deleted.text
-    assert await logged() == before
-    moved = await tenant_api.get(f"/api/animals/{toro['id']}", headers=owner.headers())
-    assert moved.json()["group_id"] != lote.json()["id"]
