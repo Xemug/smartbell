@@ -254,5 +254,8 @@ SortKey = Literal[
     "-last_calving_date",
     "expected_calving_date",
     "-expected_calving_date",
+    # Reproductive state, in cycle order (ReproState's declaration order), not by name.
+    "repro_state",
+    "-repro_state",
 ]
 GroupFilter = uuid.UUID | GroupPreset

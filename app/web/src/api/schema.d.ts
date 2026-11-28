@@ -3267,7 +3267,9 @@ export interface operations {
           | 'last_calving_date'
           | '-last_calving_date'
           | 'expected_calving_date'
-          | '-expected_calving_date';
+          | '-expected_calving_date'
+          | 'repro_state'
+          | '-repro_state';
         page?: number;
         page_size?: number;
       };

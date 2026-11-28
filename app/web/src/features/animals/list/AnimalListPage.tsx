@@ -235,6 +235,8 @@ export function AnimalListPage() {
           {
             key: 'estado',
             header: t('animals.columns.estado'),
+            // Sorts by the reproductive state alone; a cow with none (lactation shown) goes last.
+            sortValue: (a) => a.repro_state,
             cell: (a) =>
               // The reproductive state, as the Reproducción filter reads it; DEL already says
               // whether she milks. Lactation only fills in when no repro state is recorded.
@@ -260,6 +262,7 @@ export function AnimalListPage() {
             {
               key: 'estado',
               header: t('animals.columns.estado'),
+              sortValue: (a) => a.repro_state,
               cell: (a) => (a.repro_state ? t(`animals.values.repro.${a.repro_state}`) : dash),
             },
             ageColumn,

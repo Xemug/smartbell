@@ -7,10 +7,10 @@ from typing import Any
 import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient, Response
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from smartbell.enums import EventType, GroupPreset, GroupType, HistoryKey, Role
+from smartbell.enums import EventType, GroupPreset, GroupType, HistoryKey, ReproState, Role
 from smartbell.models import Animal, Event, Group, HistoryEntry
 from smartbell.routes.animals import get_today
 from tests.conftest import Account, add_member, sign_up
@@ -684,6 +684,38 @@ async def test_list_search_kind_sort_and_pages_of_ten(
     assert ids(newest) == ["V-11"]
     assert ids(search) == ["Becerra"]
     assert literal["total"] == 0
+
+
+async def test_sort_by_repro_state_follows_the_cycle(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
+) -> None:
+    # Created out of cycle order so neither control_id nor insertion order gives the answer.
+    states = {
+        "A": ReproState.SECA,
+        "B": ReproState.ABIERTA,
+        "C": None,
+        "D": ReproState.GESTANTE,
+        "E": ReproState.RECIEN_PARIDA,
+        "F": ReproState.SERVIDA,
+        "G": ReproState.VAQUILLA,
+        "H": ReproState.ABIERTA,  # Ties with B: ID order, whichever way the states run.
+    }
+    for control_id in states:
+        await created(tenant_api, owner, **cow(control_id))
+    for control_id, state in states.items():
+        await tenant_db.execute(
+            update(Animal)
+            .where(Animal.ranch_id == owner.ranch_id, Animal.control_id == control_id)
+            .values(repro_state=state)
+        )
+    await tenant_db.commit()
+
+    ascending = await listing(tenant_api, owner, sort="repro_state")
+    descending = await listing(tenant_api, owner, sort="-repro_state")
+
+    # En desarrollo, Recién parida, Vacía, Servida, Preñada, Seca; no state last both ways.
+    assert ids(ascending) == ["G", "E", "B", "H", "F", "D", "A", "C"]
+    assert ids(descending) == ["A", "D", "F", "B", "H", "E", "G", "C"]
 
 
 async def test_list_by_sex(tenant_api: AsyncClient, owner: Account) -> None:
