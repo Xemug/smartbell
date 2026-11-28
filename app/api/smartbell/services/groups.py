@@ -62,6 +62,7 @@ PRESET_NAMES = {
 }
 GENERAL_DESCRIPTION = "Este es el grupo general... ¡Aquí están todas las vacas en tu rancho!"
 NEWBORN_MONTHS = 6
+NAME_INDEX = "uq_groups_ranch_id_lower_name"
 
 
 class GroupError(Exception):
@@ -355,7 +356,22 @@ async def _check_name(
     if exclude is not None:
         query = query.where(Group.id != exclude)
     if await session.scalar(query) is not None:
-        raise FieldError(409, ("name",), "group_name_taken", "Ya hay un potrero con ese nombre")
+        raise _name_taken()
+
+
+def _name_taken() -> FieldError:
+    return FieldError(409, ("name",), "group_name_taken", "Ya hay un potrero con ese nombre")
+
+
+async def _flush_name(session: AsyncSession) -> None:
+    """Flushes a new or renamed group. Another request can take the name after `_check_name`
+    looked, so the unique index has the last word, with the same 409."""
+    try:
+        await session.flush()
+    except IntegrityError as error:
+        if NAME_INDEX in str(error.orig):
+            raise _name_taken() from error
+        raise
 
 
 async def create_group(
@@ -386,7 +402,7 @@ async def create_group(
         kpi_indicator=body.kpi_indicator,
     )
     session.add(group)
-    await session.flush()
+    await _flush_name(session)
     await history.record(
         session,
         ranch_id,
@@ -440,7 +456,7 @@ async def update_group(
         new_rule = body.auto_filter.model_dump(mode="json")
         rule_changed = new_rule != group.auto_filter
         group.auto_filter = new_rule
-    await session.flush()
+    await _flush_name(session)
     await history.record(
         session,
         ranch_id,

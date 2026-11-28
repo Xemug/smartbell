@@ -42,7 +42,7 @@ async def test_upgrade_head_on_empty_database(db_conn: AsyncConnection) -> None:
     await db_conn.run_sync(_upgrade_head)
 
     version = (await db_conn.execute(text("SELECT version_num FROM alembic_version"))).scalar_one()
-    assert version == "0008"
+    assert version == "0009"
 
 
 async def test_upgrade_creates_every_model_table(db_conn: AsyncConnection) -> None:
@@ -148,3 +148,82 @@ async def test_0008_puts_existing_males_on_the_ranch(
             await db_conn.execute(
                 text("UPDATE animals SET bull_availability = NULL WHERE control_id = 'T1'")
             )
+
+
+async def test_0009_renames_duplicate_group_names_then_refuses_new_ones(
+    db_conn: AsyncConnection,
+) -> None:
+    await db_conn.run_sync(lambda c: command.upgrade(_config(c), "0008"))
+    owner_id = uuid.uuid4()
+    await db_conn.execute(
+        text("INSERT INTO users (id, first_name, email) VALUES (:id, 'Ana', 'ana@example.com')"),
+        {"id": owner_id},
+    )
+    ranch_id, neighbour_id = uuid.uuid4(), uuid.uuid4()
+    for ranch, name in ((ranch_id, "El Roble"), (neighbour_id, "La Ceiba")):
+        await db_conn.execute(
+            text("INSERT INTO ranches (id, name, owner_user_id) VALUES (:id, :name, :owner)"),
+            {"id": ranch, "name": name, "owner": owner_id},
+        )
+    long_name = "x" * 60
+    seeded = [  # (ranch, name, preset, created_at), oldest first within a name
+        (ranch_id, "enfermas", None, "2026-01-01"),
+        (ranch_id, "Enfermas", "ENFERMAS", "2026-01-02"),  # a preset keeps its name
+        (ranch_id, "Lote", None, "2026-01-01"),
+        (ranch_id, "LOTE", None, "2026-01-02"),
+        (ranch_id, "lote", None, "2026-01-03"),
+        (ranch_id, "Lote (2)", None, "2026-01-04"),  # already taken, so the copies skip it
+        (ranch_id, long_name, None, "2026-01-01"),
+        (ranch_id, long_name, None, "2026-01-02"),
+        (neighbour_id, "Lote", None, "2026-01-01"),  # another ranch may share it
+    ]
+    ids = []
+    for ranch, name, preset, created_at in seeded:
+        group_id = uuid.uuid4()
+        ids.append(group_id)
+        await db_conn.execute(
+            text(
+                "INSERT INTO groups (id, ranch_id, name, type, preset, selection, created_at)"
+                " VALUES (:id, :ranch, :name, :type, :preset, 'MANUAL', :created_at)"
+            ),
+            {
+                "id": group_id,
+                "ranch": ranch,
+                "name": name,
+                "type": "PRESET" if preset else "CUSTOM",
+                "preset": preset,
+                "created_at": f"{created_at}T00:00:00Z",
+            },
+        )
+
+    await db_conn.run_sync(_upgrade_head)
+
+    names = {row.id: row.name for row in await db_conn.execute(text("SELECT id, name FROM groups"))}
+    assert [names[group_id] for group_id in ids] == [
+        "enfermas (2)",
+        "Enfermas",
+        "Lote",
+        "LOTE (3)",
+        "lote (4)",
+        "Lote (2)",
+        long_name,
+        "x" * 56 + " (2)",
+        "Lote",
+    ]
+    with pytest.raises(IntegrityError):
+        async with db_conn.begin_nested():
+            await db_conn.execute(
+                text(
+                    "INSERT INTO groups (id, ranch_id, name, type, selection)"
+                    " VALUES (:id, :ranch, 'lOtE', 'CUSTOM', 'MANUAL')"
+                ),
+                {"id": uuid.uuid4(), "ranch": ranch_id},
+            )
+
+
+async def test_0009_downgrade_drops_the_name_index(db_conn: AsyncConnection) -> None:
+    await db_conn.run_sync(_upgrade_head)
+    await db_conn.run_sync(lambda c: command.downgrade(_config(c), "0008"))
+
+    indexes = await db_conn.run_sync(lambda c: inspect(c).get_indexes("groups"))
+    assert "uq_groups_ranch_id_lower_name" not in {index["name"] for index in indexes}
