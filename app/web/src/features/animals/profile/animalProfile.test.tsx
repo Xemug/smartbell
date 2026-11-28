@@ -8,6 +8,7 @@ import { ActiveRanchProvider } from '../../../app/ActiveRanchProvider';
 import type { Permission } from '../../../app/useActiveRanch';
 import { SnackbarProvider } from '../../../ui/SnackbarProvider';
 import { AuthContext, type AuthApi } from '../../auth/useAuth';
+import { EventLauncherProvider } from '../../events/EventLauncher';
 import type { AnimalDetail, AnimalEvent, BullService } from './api';
 import { AnimalProfilePage } from './AnimalProfilePage';
 import { detail, event } from './testData';
@@ -27,6 +28,7 @@ let events: AnimalEvent[];
 let services: BullService[];
 let deleteStatus: number;
 let removed: boolean;
+let postFails: boolean;
 
 function authFor(permissions: Permission[]): AuthApi {
   const noop = vi.fn(async () => {});
@@ -115,12 +117,14 @@ function renderAt(path: string, permissions: Permission[] = ALL) {
         <AuthContext.Provider value={authFor(permissions)}>
           <MemoryRouter initialEntries={[path]}>
             <ActiveRanchProvider>
-              <Routes>
-                <Route path="/vacas" element={<p>lista</p>} />
-                <Route path="/vacas/:id" element={<AnimalProfilePage />} />
-                <Route path="/vacas/:id/registros" element={<AnimalProfilePage records />} />
-              </Routes>
-              <Where />
+              <EventLauncherProvider>
+                <Routes>
+                  <Route path="/vacas" element={<p>lista</p>} />
+                  <Route path="/vacas/:id" element={<AnimalProfilePage />} />
+                  <Route path="/vacas/:id/registros" element={<AnimalProfilePage records />} />
+                </Routes>
+                <Where />
+              </EventLauncherProvider>
             </ActiveRanchProvider>
           </MemoryRouter>
         </AuthContext.Provider>
@@ -136,6 +140,7 @@ beforeEach(() => {
   desktop = false;
   deleteStatus = 200;
   removed = false;
+  postFails = false;
   services = [];
   cow = detail({
     id: ID,
@@ -230,8 +235,16 @@ beforeEach(() => {
       }
       if (key === 'GET /api/groups') return Response.json(GROUPS);
       if (key === `POST /api/animals/${ID}/events`) {
-        const body = JSON.parse(text) as { payload: { to_group_id: string } };
-        cow = { ...cow, group_id: body.payload.to_group_id };
+        if (postFails) return Response.json({ detail: 'boom' }, { status: 500 });
+        const body = JSON.parse(text) as { payload: { type: string; to_group_id?: string } };
+        if (body.payload.type === 'HEAT') {
+          events = [
+            event('HEAT', body.payload, { id: 'e-new', occurred_on: '2026-11-26' }),
+            ...events,
+          ];
+          return Response.json({ animal: cow, open_alerts: [] }, { status: 201 });
+        }
+        cow = { ...cow, group_id: body.payload.to_group_id ?? null };
         return Response.json({ animal: cow, open_alerts: [] }, { status: 201 });
       }
       if (key === `PATCH /api/animals/${ID}`) {
@@ -640,5 +653,113 @@ describe('Baja', () => {
       await screen.findByText('Dada de baja por venta a rastro el 20 de noviembre de 2026.'),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Eliminar' })).not.toBeInTheDocument();
+  });
+});
+
+describe('recording an event from the profile', () => {
+  const reproCard = () => screen.findByRole('region', { name: 'Reproducción' });
+  const saludCard = () => screen.findByRole('region', { name: 'Salud' });
+  const registrar = /Registrar/;
+
+  it('disables the reproduction entries outside her windows, saying when they open', async () => {
+    cow = detail({
+      id: ID,
+      projection: { next_heat: { start: '2026-12-03', end: '2026-12-09' } },
+    });
+    renderAt(`/vacas/${ID}`);
+    await userEvent.click(within(await reproCard()).getByRole('button', { name: registrar }));
+    const sheet = await screen.findByRole('dialog', {
+      name: 'Registrar evento de reproducción: Vaca 00001',
+    });
+    const celo = within(sheet).getByRole('button', { name: 'Celo' });
+    expect(celo).toBeDisabled();
+    expect(celo).toHaveAccessibleDescription('Disponible a partir del 3 dic');
+    expect(within(sheet).getByRole('button', { name: 'Preñez' })).toHaveAccessibleDescription(
+      'Fuera de los días estimados',
+    );
+    expect(within(sheet).getByRole('button', { name: 'Parto' })).toBeDisabled();
+    expect(within(sheet).getByRole('button', { name: 'Aborto' })).toHaveAccessibleDescription(
+      'Disponible pronto',
+    );
+  });
+
+  it('says when a window already closed', async () => {
+    cow = detail({
+      id: ID,
+      projection: { next_heat: { start: '2026-11-10', end: '2026-11-16' } },
+    });
+    renderAt(`/vacas/${ID}`);
+    await userEvent.click(within(await reproCard()).getByRole('button', { name: registrar }));
+    expect(await screen.findByRole('button', { name: 'Celo' })).toHaveAccessibleDescription(
+      'Los días estimados terminaron el 16 nov',
+    );
+  });
+
+  it('records a heat inside her window, confirms it and refreshes the profile', async () => {
+    renderAt(`/vacas/${ID}`);
+    await userEvent.click(within(await reproCard()).getByRole('button', { name: registrar }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Celo' }));
+    const wizard = await screen.findByRole('dialog', { name: 'Registro de celo' });
+    expect(within(wizard).getByRole('button', { name: 'Sí, confirmar' })).toBeDisabled();
+    const reads = calls.filter((c) => c.method === 'GET' && c.path === `/api/animals/${ID}`).length;
+    await userEvent.click(within(wizard).getByRole('button', { name: 'No entró' }));
+
+    expect(await screen.findByText('Celo registrado')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Registro de celo' })).not.toBeInTheDocument(),
+    );
+    expect(calls).toContainEqual({
+      method: 'POST',
+      path: `/api/animals/${ID}/events`,
+      body: { occurred_on: '2026-11-26', payload: { type: 'HEAT', outcome: 'NOT_OBSERVED' } },
+    });
+    expect(
+      calls.filter((c) => c.method === 'GET' && c.path === `/api/animals/${ID}`).length,
+    ).toBeGreaterThan(reads);
+  });
+
+  it('keeps the form open and says so when the save fails', async () => {
+    postFails = true;
+    renderAt(`/vacas/${ID}`);
+    await userEvent.click(within(await reproCard()).getByRole('button', { name: registrar }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Celo' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'No entró' }));
+    expect(await screen.findByText('Falla de conexión, intenta más tarde')).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Registro de celo' })).toBeInTheDocument();
+  });
+
+  it('lists the health entries, still to come, on the Salud card', async () => {
+    renderAt(`/vacas/${ID}`);
+    await userEvent.click(within(await saludCard()).getByRole('button', { name: registrar }));
+    const sheet = await screen.findByRole('dialog', {
+      name: 'Registrar evento de salud: Vaca 00001',
+    });
+    for (const name of ['Enfermedad', 'Accidente', 'Tratamiento médico', 'Cambio de dieta'])
+      expect(within(sheet).getByRole('button', { name })).toHaveAccessibleDescription(
+        'Disponible pronto',
+      );
+  });
+
+  it('gives a bull only the health card, and none to a semen-only one', async () => {
+    cow = detail({ id: ID, sex: 'MACHO', kind: 'TORO', bull_availability: 'EN_RANCHO' });
+    const { unmount } = renderAt(`/vacas/${ID}`);
+    expect(within(await saludCard()).getByRole('button', { name: registrar })).toBeVisible();
+    expect(within(await reproCard()).queryByRole('button', { name: registrar })).toBeNull();
+    unmount();
+
+    cow = detail({ id: ID, sex: 'MACHO', kind: 'TORO', bull_availability: 'SEMEN' });
+    renderAt(`/vacas/${ID}`);
+    expect(within(await reproCard()).queryByRole('button', { name: registrar })).toBeNull();
+  });
+
+  it('hides Registrar on a removed animal and without EVENTS_RECORD', async () => {
+    cow = detail({ id: ID, status: 'REMOVED', removed_reason: 'VENTA_RASTRO' });
+    const { unmount } = renderAt(`/vacas/${ID}`);
+    expect(within(await saludCard()).queryByRole('button', { name: registrar })).toBeNull();
+    unmount();
+
+    cow = detail({ id: ID });
+    renderAt(`/vacas/${ID}`, ['ANIMALS_VIEW']);
+    expect(within(await saludCard()).queryByRole('button', { name: registrar })).toBeNull();
   });
 });

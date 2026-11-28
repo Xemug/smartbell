@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Outlet, ScrollRestoration } from 'react-router-dom';
 
+import { EventLauncherProvider } from '../features/events/EventLauncher';
 import { cx } from '../ui/cx';
 import { ActiveRanchProvider } from './ActiveRanchProvider';
 import { FakeDoorModal } from './FakeDoorModal';
@@ -23,28 +24,30 @@ export function AppShell() {
   };
   return (
     <ActiveRanchProvider>
-      <ScrollRestoration />
-      <div className="flex min-h-dvh flex-col bg-primary-background">
-        {isDesktop ? <WebHeader onFakeDoor={openFakeDoor} /> : <MobileHeader />}
-        <main
-          className={cx(
-            'flex-1',
-            isDesktop
-              ? 'mx-auto w-full max-w-6xl'
-              : // Clears the fixed tab bar.
-                'pb-[calc(5rem+env(safe-area-inset-bottom))]',
-          )}
-        >
-          {isDesktop && (
-            <div className="flex justify-center px-6 pt-4">
-              <RanchSwitcher />
-            </div>
-          )}
-          <Outlet />
-        </main>
-        {!isDesktop && <MobileTabBar onFakeDoor={openFakeDoor} />}
-      </div>
-      <FakeDoorModal feature={fakeDoor} onClose={() => setFakeDoor(null)} />
+      <EventLauncherProvider>
+        <ScrollRestoration />
+        <div className="flex min-h-dvh flex-col bg-primary-background">
+          {isDesktop ? <WebHeader onFakeDoor={openFakeDoor} /> : <MobileHeader />}
+          <main
+            className={cx(
+              'flex-1',
+              isDesktop
+                ? 'mx-auto w-full max-w-6xl'
+                : // Clears the fixed tab bar.
+                  'pb-[calc(5rem+env(safe-area-inset-bottom))]',
+            )}
+          >
+            {isDesktop && (
+              <div className="flex justify-center px-6 pt-4">
+                <RanchSwitcher />
+              </div>
+            )}
+            <Outlet />
+          </main>
+          {!isDesktop && <MobileTabBar onFakeDoor={openFakeDoor} />}
+        </div>
+        <FakeDoorModal feature={fakeDoor} onClose={() => setFakeDoor(null)} />
+      </EventLauncherProvider>
     </ActiveRanchProvider>
   );
 }

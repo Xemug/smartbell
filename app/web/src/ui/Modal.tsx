@@ -23,6 +23,8 @@ interface ModalProps {
   initialFocus?: RefObject<HTMLElement>;
   /** Receives focus on close, when set; by default it is whatever opened the dialog. */
   returnFocus?: RefObject<HTMLElement>;
+  /** Covers the whole screen: the phone's event forms (event-launcher), which have no 360 frames. */
+  fullScreen?: boolean;
   className?: string;
 }
 
@@ -38,6 +40,7 @@ export function Modal({
   alert = false,
   initialFocus,
   returnFocus,
+  fullScreen = false,
   className,
 }: ModalProps) {
   const { t } = useTranslation();
@@ -61,8 +64,10 @@ export function Modal({
             if (alert || fromSnackbar(event)) event.preventDefault();
           }}
           className={cx(
-            'fixed left-1/2 top-1/2 z-40 flex max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-[534px] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-y-auto',
-            'rounded-moon-i-md bg-neutral-1 p-6 text-primary-text shadow-moon-lg outline-none',
+            'z-40 flex flex-col gap-4 overflow-y-auto bg-neutral-1 text-primary-text outline-none',
+            fullScreen
+              ? 'fixed inset-0 h-dvh w-full px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]'
+              : 'fixed left-1/2 top-1/2 max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-[534px] -translate-x-1/2 -translate-y-1/2 rounded-moon-i-md p-6 shadow-moon-lg',
             className,
           )}
         >

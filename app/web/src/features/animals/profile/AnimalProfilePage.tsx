@@ -10,6 +10,7 @@ import { cx, focusRing } from '../../../ui/cx';
 import { iconArrowLeft, iconBull, iconCow, iconHeifer, type Glyph } from '../../../ui/icons/glyphs';
 import { Icon } from '../../../ui/icons/Icon';
 import { Spinner } from '../../../ui/Spinner';
+import { useEventLauncher } from '../../events/launcherContext';
 import { ANIMALS_PATH } from '../list/AnimalListPage';
 import { ApiError } from '../list/api';
 import {
@@ -25,6 +26,7 @@ import {
   longDate,
   profileBanners,
   recordTabs,
+  semenOnly,
   type BitacoraFilter,
   type RecordTab,
   type EventCategory,
@@ -91,6 +93,7 @@ export function AnimalProfilePage({ records = false }: { records?: boolean }) {
   const today = useMemo(() => new Date(), []);
   const [removing, setRemoving] = useState(false);
   const forgetAnimal = useForgetAnimal();
+  const launcher = useEventLauncher();
 
   const animalQuery = useAnimal(id);
   const eventsQuery = useAnimalEvents(id);
@@ -210,6 +213,12 @@ export function AnimalProfilePage({ records = false }: { records?: boolean }) {
             registrosHref={desktop ? null : `${profileHref}/registros`}
             canMove={active && can('EVENTS_RECORD')}
             canSetAvailability={active && can('ANIMALS_EDIT')}
+            // A bull kept only as semen has no events to record (#41).
+            onRecord={
+              active && can('EVENTS_RECORD') && !semenOnly(animal)
+                ? (group) => launcher.openLauncher(animal, group)
+                : null
+            }
           />
         )}
         {showRecords && (

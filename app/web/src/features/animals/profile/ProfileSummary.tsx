@@ -11,11 +11,13 @@ import {
   iconCow,
   iconDiet,
   iconHealth,
+  iconPlus,
   iconTrash,
   iconUsers,
   type Glyph,
 } from '../../../ui/icons/glyphs';
 import { Icon } from '../../../ui/icons/Icon';
+import type { LauncherGroup } from '../../events/eventTypes';
 import { ANIMALS_PATH } from '../list/AnimalListPage';
 import type { AnimalDetail, AnimalEvent, BullService } from './api';
 import { AvailabilityFact, GroupFact } from './ProfileEdits';
@@ -47,6 +49,8 @@ interface ProfileSummaryProps {
   canMove: boolean;
   /** Shows Cambiar on his availability (ANIMALS_EDIT: it goes through the animal's PATCH). */
   canSetAvailability: boolean;
+  /** Registrar on the Reproducción and Salud cards opens the event launcher; null hides it. */
+  onRecord: ((group: LauncherGroup) => void) | null;
 }
 
 const shortDate = (iso: string) => format(parseISO(iso), 'dd/MM/yyyy');
@@ -64,12 +68,15 @@ function InfoCard({
   title,
   icon,
   link,
+  action,
   children,
 }: {
   title: string;
   icon: Glyph;
   /** "Consultar historial"; the genealogy has no tree to open yet, so it has none. */
   link?: { href: string; label: string };
+  /** Registrar: opens the event launcher for this card. */
+  action?: { label: string; onClick: () => void };
   children: ReactNode;
 }) {
   return (
@@ -79,6 +86,18 @@ function InfoCard({
     >
       <div className="flex flex-1 flex-col items-center justify-center gap-1 p-3 text-center">
         {children}
+        {action && (
+          <Button
+            size="sm"
+            variant="outline"
+            leadingIcon={iconPlus}
+            onClick={action.onClick}
+            aria-label={`${action.label}: ${title}`}
+            className="mt-1"
+          >
+            {action.label}
+          </Button>
+        )}
       </div>
       <div className="flex items-center justify-center gap-2 bg-secondary-background px-2 py-2">
         <Icon icon={icon} size={24} className="text-primary" />
@@ -144,6 +163,7 @@ export function ProfileSummary({
   registrosHref,
   canMove,
   canSetAvailability,
+  onRecord,
   parents,
 }: ProfileSummaryProps & { parents: { dam?: string; sire?: string } }) {
   const { t } = useTranslation();
@@ -270,6 +290,11 @@ export function ProfileSummary({
             href: recordsHref(bull ? { tab: 'servicios' } : { tipo: 'reproduccion' }),
             label: t('profile.cards.consultar'),
           }}
+          action={
+            onRecord && !bull
+              ? { label: t('events.registrar'), onClick: () => onRecord('reproduccion') }
+              : undefined
+          }
         >
           <span className="text-secondary-text type-body-sm">
             {t(`profile.cards.${milestone?.key ?? (bull ? 'lastBullService' : 'lastCalving')}`)}
@@ -281,6 +306,11 @@ export function ProfileSummary({
             title={t('profile.cards.salud')}
             icon={iconHealth}
             link={{ href: recordsHref({ tipo: 'salud' }), label: t('profile.cards.consultar') }}
+            action={
+              onRecord
+                ? { label: t('events.registrar'), onClick: () => onRecord('salud') }
+                : undefined
+            }
           >
             <span className="text-secondary-text type-body-sm">{t('profile.cards.estado')}</span>
             <span className={cx('type-title-sm', animal.is_sick && 'text-error')}>
