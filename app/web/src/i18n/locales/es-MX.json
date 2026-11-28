@@ -1199,5 +1199,48 @@
       "confirm_one": "Agregar {{count}} vaca",
       "confirm_other": "Agregar {{count}} vacas"
     }
+  },
+  "events": {
+    "registrar": "Registrar",
+    "launcher": {
+      "reproduccion": "Registrar evento de reproducción: {{kind}} {{id}}",
+      "salud": "Registrar evento de salud: {{kind}} {{id}}"
+    },
+    "kinds": {
+      "HEAT": "Celo",
+      "PREGNANCY_CHECK": "Preñez",
+      "CALVING": "Parto",
+      "ABORTION": "Aborto",
+      "ILLNESS": "Enfermedad",
+      "ACCIDENT": "Accidente",
+      "MEDICAL_TREATMENT": "Tratamiento médico",
+      "DIET_CHANGE": "Cambio de dieta"
+    },
+    "reasons": {
+      "opensOn": "Disponible a partir del {{date}}",
+      "closedOn": "Los días estimados terminaron el {{date}}",
+      "noWindow": "Fuera de los días estimados",
+      "soon": "Disponible pronto"
+    },
+    "titles": {
+      "HEAT": "Registro de celo"
+    },
+    "heat": {
+      "intro": "Estás a punto de registrar un evento de celo ({{kind}} {{id}}).",
+      "question": "¿Este animal entró o no en un periodo de celo?",
+      "notObserved": "No entró",
+      "confirm": "Sí, confirmar",
+      "confirmSoon": "El registro completo del celo estará disponible pronto."
+    },
+    "recorded": {
+      "HEAT": "Celo registrado",
+      "PREGNANCY_CHECK": "Preñez registrada",
+      "CALVING": "Parto registrado",
+      "ABORTION": "Aborto registrado",
+      "DIET_CHANGE": "Cambio de dieta registrado",
+      "HEALTH": "Estado de salud registrado"
+    },
+    "recordedFor": "{{kind}} {{id}}: {{what}}",
+    "connectionError": "Falla de conexión, intenta más tarde"
   }
 }

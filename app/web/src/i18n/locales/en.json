@@ -1199,5 +1199,48 @@
       "confirm_one": "Add {{count}} cow",
       "confirm_other": "Add {{count}} cows"
     }
+  },
+  "events": {
+    "registrar": "Record",
+    "launcher": {
+      "reproduccion": "Record a reproduction event: {{kind}} {{id}}",
+      "salud": "Record a health event: {{kind}} {{id}}"
+    },
+    "kinds": {
+      "HEAT": "Heat",
+      "PREGNANCY_CHECK": "Pregnancy check",
+      "CALVING": "Calving",
+      "ABORTION": "Abortion",
+      "ILLNESS": "Illness",
+      "ACCIDENT": "Accident",
+      "MEDICAL_TREATMENT": "Medical treatment",
+      "DIET_CHANGE": "Diet change"
+    },
+    "reasons": {
+      "opensOn": "Available from {{date}}",
+      "closedOn": "The estimated days ended on {{date}}",
+      "noWindow": "Outside the estimated days",
+      "soon": "Coming soon"
+    },
+    "titles": {
+      "HEAT": "Heat record"
+    },
+    "heat": {
+      "intro": "You are about to record a heat event ({{kind}} {{id}}).",
+      "question": "Did this animal come into heat or not?",
+      "notObserved": "No heat",
+      "confirm": "Yes, confirm",
+      "confirmSoon": "The full heat record is coming soon."
+    },
+    "recorded": {
+      "HEAT": "Heat recorded",
+      "PREGNANCY_CHECK": "Pregnancy recorded",
+      "CALVING": "Calving recorded",
+      "ABORTION": "Abortion recorded",
+      "DIET_CHANGE": "Diet change recorded",
+      "HEALTH": "Health status recorded"
+    },
+    "recordedFor": "{{kind}} {{id}}: {{what}}",
+    "connectionError": "Connection failed, try again later"
   }
 }
