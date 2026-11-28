@@ -107,15 +107,18 @@ export function EventDetailDialog({ animal, event, onClose }: EventDetailDialogP
   }, [event]);
 
   if (!event) return null;
-  /** No group yet is General; a potrero deleted since has no name left to show. */
-  const potrero = (id: unknown) => {
+  /** No group yet is General. A potrero deleted since shows the name the API kept for it. */
+  const potrero = (id: unknown, kept: unknown) => {
     const list = groups.data ?? [];
     const group =
       typeof id === 'string'
         ? list.find((g) => g.id === id)
         : list.find((g) => g.preset === 'GENERAL');
     if (group) return groupName(group, t);
-    return groups.isPending ? '…' : t('profile.detail.deletedPotrero');
+    if (groups.isPending) return '…';
+    return typeof kept === 'string'
+      ? t('profile.detail.deletedPotreroNamed', { name: kept })
+      : t('profile.detail.deletedPotrero');
   };
   const treatment = treatmentOf(event);
   const recorder = can('EVENTS_RECORD') && animal.status === 'ACTIVE';
@@ -175,8 +178,8 @@ export function EventDetailDialog({ animal, event, onClose }: EventDetailDialogP
       : []),
     ...(move
       ? ([
-          [t('profile.detail.dePotrero'), potrero(move.from_group_id)],
-          [t('profile.detail.aPotrero'), potrero(move.to_group_id)],
+          [t('profile.detail.dePotrero'), potrero(move.from_group_id, move.from_group_name)],
+          [t('profile.detail.aPotrero'), potrero(move.to_group_id, move.to_group_name)],
         ] as [string, ReactNode][])
       : []),
     [t('profile.detail.realizo'), event.recorded_by_name || t('profile.detail.unknownUser')],

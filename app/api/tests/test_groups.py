@@ -387,6 +387,35 @@ async def test_delete_sends_cows_to_general_with_one_history_entry(
     assert entries[-1].refs == {"group_id": general["id"], "group": "Lote", "to_group": "General"}
 
 
+async def test_a_deleted_potrero_keeps_its_name_on_the_moves_that_name_it(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
+) -> None:
+    cow = await new_cow(tenant_api, owner, "0001")
+    lote = await tenant_api.post("/api/groups", headers=owner.headers(), json={"name": "Lote"})
+    lote_id = lote.json()["id"]
+    # A client can't name the potreros itself: only a delete writes a name.
+    into = await tenant_api.post(
+        f"/api/animals/{cow}/events",
+        headers=owner.headers(),
+        json={
+            "occurred_on": TODAY.isoformat(),
+            "payload": {"type": "GROUP_CHANGE", "to_group_id": lote_id, "to_group_name": "Otro"},
+        },
+    )
+    assert into.status_code == 201, into.text
+    stored = await group_changes(tenant_db, cow)
+    assert len(stored) == 1 and "to_group_name" not in stored[0].payload
+
+    await tenant_api.delete(f"/api/groups/{lote_id}", headers=owner.headers())
+
+    listed = await tenant_api.get(f"/api/animals/{cow}/events", headers=owner.headers())
+    moves = [e["payload"] for e in listed.json() if e["type"] == "GROUP_CHANGE"]
+    moved_in = next(m for m in moves if m["to_group_id"] == lote_id)
+    moved_out = next(m for m in moves if m.get("from_group_id") == lote_id)
+    assert moved_in["to_group_name"] == "Lote" and "from_group_name" not in moved_in
+    assert moved_out["from_group_name"] == "Lote" and "to_group_name" not in moved_out
+
+
 async def test_delete_to_a_chosen_group_and_general_stays(
     tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
 ) -> None:

@@ -9,7 +9,7 @@ import uuid
 from collections.abc import Collection
 from dataclasses import dataclass
 
-from sqlalchemy import select
+from sqlalchemy import String, cast, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from smartbell.domain.repro import PREGNANT_STATES, Projection, classify_loss, project
@@ -439,6 +439,7 @@ async def _apply_group_change(
     if change.to_group_id == animal.group_id:
         raise _invalid(("payload", "to_group_id"), "same_group", "La vaca ya está en ese potrero")
     change.from_group_id = animal.group_id
+    change.from_group_name = change.to_group_name = None  # Both potreros exist: no names kept.
     animal.group_id = change.to_group_id
 
 
@@ -458,6 +459,10 @@ async def _move_again(
         return
     if before is not None and after is not None:
         after.from_group_id = before.from_group_id
+        after.from_group_name = before.from_group_name
+        after.to_group_name = (
+            before.to_group_name if before.to_group_id == after.to_group_id else None
+        )
         if before.to_group_id == after.to_group_id:
             return
         if animal.group_id != before.to_group_id:  # Moved on since: only the record changes.
@@ -757,3 +762,31 @@ async def delete_event(
         HistoryRefs(animal_ids=[animal.id]),
     )
     return Deleted(animal, projection, alerts)
+
+
+async def name_moves_of_deleted_group(
+    session: AsyncSession, ranch_id: uuid.UUID, group_id: uuid.UUID, name: str
+) -> None:
+    """Before a potrero is deleted, its name goes into every move that points at it, so the
+    bitácora can still say where the animal came from or went to."""
+    gid = str(group_id)
+    rows = await session.scalars(
+        select(Event).where(
+            Event.ranch_id == ranch_id,
+            Event.type.in_((EventType.GROUP_CHANGE, EventType.ILLNESS, EventType.ACCIDENT)),
+            cast(Event.payload, String).contains(gid),
+        )
+    )
+    for row in rows:
+        payload = dict(row.payload)
+        nested = row.type is not EventType.GROUP_CHANGE
+        move = payload.get("group_change") if nested else payload
+        if not isinstance(move, dict):
+            continue
+        named = dict(move)
+        if move.get("from_group_id") == gid:
+            named["from_group_name"] = name
+        if move.get("to_group_id") == gid:
+            named["to_group_name"] = name
+        if named != move:
+            row.payload = {**payload, "group_change": named} if nested else named

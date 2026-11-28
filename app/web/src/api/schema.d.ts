@@ -1680,6 +1680,10 @@ export interface components {
        * Format: uuid
        */
       to_group_id: string;
+      /** From Group Name */
+      from_group_name?: string | null;
+      /** To Group Name */
+      to_group_name?: string | null;
     };
     /** GroupChangePayload */
     GroupChangePayload: {
@@ -1690,6 +1694,10 @@ export interface components {
        * Format: uuid
        */
       to_group_id: string;
+      /** From Group Name */
+      from_group_name?: string | null;
+      /** To Group Name */
+      to_group_name?: string | null;
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}

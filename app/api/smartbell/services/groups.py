@@ -496,6 +496,7 @@ async def delete_group(
         HistoryKey.GROUP_DELETED,
         HistoryRefs(group_id=target.id, group=group.name, to_group=target.name),
     )
+    await events.name_moves_of_deleted_group(session, ranch_id, group.id, group.name)
     await session.flush()
     await session.delete(group)
     await session.flush()

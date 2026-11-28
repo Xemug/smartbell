@@ -488,7 +488,7 @@ describe('the bitácora', () => {
       ),
       event(
         'GROUP_CHANGE',
-        { from_group_id: 'g-norte', to_group_id: 'g-gone' },
+        { from_group_id: 'g-norte', to_group_id: 'g-gone', to_group_name: 'Lote sur' },
         { id: 'e-move-2', occurred_on: '2026-11-25' },
       ),
     ];
@@ -507,7 +507,7 @@ describe('the bitácora', () => {
     await userEvent.click(latest);
     dialog = await screen.findByRole('dialog', { name: 'Detalle del evento' });
     expect(await within(dialog).findByText('Lote norte')).toBeInTheDocument();
-    expect(within(dialog).getByText('Potrero eliminado')).toBeInTheDocument();
+    expect(within(dialog).getByText('Lote sur (Potrero eliminado)')).toBeInTheDocument();
   });
 
   it('shows no Eliminar on a repro event', async () => {

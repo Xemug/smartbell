@@ -925,6 +925,7 @@
       "dePotrero": "De potrero",
       "aPotrero": "A potrero",
       "deletedPotrero": "Potrero eliminado",
+      "deletedPotreroNamed": "{{name}} (Potrero eliminado)",
       "realizo": "Realizó registro",
       "comentarios": "Comentarios",
       "sinComentarios": "Sin comentarios",

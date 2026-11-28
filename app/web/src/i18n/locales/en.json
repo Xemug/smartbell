@@ -925,6 +925,7 @@
       "dePotrero": "From group",
       "aPotrero": "To group",
       "deletedPotrero": "Deleted group",
+      "deletedPotreroNamed": "{{name}} (deleted group)",
       "realizo": "Recorded by",
       "comentarios": "Comments",
       "sinComentarios": "No comments",
