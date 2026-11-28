@@ -12,6 +12,8 @@ import { iconPencil, iconTrash } from '../../../ui/icons/glyphs';
 import { Modal } from '../../../ui/Modal';
 import { TextArea } from '../../../ui/TextArea';
 import { useSnackbar } from '../../../ui/useSnackbar';
+import { useGroupList } from '../../groups/api';
+import { groupName } from '../../groups/labels';
 import { ANIMALS_PATH } from '../list/AnimalListPage';
 import {
   useAnimal,
@@ -94,6 +96,9 @@ export function EventDetailDialog({ animal, event, onClose }: EventDetailDialogP
       ? { bullId: event.payload.bull_id, method: String(event.payload.method ?? '') }
       : null;
   const bull = useAnimal(service?.bullId);
+  // A potrero change names where she came from and where she went.
+  const move = event?.type === 'GROUP_CHANGE' ? event.payload : null;
+  const groups = useGroupList();
 
   useEffect(() => {
     setEditing(false);
@@ -102,6 +107,16 @@ export function EventDetailDialog({ animal, event, onClose }: EventDetailDialogP
   }, [event]);
 
   if (!event) return null;
+  /** No group yet is General; a potrero deleted since has no name left to show. */
+  const potrero = (id: unknown) => {
+    const list = groups.data ?? [];
+    const group =
+      typeof id === 'string'
+        ? list.find((g) => g.id === id)
+        : list.find((g) => g.preset === 'GENERAL');
+    if (group) return groupName(group, t);
+    return groups.isPending ? '…' : t('profile.detail.deletedPotrero');
+  };
   const treatment = treatmentOf(event);
   const recorder = can('EVENTS_RECORD') && animal.status === 'ACTIVE';
   // Only events the API lets anyone edit: the deletable kinds (repro edits are admins' only).
@@ -156,6 +171,12 @@ export function EventDetailDialog({ animal, event, onClose }: EventDetailDialogP
             </Link>,
           ],
           [t('profile.detail.metodo'), t(`profile.services.methods.${service.method}`)],
+        ] as [string, ReactNode][])
+      : []),
+    ...(move
+      ? ([
+          [t('profile.detail.dePotrero'), potrero(move.from_group_id)],
+          [t('profile.detail.aPotrero'), potrero(move.to_group_id)],
         ] as [string, ReactNode][])
       : []),
     [t('profile.detail.realizo'), event.recorded_by_name || t('profile.detail.unknownUser')],

@@ -479,6 +479,37 @@ describe('the bitácora', () => {
     expect(within(dialog).getByText('Inseminación artificial')).toBeInTheDocument();
   });
 
+  it('says which potrero she left and which she went to', async () => {
+    events = [
+      event(
+        'GROUP_CHANGE',
+        { from_group_id: null, to_group_id: 'g-norte' },
+        { id: 'e-move', occurred_on: '2026-11-20' },
+      ),
+      event(
+        'GROUP_CHANGE',
+        { from_group_id: 'g-norte', to_group_id: 'g-gone' },
+        { id: 'e-move-2', occurred_on: '2026-11-25' },
+      ),
+    ];
+    renderAt(`/vacas/${ID}/registros`);
+    const moves = await screen.findAllByRole('button', { name: 'Cambio de potrero' });
+    expect(moves).toHaveLength(2);
+    const [first, latest] = moves as [HTMLElement, HTMLElement];
+    await userEvent.click(first);
+    let dialog = await screen.findByRole('dialog', { name: 'Detalle del evento' });
+    // No potrero before is General.
+    expect(await within(dialog).findByText('General')).toBeInTheDocument();
+    expect(within(dialog).getByText('De potrero')).toBeInTheDocument();
+    expect(within(dialog).getByText('Lote norte')).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole('button', { name: /cerrar|close/i }));
+
+    await userEvent.click(latest);
+    dialog = await screen.findByRole('dialog', { name: 'Detalle del evento' });
+    expect(await within(dialog).findByText('Lote norte')).toBeInTheDocument();
+    expect(within(dialog).getByText('Potrero eliminado')).toBeInTheDocument();
+  });
+
   it('shows no Eliminar on a repro event', async () => {
     renderAt(`/vacas/${ID}/registros`);
     await userEvent.click(
