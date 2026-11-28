@@ -32,6 +32,7 @@ import { ANIMALS_PATH } from '../animals/list/AnimalListPage';
 import { daysInMilk } from '../animals/list/animalFacts';
 import { useAnimalPage, type Animal } from '../animals/list/api';
 import {
+  GroupNameTaken,
   useGroup,
   useMoveAnimals,
   useReevaluate,
@@ -104,6 +105,7 @@ function Detail({ group }: { group: GroupOut }) {
   const [description, setDescription] = useState(group.description ?? '');
   const [kpi, setKpi] = useState<string>(group.kpi_indicator ?? NO_KPI);
   const [formError, setFormError] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
   // Arriving from the wizard: say the potrero was created until it's dismissed.
   const location = useLocation();
   const [justCreated, setJustCreated] = useState(
@@ -149,6 +151,7 @@ function Detail({ group }: { group: GroupOut }) {
 
   const save = () => {
     setFormError(null);
+    setNameError(null);
     update.mutate(
       {
         ...(group.preset ? {} : { name: name.trim() }),
@@ -158,11 +161,9 @@ function Detail({ group }: { group: GroupOut }) {
       {
         onSuccess: () => snackbar.show({ kind: 'success', message: t('groups.detail.saved') }),
         onError: (failure) =>
-          setFormError(
-            failure.message === 'group_name_taken'
-              ? t('groups.detail.nameTaken')
-              : t('groups.detail.saveError'),
-          ),
+          failure instanceof GroupNameTaken
+            ? setNameError(t('groups.detail.nameTaken', { name: failure.existingName }))
+            : setFormError(t('groups.detail.saveError')),
       },
     );
   };
@@ -270,8 +271,13 @@ function Detail({ group }: { group: GroupOut }) {
                 hint={`${name.length}/60`}
                 disabled={!canEdit}
                 value={name}
-                error={name.trim() === '' ? t('groups.wizard.nameRequired') : undefined}
-                onChange={(event) => setName(event.target.value)}
+                error={
+                  name.trim() === '' ? t('groups.wizard.nameRequired') : (nameError ?? undefined)
+                }
+                onChange={(event) => {
+                  setNameError(null);
+                  setName(event.target.value);
+                }}
               />
             )}
             <TextArea

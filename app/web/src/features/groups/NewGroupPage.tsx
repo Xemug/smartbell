@@ -13,6 +13,7 @@ import { TextField } from '../../ui/TextField';
 import { Wizard } from '../../ui/Wizard';
 import { BREEDS, GROUP_PRESETS } from '../animals/list/listState';
 import {
+  GroupNameTaken,
   useAutoPreview,
   useCreateGroup,
   useGroupList,
@@ -55,6 +56,8 @@ export function NewGroupPage() {
   const [kpi, setKpi] = useState<KpiIndicator | typeof NO_KPI>(NO_KPI);
   const [touched, setTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // A taken name is shown under the name field, on the first step, with the typing kept.
+  const [nameError, setNameError] = useState<string | null>(null);
 
   const rule: AutoFilter | null = method === 'AUTO' ? { field, values } : null;
   const preview = useAutoPreview(rule);
@@ -94,14 +97,18 @@ export function NewGroupPage() {
         // The new potrero's page says it was created, at the top where it can't be missed.
         onSuccess: (group) =>
           navigate(groupPath(group.id), { replace: true, state: { created: true } }),
-        onError: (failure) =>
+        onError: (failure) => {
+          if (failure instanceof GroupNameTaken) {
+            setNameError(t('groups.detail.nameTaken', { name: failure.existingName }));
+            setStep(0);
+            return;
+          }
           setError(
-            failure.message === 'group_name_taken'
-              ? t('groups.detail.nameTaken')
-              : failure.message === 'kpi_needs_animals'
-                ? t('groups.kpi.needsCows')
-                : t('groups.wizard.error'),
-          ),
+            failure.message === 'kpi_needs_animals'
+              ? t('groups.kpi.needsCows')
+              : t('groups.wizard.error'),
+          );
+        },
       },
     );
   };
@@ -158,16 +165,23 @@ export function NewGroupPage() {
                   { value: 'custom', label: t('groups.wizard.custom') },
                 ]}
                 value={kind}
-                onChange={(value) => setKind(value as 'preset' | 'custom')}
+                onChange={(value) => {
+                  setKind(value as 'preset' | 'custom');
+                  setNameError(null);
+                }}
               />
               {kind === 'preset' ? (
                 <Select
                   label={t('groups.wizard.name')}
                   required
-                  error={touched && nameMissing ? t('groups.wizard.nameRequired') : undefined}
+                  error={
+                    nameError ??
+                    (touched && nameMissing ? t('groups.wizard.nameRequired') : undefined)
+                  }
                   options={freePresets.map((p) => ({ value: p, label: t(`groups.presets.${p}`) }))}
                   value={preset}
                   onChange={(value) => {
+                    setNameError(null);
                     setPreset(value as GroupPreset);
                     if (!description) setDescription(t(`groups.presetDescriptions.${value}`));
                   }}
@@ -179,9 +193,15 @@ export function NewGroupPage() {
                   placeholder={t('groups.wizard.namePlaceholder')}
                   maxLength={NAME_MAX}
                   hint={`${name.length}/${NAME_MAX}`}
-                  error={touched && nameMissing ? t('groups.wizard.nameRequired') : undefined}
+                  error={
+                    nameError ??
+                    (touched && nameMissing ? t('groups.wizard.nameRequired') : undefined)
+                  }
                   value={name}
-                  onChange={(event) => setName(event.target.value)}
+                  onChange={(event) => {
+                    setNameError(null);
+                    setName(event.target.value);
+                  }}
                 />
               )}
               <TextArea

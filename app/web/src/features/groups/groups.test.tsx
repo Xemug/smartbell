@@ -248,6 +248,27 @@ beforeEach(() => {
           { key: 'ENFERMAS', animals: [] },
         ]);
       }
+      if (key === 'POST /api/groups' || key === `PATCH /api/groups/${LOTE}`) {
+        // The API answers a taken name (ignoring case) with the existing potrero's name.
+        const wanted = (JSON.parse(text) as { name?: string }).name?.toLowerCase();
+        const holder = groups.find((g) => g.name.toLowerCase() === wanted);
+        if (holder && holder.id !== url.pathname.split('/').pop()) {
+          return Response.json(
+            {
+              detail: [
+                {
+                  loc: ['body', 'name'],
+                  type: 'group_name_taken',
+                  msg: `Ya hay un potrero llamado «${holder.name}» en este rancho. Elige otro nombre.`,
+                  ctx: { existing_name: holder.name },
+                },
+              ],
+            },
+            { status: 409 },
+          );
+        }
+        if (key !== 'POST /api/groups') return Response.json(groups[1]);
+      }
       if (key === 'POST /api/groups') {
         return Response.json(group('new-group', { name: 'Lote sur', animal_count: 3 }), {
           status: 201,
@@ -396,6 +417,29 @@ describe('New potrero wizard', () => {
     expect(screen.getByRole('heading', { name: 'Datos generales' })).toBeInTheDocument();
   });
 
+  it('says which potrero has the name, under the field, keeping the typing', async () => {
+    renderAt('/grupos/nuevo');
+    await userEvent.type(await screen.findByLabelText(/Nombre del potrero/), 'LOTE NORTE');
+    await userEvent.click(screen.getByRole('button', { name: /Continuar/ }));
+    await screen.findByRole('heading', { name: 'Método selección vacas' });
+    await userEvent.click(screen.getByRole('button', { name: /Continuar/ }));
+    await screen.findByRole('heading', { name: 'Selección de indicador' });
+    await userEvent.click(screen.getByRole('button', { name: /Agregar potrero/ }));
+
+    // Back on the first step, where the name can be changed.
+    expect(
+      await screen.findByText(
+        'Ya hay un potrero llamado «Lote norte» en este rancho. Elige otro nombre.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Datos generales' })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Nombre del potrero/)).toHaveValue('LOTE NORTE');
+    expect(screen.getByLabelText(/Nombre del potrero/)).toHaveAccessibleDescription(
+      /Ya hay un potrero llamado «Lote norte»/,
+    );
+    expect(screen.getByTestId('where')).toHaveTextContent('/grupos/nuevo');
+  });
+
   it('keeps the indicator off while the potrero has no cows', async () => {
     renderAt('/grupos/nuevo');
     await userEvent.type(await screen.findByLabelText(/Nombre del potrero/), 'Vacío');
@@ -412,6 +456,23 @@ describe('New potrero wizard', () => {
 });
 
 describe('Potrero detail', () => {
+  it('says which potrero has the name it was renamed to, under the field', async () => {
+    renderAt(`/grupos/${LOTE}`);
+    const field = await screen.findByLabelText(/Nombre del potrero/);
+    await userEvent.clear(field);
+    await userEvent.type(field, 'general');
+    await userEvent.click(screen.getByRole('button', { name: /Guardar/ }));
+
+    expect(
+      await screen.findByText(
+        'Ya hay un potrero llamado «General» en este rancho. Elige otro nombre.',
+      ),
+    ).toBeInTheDocument();
+    expect(field).toHaveValue('general');
+    expect(field).toHaveAccessibleDescription(/Ya hay un potrero llamado «General»/);
+    expect(writes()).toEqual([expect.objectContaining({ method: 'PATCH' })]);
+  });
+
   it('moves a cow to another potrero', async () => {
     renderAt(`/grupos/${LOTE}`);
     await userEvent.click(await screen.findByRole('button', { name: /Cambiar de potrero.*V-004/ }));

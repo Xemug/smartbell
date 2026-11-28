@@ -18,7 +18,8 @@ The caller commits, so a request is one transaction.
 
 import datetime as dt
 import uuid
-from collections.abc import Iterable, Sequence
+from collections.abc import AsyncIterator, Iterable, Sequence
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import Any
 
@@ -66,6 +67,7 @@ PRESET_NAMES = {
 }
 GENERAL_DESCRIPTION = "Este es el grupo general... ¡Aquí están todas las vacas en tu rancho!"
 NEWBORN_MONTHS = 6
+NAME_INDEX = "uq_groups_ranch_id_lower_name"
 
 
 class GroupError(Exception):
@@ -357,16 +359,53 @@ async def reevaluate_ranch(session: AsyncSession, ranch_id: uuid.UUID, today: dt
 # --- Writes ------------------------------------------------------------------------------------
 
 
-async def _check_name(
+async def _taken_by(
     session: AsyncSession, ranch_id: uuid.UUID, name: str, exclude: uuid.UUID | None = None
-) -> None:
-    query = select(Group.id).where(
-        Group.ranch_id == ranch_id, func.lower(Group.name) == name.lower()
+) -> str | None:
+    """The name, as saved, of the ranch's potrero that already has `name` ignoring case."""
+    query = select(Group.name).where(
+        # The database's lower() on both sides, as the unique index compares them.
+        Group.ranch_id == ranch_id,
+        func.lower(Group.name) == func.lower(name),
     )
     if exclude is not None:
         query = query.where(Group.id != exclude)
-    if await session.scalar(query) is not None:
-        raise FieldError(409, ("name",), "group_name_taken", "Ya hay un potrero con ese nombre")
+    return await session.scalar(query.limit(1))
+
+
+async def _check_name(
+    session: AsyncSession, ranch_id: uuid.UUID, name: str, exclude: uuid.UUID | None = None
+) -> None:
+    existing = await _taken_by(session, ranch_id, name, exclude)
+    if existing is not None:
+        raise _name_taken(existing)
+
+
+def _name_taken(existing: str) -> FieldError:
+    return FieldError(
+        409,
+        ("name",),
+        "group_name_taken",
+        f"Ya hay un potrero llamado «{existing}» en este rancho. Elige otro nombre.",
+        ctx={"existing_name": existing},
+    )
+
+
+@asynccontextmanager
+async def _claiming_name(
+    session: AsyncSession, ranch_id: uuid.UUID, name: str, group_id: uuid.UUID
+) -> AsyncIterator[None]:
+    """Wraps adding or renaming a group. Another request can take the name after `_check_name`
+    looked, so the unique index has the last word, with the same 409. The change goes in a
+    savepoint so the session stays usable to look up who holds the name."""
+    try:
+        async with session.begin_nested():
+            yield
+    except IntegrityError as error:
+        if NAME_INDEX not in str(error.orig):
+            raise
+        existing = await _taken_by(session, ranch_id, name, exclude=group_id)
+        raise _name_taken(existing or name) from error
 
 
 async def create_group(
@@ -396,7 +435,8 @@ async def create_group(
         auto_filter=body.auto_filter.model_dump(mode="json") if body.auto_filter else None,
         kpi_indicator=body.kpi_indicator,
     )
-    session.add(group)
+    async with _claiming_name(session, ranch_id, name, group.id):
+        session.add(group)
     await session.flush()
     await history.record(
         session,
@@ -437,7 +477,8 @@ async def update_group(
                 422, ("name",), "preset_name_fixed", "Un potrero preconfigurado no se renombra"
             )
         await _check_name(session, ranch_id, body.name, exclude=group.id)
-        group.name = body.name
+        async with _claiming_name(session, ranch_id, body.name, group.id):
+            group.name = body.name
     if "description" in changes:
         group.description = body.description or None
     if "kpi_indicator" in changes:

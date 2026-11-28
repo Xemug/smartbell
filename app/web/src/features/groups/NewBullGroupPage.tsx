@@ -8,7 +8,7 @@ import { Card } from '../../ui/Card';
 import { TextArea } from '../../ui/TextArea';
 import { TextField } from '../../ui/TextField';
 import { Wizard } from '../../ui/Wizard';
-import { useCreateGroup } from './api';
+import { GroupNameTaken, useCreateGroup } from './api';
 import { CowPicker } from './CowPicker';
 import { BULL_GROUPS_PATH, groupPath } from './labels';
 
@@ -29,6 +29,7 @@ export function NewBullGroupPage() {
   const [picked, setPicked] = useState<string[]>([]);
   const [touched, setTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
 
   const nameMissing = name.trim() === '';
   const stepValid = step === 0 ? !nameMissing : true;
@@ -56,14 +57,18 @@ export function NewBullGroupPage() {
       {
         onSuccess: (group) =>
           navigate(groupPath(group.id), { replace: true, state: { created: true } }),
-        onError: (failure) =>
+        onError: (failure) => {
+          if (failure instanceof GroupNameTaken) {
+            setNameError(t('groups.detail.nameTaken', { name: failure.existingName }));
+            setStep(0);
+            return;
+          }
           setError(
-            failure.message === 'group_name_taken'
-              ? t('groups.detail.nameTaken')
-              : failure.message === 'bull_semen_only'
-                ? t('groups.bulls.semenOnly')
-                : t('groups.wizard.error'),
-          ),
+            failure.message === 'bull_semen_only'
+              ? t('groups.bulls.semenOnly')
+              : t('groups.wizard.error'),
+          );
+        },
       },
     );
   };
@@ -103,9 +108,15 @@ export function NewBullGroupPage() {
                 placeholder={t('groups.bulls.namePlaceholder')}
                 maxLength={NAME_MAX}
                 hint={`${name.length}/${NAME_MAX}`}
-                error={touched && nameMissing ? t('groups.wizard.nameRequired') : undefined}
+                error={
+                  nameError ??
+                  (touched && nameMissing ? t('groups.wizard.nameRequired') : undefined)
+                }
                 value={name}
-                onChange={(event) => setName(event.target.value)}
+                onChange={(event) => {
+                  setName(event.target.value);
+                  setNameError(null);
+                }}
               />
               <TextArea
                 label={t('groups.wizard.description')}

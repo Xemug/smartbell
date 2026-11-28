@@ -1,5 +1,6 @@
 """Groups (potreros): the list, the wizard, edit, delete, moving cows, AUTO rules, heifer groups."""
 
+import asyncio
 import datetime as dt
 import uuid
 from typing import Any
@@ -8,12 +9,16 @@ import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
+from smartbell.db import make_sessionmaker
 from smartbell.enums import EventType, GroupPreset, GroupType, HistoryKey, Role
 from smartbell.jobs.daily import run_ranch
 from smartbell.models import Animal, Event, Group, HistoryEntry
 from smartbell.routes.animals import get_today
+from smartbell.schemas.groups import GroupCreate
+from smartbell.services import groups as groups_service
+from smartbell.services.animals import FieldError
 from tests.conftest import Account, add_member, sign_up
 
 TODAY = dt.date(2026, 11, 3)
@@ -223,6 +228,68 @@ async def test_create_refusals(tenant_api: AsyncClient, owner: Account) -> None:
     assert kpi_alone[0] == 422 and kpi_alone[1]["detail"][0]["type"] == "kpi_needs_animals"
     assert auto_without_rule[0] == 422 and bad_chip[0] == 422
     assert taken[0] == 409 and taken[1]["detail"][0]["type"] == "group_name_taken"
+
+
+async def test_a_name_taken_after_the_check_is_409_not_500(
+    tenant_api: AsyncClient, owner: Account, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Another request took the name between this one's check and its write: the index says so."""
+    await tenant_api.post("/api/groups", headers=owner.headers(), json={"name": "Lote"})
+    other = (
+        await tenant_api.post("/api/groups", headers=owner.headers(), json={"name": "Otro"})
+    ).json()
+
+    async def stale_check(*args: Any, **kwargs: Any) -> None:
+        return None  # What this request saw before the other one committed.
+
+    monkeypatch.setattr(groups_service, "_check_name", stale_check)
+    created = await tenant_api.post("/api/groups", headers=owner.headers(), json={"name": "LOTE"})
+    renamed = await tenant_api.patch(
+        f"/api/groups/{other['id']}", headers=owner.headers(), json={"name": "lote"}
+    )
+
+    for response in (created, renamed):
+        assert response.status_code == 409, response.text
+        assert response.json()["detail"][0] == {
+            "loc": ["body", "name"],
+            "type": "group_name_taken",
+            "msg": "Ya hay un potrero llamado «Lote» en este rancho. Elige otro nombre.",
+            "ctx": {"existing_name": "Lote"},
+        }
+    assert sorted(await groups_by_name(tenant_api, owner)) == ["General", "Lote", "Otro"]
+
+
+async def test_concurrent_creates_with_one_name_make_one_group(
+    tenant_api: AsyncClient,
+    tenant_db: AsyncSession,
+    schema: AsyncEngine,
+    owner: Account,
+    db_backend: str,
+) -> None:
+    if db_backend != "postgresql":
+        pytest.skip("Needs two real connections; SQLite has one writer")
+    await groups_by_name(tenant_api, owner)  # General exists before the race.
+    sessions = make_sessionmaker(schema)
+
+    async def create(session: AsyncSession, name: str) -> Group:
+        body = GroupCreate(name=name)
+        return await groups_service.create_group(
+            session, owner.ranch_id, owner.user_id, body, TODAY
+        )
+
+    async with sessions() as first, sessions() as second:
+        await create(first, "Lote")  # holds the name until it commits
+        racing = asyncio.create_task(create(second, "lote"))
+        await asyncio.sleep(0.3)
+        assert not racing.done(), "the second create should wait on the first one's name"
+        await first.commit()
+        with pytest.raises(FieldError) as refused:
+            await racing
+        await second.rollback()
+
+    assert (refused.value.status, refused.value.code) == (409, "group_name_taken")
+    assert refused.value.ctx == {"existing_name": "Lote"}
+    assert sorted(await groups_by_name(tenant_api, owner)) == ["General", "Lote"]
 
 
 async def test_needs_groups_create(tenant_api: AsyncClient, tenant_db: AsyncSession) -> None:
