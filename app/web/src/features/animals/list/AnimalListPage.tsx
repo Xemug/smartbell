@@ -36,6 +36,7 @@ import { Icon } from '../../../ui/icons/Icon';
 import { Tabs } from '../../../ui/Tabs';
 import { TextField } from '../../../ui/TextField';
 import { useSnackbar } from '../../../ui/useSnackbar';
+import { isBullGroup } from '../../groups/labels';
 import { MoveToGroupDialog } from '../../groups/MoveToGroupDialog';
 import { ageInMonths, daysInMilk } from './animalFacts';
 import { useAnimalPage, useGroups, useKindCount, useRemoveAnimals, type Animal } from './api';
@@ -147,7 +148,10 @@ export function AnimalListPage() {
     }
     return names;
   }, [groups.data, t]);
-  const customGroups = (groups.data ?? []).filter((g) => !g.preset);
+  // The Toros list filters by bull group; the others by cow potrero.
+  const customGroups = (groups.data ?? []).filter(
+    (g) => !g.preset && isBullGroup(g) === (state.kind === 'toros'),
+  );
 
   const categories = useMemo(() => {
     const result: Record<string, FilterCategory> = {};

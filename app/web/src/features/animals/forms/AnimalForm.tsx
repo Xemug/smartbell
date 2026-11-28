@@ -28,6 +28,7 @@ import {
   isHeifer,
   NO_REPRO_STAGE,
   parentLabel,
+  isBull,
   showsRepro,
   toCreateBody,
   type AnimalValues,
@@ -93,10 +94,11 @@ export function AnimalForm({
     ],
   });
 
-  // Kinds never mix: a female goes into a cow potrero, a male into a bull group, and a semen-only
-  // bull into none. A female's potrero starts on General once the groups are in; a male's on none.
-  const male = sex === 'MACHO';
-  const semenOnly = male && bullAvailability === 'SEMEN';
+  // Kinds never mix: a cow goes into a cow potrero, a bull into a bull group, and a semen-only
+  // male into none. A young male keeps the cow potreros. Everyone but a bull starts on General
+  // once the groups are in; a bull on no group.
+  const male = isBull(sex, stage, birthDate);
+  const semenOnly = sex === 'MACHO' && bullAvailability === 'SEMEN';
   const groupChoices = semenOnly ? [] : movableGroups(groups.data ?? [], male);
   const generalId = groups.data?.find((group) => group.preset === 'GENERAL')?.id;
   const groupIds = groupChoices.map((group) => group.id).join();

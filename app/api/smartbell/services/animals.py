@@ -188,8 +188,13 @@ async def _check_bull_name(
 
 
 async def _check_group(
-    session: AsyncSession, animal: Animal, group_id: uuid.UUID, loc: tuple[str, ...]
+    session: AsyncSession,
+    animal: Animal,
+    group_id: uuid.UUID,
+    loc: tuple[str, ...],
+    availability: BullAvailability | None = None,
 ) -> None:
+    """`availability`: the one the animal will have, when the same request changes it."""
     group = await session.scalar(
         select(Group).where(Group.id == group_id, Group.ranch_id == animal.ranch_id)
     )
@@ -197,9 +202,23 @@ async def _check_group(
         raise _invalid((*loc, "group_id"), "group_not_found", "El potrero no existe")
     if group.selection is GroupSelection.AUTO:  # Its rule picks its cows (groups card).
         raise _invalid((*loc, "group_id"), "group_is_auto", "Ese potrero elige sus vacas solo")
-    refusal = membership_refusal(group.type, animal.kind, animal.bull_availability)
+    refusal = membership_refusal(group.type, animal.kind, availability or animal.bull_availability)
     if refusal is not None:
         raise _invalid((*loc, "group_id"), refusal, REFUSAL_MESSAGES[refusal])
+
+
+async def _leave_misfit_group(
+    session: AsyncSession, ctx: RanchContext, animal: Animal, today: dt.date
+) -> None:
+    """The kind follows the stage and age: an animal whose new kind doesn't fit its group (a bull
+    re-staged a novillo, or a bull from before bull groups still in a cow potrero) leaves it."""
+    from smartbell.services.events import move_to_group  # events imports this module
+
+    if animal.group_id is None:
+        return
+    group = await session.get(Group, animal.group_id)
+    if group and membership_refusal(group.type, animal.kind, animal.bull_availability):
+        await move_to_group(session, ctx.ranch_id, ctx.user.id, animal, None, today)
 
 
 def _check_crossbreed(
@@ -459,10 +478,13 @@ async def create_animal(
 # --- Edit --------------------------------------------------------------------------------------
 
 
-async def get_animal(session: AsyncSession, ranch_id: uuid.UUID, animal_id: uuid.UUID) -> Animal:
-    animal = await session.scalar(
-        select(Animal).where(Animal.id == animal_id, Animal.ranch_id == ranch_id)
-    )
+async def get_animal(
+    session: AsyncSession, ranch_id: uuid.UUID, animal_id: uuid.UUID, *, lock: bool = False
+) -> Animal:
+    query = select(Animal).where(Animal.id == animal_id, Animal.ranch_id == ranch_id)
+    if lock:  # An edit can move him between groups, as the groups card's moves do.
+        query = query.with_for_update().execution_options(populate_existing=True)
+    animal = await session.scalar(query)
     if animal is None:
         raise AnimalNotFound
     return animal
@@ -480,7 +502,7 @@ async def update_animal(
     body: AnimalUpdate,
     today: dt.date,
 ) -> tuple[Animal, Projection]:
-    animal = await get_animal(session, ctx.ranch_id, animal_id)
+    animal = await get_animal(session, ctx.ranch_id, animal_id, lock=True)
     if animal.status is AnimalStatus.REMOVED:
         raise AnimalRemoved
     changes = {name: getattr(body, name) for name in body.model_fields_set}
@@ -499,7 +521,7 @@ async def update_animal(
     if to_group is not None and to_group != animal.group_id:  # Staying put is fine.
         if availability is BullAvailability.SEMEN and animal.kind is AnimalKind.TORO:
             raise _invalid(("group_id",), "bull_semen_only", REFUSAL_MESSAGES["bull_semen_only"])
-        await _check_group(session, animal, to_group, ())
+        await _check_group(session, animal, to_group, (), availability=availability)
     level = changes.get("crossbreed_level", animal.crossbreed_level)
     contributing = changes.get("contributing_breed", animal.contributing_breed)
     if level is CrossbreedLevel.FB and "contributing_breed" not in changes:
@@ -540,20 +562,22 @@ async def update_animal(
                 "El último parto debe ser al menos 660 días después del nacimiento",
             )
 
-    # A move is a GROUP_CHANGE on the bitácora, written before the new availability lands so a
-    # bull going semen-only still logs leaving his group. A cow sent to no group (General) keeps
-    # the old plain update.
+    # A move is a GROUP_CHANGE on the bitácora. Leaving for Solo semen is logged before the new
+    # availability freezes his records; any other move after the edit lands, so a bull coming
+    # back on the ranch logs his. A cow sent to no group (General) keeps the old plain update.
     from smartbell.services.events import move_to_group  # events imports this module
 
-    if availability is BullAvailability.SEMEN:
+    if availability is BullAvailability.SEMEN and animal.group_id is not None:
+        await move_to_group(session, ctx.ranch_id, ctx.user.id, animal, None, today)
         to_group = None
+    for name, value in changes.items():
+        setattr(animal, name, value)
     if to_group != animal.group_id and (to_group is not None or animal.kind is AnimalKind.TORO):
         await move_to_group(session, ctx.ranch_id, ctx.user.id, animal, to_group, today)
     animal.group_id = to_group
-    for name, value in changes.items():
-        setattr(animal, name, value)
     settings = await session.get_one(RanchSettings, ctx.ranch_id)
     projection = await reproject_animal(session, animal, settings, today)
+    await _leave_misfit_group(session, ctx, animal, today)
     await alert_sync.sync_animal(session, animal, projection, today)
     await history.record(
         session,

@@ -8,7 +8,7 @@ import { ActiveRanchProvider } from '../../../app/ActiveRanchProvider';
 import type { Permission } from '../../../app/useActiveRanch';
 import { SnackbarProvider } from '../../../ui/SnackbarProvider';
 import { AuthContext, type AuthApi } from '../../auth/useAuth';
-import { isHeifer, showsRepro, toCreateBody, defaultValues } from './formModel';
+import { isBull, isHeifer, showsRepro, toCreateBody, defaultValues } from './formModel';
 import { NewAnimalPage } from './NewAnimalPage';
 
 const TODAY = new Date(2026, 10, 21, 9);
@@ -563,6 +563,16 @@ describe('review cases', () => {
 });
 
 describe('form model', () => {
+  it('takes a male for a bull, who goes in bull groups, from 24 months or his stage', () => {
+    expect(isBull('MACHO', 'AUTO', '2020-01-01', TODAY)).toBe(true);
+    expect(isBull('MACHO', 'AUTO', '', TODAY)).toBe(true);
+    expect(isBull('MACHO', 'TORO', '2026-01-01', TODAY)).toBe(true);
+    // A young male keeps the cow potreros, as before bull groups.
+    expect(isBull('MACHO', 'AUTO', '2026-01-01', TODAY)).toBe(false);
+    expect(isBull('MACHO', 'NOVILLO', '2020-01-01', TODAY)).toBe(false);
+    expect(isBull('HEMBRA', 'AUTO', '2020-01-01', TODAY)).toBe(false);
+  });
+
   it('shows the reproductive section by sex, stage and age', () => {
     expect(showsRepro('MACHO', 'AUTO', '2018-01-01', TODAY)).toBe(false);
     expect(showsRepro('HEMBRA', 'NOVILLA', '2018-01-01', TODAY)).toBe(false);

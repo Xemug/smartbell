@@ -303,3 +303,78 @@ async def test_the_bull_picker_lists_bulls_on_the_ranch_only(
 
     assert listed.status_code == 200, listed.text
     assert {a["id"] for a in listed.json()["items"]} == {on, both}
+
+
+async def test_one_edit_brings_a_semen_only_bull_back_into_a_bull_group(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
+) -> None:
+    toros = await bull_group(tenant_api, owner)
+    toro = await bull(tenant_api, owner, "T1", bull_availability="SEMEN")
+
+    back = await tenant_api.patch(
+        f"/api/animals/{toro}",
+        headers=owner.headers(),
+        json={"bull_availability": "EN_RANCHO", "group_id": toros},
+    )
+
+    assert back.status_code == 200, back.text
+    assert str(await group_of(tenant_db, toro)) == toros
+    assert [m.get("to_group_id") for m in await moves(tenant_db, toro)] == [toros]  # Logged.
+
+
+async def test_a_bull_restaged_as_a_novillo_leaves_his_bull_group(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
+) -> None:
+    toros = await bull_group(tenant_api, owner)
+    toro = await bull(tenant_api, owner, "T1", group_id=toros)
+
+    edited = await tenant_api.patch(
+        f"/api/animals/{toro}", headers=owner.headers(), json={"development_stage": "NOVILLO"}
+    )
+
+    assert edited.status_code == 200, edited.text
+    assert edited.json()["kind"] == "NOVILLO"
+    assert await group_of(tenant_db, toro) is None
+    assert (await moves(tenant_db, toro))[-1].get("to_group_id") is None
+
+
+async def test_undoing_his_exit_leaves_a_semen_only_bull_in_no_group(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
+) -> None:
+    toros = await bull_group(tenant_api, owner)
+    toro = await bull(tenant_api, owner, "T1", group_id=toros)
+    await tenant_api.patch(
+        f"/api/animals/{toro}", headers=owner.headers(), json={"bull_availability": "SEMEN"}
+    )
+    exit_event = await tenant_db.scalar(
+        select(Event.id).where(
+            Event.animal_id == uuid.UUID(toro), Event.type == EventType.GROUP_CHANGE
+        )
+    )
+
+    deleted = await tenant_api.delete(
+        f"/api/animals/{toro}/events/{exit_event}", headers=owner.headers()
+    )
+
+    # Refused (his records are frozen) or undone without putting him back: never in a group.
+    assert deleted.status_code in (200, 409), deleted.text
+    assert await group_of(tenant_db, toro) is None
+
+
+async def test_deleting_a_cow_potrero_sends_an_old_bull_in_it_to_no_group(
+    tenant_api: AsyncClient, tenant_db: AsyncSession, owner: Account
+) -> None:
+    lote = await tenant_api.post("/api/groups", headers=owner.headers(), json={"name": "Lote"})
+    lote_id = lote.json()["id"]
+    vaca = await cow(tenant_api, owner, "0001")
+    await move(tenant_api, owner, lote_id, vaca)
+    toro = await bull(tenant_api, owner, "T1")
+    old = await tenant_db.get_one(Animal, uuid.UUID(toro))  # Put there before bull groups.
+    old.group_id = uuid.UUID(lote_id)
+    await tenant_db.commit()
+
+    deleted = await tenant_api.delete(f"/api/groups/{lote_id}", headers=owner.headers())
+
+    assert deleted.status_code == 200, deleted.text
+    assert await group_of(tenant_db, toro) is None
+    assert await group_of(tenant_db, vaca) is not None  # The cow went to General.

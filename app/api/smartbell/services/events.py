@@ -531,7 +531,9 @@ async def _revert_group_change(
     change = _group_change(payload)
     if change is not None and animal.group_id == change.to_group_id:
         back = change.from_group_id
-        if back is not None and await session.get(Group, back) is None:
+        group = await session.get(Group, back) if back is not None else None
+        # Gone since, or no longer his kind of group (a bull gone semen-only): no group.
+        if group is None or membership_refusal(group.type, animal.kind, animal.bull_availability):
             back = None
         animal.group_id = back
 

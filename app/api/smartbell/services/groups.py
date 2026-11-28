@@ -505,7 +505,12 @@ async def delete_group(
     moved = 0
     for animal in animals:
         if animal.status is AnimalStatus.ACTIVE:
-            await events.move_to_group(session, ranch_id, user_id, animal, target_id, today)
+            # A bull from before bull groups may still sit in a cow potrero: he goes to none.
+            fits = target is None or not membership_refusal(
+                target.type, animal.kind, animal.bull_availability
+            )
+            to = target_id if fits else None
+            await events.move_to_group(session, ranch_id, user_id, animal, to, today)
             moved += 1
         else:  # A baja has no new events; it just stops pointing at a group that's gone.
             animal.group_id = None
