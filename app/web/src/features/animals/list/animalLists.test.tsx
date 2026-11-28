@@ -326,6 +326,20 @@ describe('Vacas tab', () => {
     expect(screen.getByText('Filtro: Disponibilidad · Ambos')).toBeInTheDocument();
   });
 
+  it('keeps the heifer list to ID and Estado on a phone, Edad from md up', async () => {
+    desktop = false;
+    listed = (query) =>
+      query.get('kind') === 'VAQUILLA'
+        ? [animal('q-001', { kind: 'VAQUILLA', birth_date: '2025-03-10', repro_state: 'VACIA' })]
+        : [];
+    renderAt('/vacas?tipo=vaquillas');
+    expect(await screen.findByText('Q-001')).toBeInTheDocument();
+    // At 360px the Edad column pushed the row 39px past the screen; Toros already drops it.
+    const table = screen.getByRole('table', { name: 'Vaquillas' });
+    expect(within(table).getByRole('columnheader', { name: /Estado/ })).not.toHaveClass('hidden');
+    expect(within(table).getByRole('columnheader', { name: /Edad/ })).toHaveClass('hidden');
+  });
+
   it('sorts the heifers by Estado from the header, on a phone too', async () => {
     desktop = false;
     const user = userEvent.setup();

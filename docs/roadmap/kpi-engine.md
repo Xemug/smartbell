@@ -21,7 +21,7 @@ Report screens and exports become thin renderers.
 `app/api/smartbell/reports/kpis.py`, `bands.py`, `/reports/basic` endpoint, tests on a fixture herd with hand-computed expectations.
 
 **Figma:** n/a (no UI)
-**Inventory:** alerts-dashboard-reports.md §3.4 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.
+**Inventory:** alerts-dashboard-reports.md §3.4; 2019 reference: `legacy-2019-web.md` §3.1 (files in `docs/design-inventory/`, except `domain-model.md` in `docs/`). Domain rules: `docs/domain-model.md` (§7 overrides earlier sections). Reconciliation: `docs/reconciliation-v4.md`. Screen index: `docs/screen-inventory.md`.
 
 ## Approach
 
