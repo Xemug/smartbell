@@ -2,6 +2,7 @@
 id: keep-potrero-names-unique-per-ranch-in-the-database
 title: Keep potrero names unique per ranch in the database
 summary: The app already refuses a second potrero with the same name in a ranch, but two saves at the same moment can both slip through. A database rule closes that gap, the refusal message names the clashing potrero, and the legacy import has rules for names that already clash.
+verifiedAt: 2026-11-28
 ---
 
 # Keep potrero names unique per ranch in the database
