@@ -222,6 +222,8 @@ export function AnimalListPage() {
     key: 'edad',
     header: t('animals.columns.edad'),
     align: 'right',
+    // Heifers and bulls both drop age on a phone so the row fits 360px; it shows from md up.
+    hideOnMobile: true,
     sortValue: (a) => ageInMonths(a, today),
     cell: (a) => t('animals.months', { count: ageInMonths(a, today) }),
   };
@@ -272,8 +274,8 @@ export function AnimalListPage() {
               hideOnMobile: true,
               cell: (a) => a.name ?? dash,
             },
-            // A phone has room for the ID and the availability only; age shows from md up.
-            { ...ageColumn, hideOnMobile: true },
+            // Hides on a phone (see ageColumn): the phone keeps the ID and the availability.
+            ageColumn,
             {
               key: 'disponibilidad',
               header: t('animals.columns.disponibilidad'),

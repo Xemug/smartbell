@@ -8,42 +8,47 @@ summary: "The Vaquillas list scrolls sideways 39px at 360px. Founder decision: h
 
 ## Problem
 
-<The pain, in one or two sentences. What is hard, slow, or impossible today?
-Concrete and grounded — not "it would be nice if". Who hits this and when?>
+On a 360px phone the Vaquillas list scrolls sideways by 39px: its phone row
+shows ID, Estado and Edad, and the three don't fit. Anyone checking heifers from
+the field on a phone hits it.
 
 ## Why
 
-<Why this is worth doing now. Tie it to the product north-star (the repo's
-CLAUDE.md / README) and to what is already shipped. What does it unlock?>
+Phones are the main way the list is used in the corral. Toros already drops Edad
+below `md` for the same reason. Vaquillas should do the same.
 
 ## What it touches
 
-<The surfaces, modules, and data this reaches. Name real files / components /
-tables where you can — this is the "blast radius" reviewers care about.>
+- `app/web/src/features/animals/list/AnimalListPage.tsx`: the shared
+  `ageColumn` used by the Vaquillas and Toros column sets.
+- `app/web/src/features/animals/list/animalLists.test.tsx`: the phone-layout test.
+
+Vacas has no Edad column (cows show DEL), so nothing changes there.
 
 ## Approach
 
-<The intended shape of the solution. Enough that an agent could start. Note key
-decisions, anything explicitly out of scope, and dependencies on other specs.>
+Root cause: Toros opted the shared `ageColumn` into `hideOnMobile` with a spread
+at the call site (`{ ...ageColumn, hideOnMobile: true }`), but Vaquillas used the
+column without it. Every list that shows Edad now hides it on phones, so the
+flag moves onto `ageColumn` itself and the Toros spread goes. Computer screens
+(`md` and up) are unchanged.
+
+Sorting by Edad becomes desktop-only, as on Toros: the only sort control is the
+column header, which hides with the column. A phone sort control, or a cue when a
+link sorted by Edad opens on a phone, is out of scope; raise it as its own spec if
+field users want it.
 
 ## Effort
 
-<S / M / L / XL and a one-line justification. What makes it that size?>
+S. A one-line column flag and one test.
 
 ## Acceptance
 
-<Bulleted, checkable outcomes. "Done" means these are true. Each should be
-observable — a behavior to demo or a check that passes, not a vibe. End a
-criterion with `(human)` when a person has to verify it by hand; the board's
-card shows these as the test checklist once the PR is ready for review.>
-
-- [ ] <criterion>
-- [ ] <criterion>
+- [x] On a phone, the Vaquillas table's Edad header carries `hidden`; ID and Estado stay visible (regression test in `animalLists.test.tsx`).
+- [x] Toros on a phone still hides Edad (existing test).
+- [ ] At 360px the Vaquillas list no longer scrolls sideways; at desktop width Edad still shows (human)
 
 ## Verify
 
-<Optional. What to RE-CHECK before this spec is trusted again — the claims most
-likely to rot, written as prose or as commands (a `grep`, a file to open,
-`hc roadmap list --json`). `hc roadmap audit` surfaces this section and an
-AGENT runs what it says, under its own permissions; the CLI and the app never
-execute it. Delete this section if the mechanical check is enough.>
+`grep -n "hideOnMobile" app/web/src/features/animals/list/AnimalListPage.tsx`
+should show the flag on `ageColumn`.
