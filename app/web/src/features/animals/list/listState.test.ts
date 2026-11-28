@@ -35,6 +35,16 @@ describe('list state in the URL', () => {
     expect(parse('pagina=-2').page).toBe(1);
   });
 
+  it('sorts cows and heifers by Estado, but not bulls', () => {
+    expect(parse('orden=estado:asc').sort).toEqual({ column: 'estado', direction: 'asc' });
+    expect(parse('tipo=vaquillas&orden=estado:desc').sort).toEqual({
+      column: 'estado',
+      direction: 'desc',
+    });
+    // Bulls have no Estado column.
+    expect(parse('tipo=toros&orden=estado:asc').sort).toBeNull();
+  });
+
   it('accepts a custom group id', () => {
     const id = '0b7c6a4e-55a4-4e0e-9f0e-1f6c2b0f9a11';
     expect(parse(`filtro=grupo&valor=${id}`).filter).toEqual({ category: 'grupo', variable: id });
@@ -73,6 +83,13 @@ describe('API query', () => {
       page: 2,
       page_size: 10,
     });
+  });
+
+  it('asks the server to sort Estado in cycle order', () => {
+    const sorted = (direction: 'asc' | 'desc') =>
+      listQuery(parse(`tipo=vaquillas&orden=estado:${direction}`), TODAY).sort;
+    expect(sorted('asc')).toBe('repro_state');
+    expect(sorted('desc')).toBe('-repro_state');
   });
 
   it('filters the bulls by availability, and only the bulls', () => {

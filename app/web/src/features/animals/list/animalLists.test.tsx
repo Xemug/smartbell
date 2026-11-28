@@ -326,6 +326,23 @@ describe('Vacas tab', () => {
     expect(screen.getByText('Filtro: Disponibilidad · Ambos')).toBeInTheDocument();
   });
 
+  it('sorts the heifers by Estado from the header, on a phone too', async () => {
+    desktop = false;
+    const user = userEvent.setup();
+    listed = (query) =>
+      query.get('kind') === 'VAQUILLA'
+        ? [animal('q-001', { kind: 'VAQUILLA', birth_date: '2025-03-10', repro_state: 'VAQUILLA' })]
+        : [];
+    renderAt('/vacas?tipo=vaquillas');
+    expect(await screen.findByText('Q-001')).toBeInTheDocument();
+    const table = screen.getByRole('table', { name: 'Vaquillas' });
+
+    await user.click(within(table).getByRole('button', { name: /Estado/ }));
+
+    await waitFor(() => expect(lastQuery()?.get('sort')).toBe('repro_state'));
+    expect(screen.getByTestId('where')).toHaveTextContent('orden=estado%3Aasc');
+  });
+
   it('shows the availability on a phone and filters by it from the sheet', async () => {
     desktop = false;
     const user = userEvent.setup();

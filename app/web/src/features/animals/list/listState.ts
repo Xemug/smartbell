@@ -92,6 +92,8 @@ const SORT_KEYS = {
   // More days in milk means an older calving.
   dim: { asc: '-last_calving_date', desc: 'last_calving_date' },
   edad: { asc: '-birth_date', desc: 'birth_date' },
+  // The server orders states along the cycle: En desarrollo first, Seca last.
+  estado: { asc: 'repro_state', desc: '-repro_state' },
 } as const satisfies Record<string, { asc: ListQuery['sort']; desc: ListQuery['sort'] }>;
 export type SortColumn = keyof typeof SORT_KEYS;
 
@@ -128,8 +130,13 @@ export function parseListState(params: URLSearchParams): ListState {
   const filter = validVariable ? { category, variable } : null;
 
   const [column, direction] = (params.get('orden') ?? '').split(':');
-  // Only the columns this list draws: cows have DIM, heifers and bulls have Edad.
-  const columns: SortColumn[] = kind === 'vacas' ? ['id', 'dim'] : ['id', 'edad'];
+  // Only the columns this list draws: cows have DIM, heifers and bulls have Edad, bulls no Estado.
+  const columns: SortColumn[] =
+    kind === 'vacas'
+      ? ['id', 'estado', 'dim']
+      : kind === 'vaquillas'
+        ? ['id', 'estado', 'edad']
+        : ['id', 'edad'];
   const sortable = column !== undefined && (columns as string[]).includes(column);
   const sort =
     sortable && (direction === 'asc' || direction === 'desc')

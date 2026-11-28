@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import ColumnElement, Select, String, cast, delete, func, or_, select, update
+from sqlalchemy import ColumnElement, Select, String, case, cast, delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -741,8 +741,18 @@ def _filters(ranch_id: uuid.UUID, filters: AnimalFilters) -> list[ColumnElement[
     return conditions
 
 
+# Where each reproductive state falls in the cycle: En desarrollo first, Seca last.
+_CYCLE_RANK = {state: rank for rank, state in enumerate(ReproState)}
+
+
 def _ordered(query: Select[Animal], sort: SortKey) -> Select[Animal]:
-    column = getattr(Animal, sort.lstrip("-"))
+    name = sort.lstrip("-")
+    column: ColumnElement[Any] = (
+        # No state ranks NULL, so it stays last in both directions.
+        case(_CYCLE_RANK, value=Animal.repro_state)
+        if name == "repro_state"
+        else getattr(Animal, name)
+    )
     key = column.desc() if sort.startswith("-") else column.asc()
     return query.order_by(key.nulls_last(), Animal.id)
 
