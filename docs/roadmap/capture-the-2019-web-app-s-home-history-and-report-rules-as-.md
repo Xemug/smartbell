@@ -69,17 +69,27 @@ Write `legacy-2019-web.md` with one section per screen. For each element, give a
 - Changing any behaviour.
 - Re-opening the founder's 2026-11-26 decisions (heat split, Seguimiento preñez, web donut). These are already in `dashboard.md` and `v4-reports.md` §3.
 
+**Grooming notes (2026-11-27, checked against the 2019 code):**
+- The 2019 folder is still at the path above, and all 13 named files plus the 14 PNGs exist.
+- The DEL tile is labelled "DIM" in 2019 and links to Reportes; the note labels it DEL.
+- The Preñadas drill-down slider filters by months since `pregDate` (1–5, 30-day months), although its header reads "Fecha parto estimada". It is not an expected-calving range. The v3 "Siguientes partos entre" filter stays the target.
+- The donut's data is dummy (`[10, 20, 30, 50]`, centre text `'05'`), not only the `002` legend counts.
+- Reportes "Preñez" header counts are Diagnósticos / Esperados (not Confirmados), its first tile is mislabelled "Eficiencia detección de celo" (copy bug, its dialog is Servicios realizados), the Enfermas tiles are spelled "Deshechadas", and the Días/Años toggle sits on both Tiempo entre partos and Edad primer parto.
+- History role list maps 1:1 onto our five roles; no role lacks a match. 2019 searches by user, our `history` spec by cow ID.
+- The vaccines tile is dropped because the v4 dashboard (v4-reports.md §1.1) has no vaccines row; v4 §6.1 keeps the v3 drill-down designs valid only until redrawn.
+- The PNGs are copied under kebab-case names (`<kpi>-trend.png`, `<kpi>-bar.png` or `<kpi>-percent.png`); the note lists the original filenames.
+
 ## Effort
 
 S. Docs only: one inventory note, 14 images, and a line added to five specs. The Vue files are long, but the relevant parts are listed above.
 
 ## Acceptance
 
-- [ ] `docs/design-inventory/legacy-2019-web.md` exists with §1 Inicio, §2 Historial, §3 Reportes and a final "Founder decisions" section linking to `dashboard.md` Approach §1–3. Every element has a covered/gap/drop verdict that cites a spec or inventory row.
-- [ ] The 14 chart PNGs are in `docs/design-inventory/legacy-2019/graphs/` and every image link in the note resolves (`grep -o 'legacy-2019/graphs/[^)]*' docs/design-inventory/legacy-2019-web.md` lists only files that exist).
-- [ ] The Inventory lines in `dashboard.md`, `history.md`, `kpi-engine.md`, `reports-overview.md` and `reports-kpi-detail.md` point to the matching section of the note.
-- [ ] No 2019 source code or Firebase config is in the repo (`git grep -n "smartbell-master\|apiKey" -- docs/` returns nothing).
-- [ ] The "Founder decisions" section gives the heat split, Seguimiento preñez and the web donut, each next to its 2019 definition, and agrees with `dashboard.md` (human).
+- [x] `docs/design-inventory/legacy-2019-web.md` exists with §1 Inicio, §2 Historial, §3 Reportes and a final "Founder decisions" section linking to `dashboard.md` Approach §1–3. Every element has a covered/gap/drop verdict that cites a spec or inventory row.
+- [x] The 14 chart PNGs are in `docs/design-inventory/legacy-2019/graphs/` and every image link in the note resolves (`grep -o 'legacy-2019/graphs/[^)]*' docs/design-inventory/legacy-2019-web.md` lists only files that exist).
+- [x] The Inventory lines in `dashboard.md`, `history.md`, `kpi-engine.md`, `reports-overview.md` and `reports-kpi-detail.md` point to the matching section of the note.
+- [x] No 2019 source code or Firebase config is in the repo (`git grep -n "smartbell-master\|apiKey" -- docs/ ':!docs/roadmap/capture-the-2019-*'` returns nothing; this spec is excluded because it names the project and the pattern).
+- [x] The "Founder decisions" section gives the heat split, Seguimiento preñez and the web donut, each next to its 2019 definition, and agrees with `dashboard.md` (human; founder confirmed all three match on 2026-11-27).
 
 ## Verify
 
