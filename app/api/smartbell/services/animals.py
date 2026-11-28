@@ -754,7 +754,8 @@ def _ordered(query: Select[Animal], sort: SortKey) -> Select[Animal]:
         else getattr(Animal, name)
     )
     key = column.desc() if sort.startswith("-") else column.asc()
-    return query.order_by(key.nulls_last(), Animal.id)
+    # Ties read in ID order, as the list shows it; the id only keeps paging stable.
+    return query.order_by(key.nulls_last(), Animal.control_id, Animal.id)
 
 
 async def list_animals(

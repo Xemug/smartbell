@@ -698,6 +698,7 @@ async def test_sort_by_repro_state_follows_the_cycle(
         "E": ReproState.RECIEN_PARIDA,
         "F": ReproState.SERVIDA,
         "G": ReproState.VAQUILLA,
+        "H": ReproState.ABIERTA,  # Ties with B: ID order, whichever way the states run.
     }
     for control_id in states:
         await created(tenant_api, owner, **cow(control_id))
@@ -713,8 +714,8 @@ async def test_sort_by_repro_state_follows_the_cycle(
     descending = await listing(tenant_api, owner, sort="-repro_state")
 
     # En desarrollo, Recién parida, Vacía, Servida, Preñada, Seca; no state last both ways.
-    assert ids(ascending) == ["G", "E", "B", "F", "D", "A", "C"]
-    assert ids(descending) == ["A", "D", "F", "B", "E", "G", "C"]
+    assert ids(ascending) == ["G", "E", "B", "H", "F", "D", "A", "C"]
+    assert ids(descending) == ["A", "D", "F", "B", "H", "E", "G", "C"]
 
 
 async def test_list_by_sex(tenant_api: AsyncClient, owner: Account) -> None:
