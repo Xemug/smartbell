@@ -62,7 +62,9 @@ def _check(key: HistoryKey, template: HistoryTemplate, refs: HistoryRefs, n: int
     missing = [name for name in template.names if getattr(refs, name) is None]
     if missing:
         raise ValueError(f"{key}: refs need {sorted(missing)}")
-    if template.names & {"group", "to_group"} and refs.group_id is None:
+    # A deleted bull group's bulls go to no group: nothing is left for the card to link to.
+    linkless = key is HistoryKey.GROUP_BULLS_DELETED_OUT
+    if template.names & {"group", "to_group"} and refs.group_id is None and not linkless:
         raise ValueError(f"{key}: refs need group_id")
     if template.plural is not None:  # A count has to agree with the IDs the card lists.
         listed = refs.user_ids if template.card is HistoryCard.C else refs.animal_ids

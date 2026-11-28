@@ -40,6 +40,7 @@ VALID: dict[EventType, dict[str, Any]] = {
     EventType.REMOVAL: {"reason": "MUERTE"},
 }
 
+SAME_GROUP = str(uuid4())
 MISMATCHED: dict[EventType, dict[str, Any]] = {
     EventType.ALTA: {"control_id": "00001", "sex": "HEMBRA"},  # no birth date
     EventType.HEAT: {"outcome": "SOMETHING"},
@@ -51,7 +52,7 @@ MISMATCHED: dict[EventType, dict[str, Any]] = {
     EventType.MEDICAL_TREATMENT: {"kind": "OTROS"},  # no treatment
     EventType.TREATMENT_FOLLOWUP: {"outcome": "CHANGE"},  # no new treatment
     EventType.DIET_CHANGE: {"reason": "OTRA"},  # no diet
-    EventType.GROUP_CHANGE: {"from_group_id": str(uuid4())},  # no destination
+    EventType.GROUP_CHANGE: {"from_group_id": SAME_GROUP, "to_group_id": SAME_GROUP},
     EventType.VACCINATION: {"vaccine_id": "not-a-uuid", "dose_ml": 2},
     EventType.WEIGHT: {"kg": 0},
     EventType.REMOVAL: {"reason": "PERDIDA"},

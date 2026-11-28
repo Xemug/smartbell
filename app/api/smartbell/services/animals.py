@@ -15,6 +15,7 @@ from sqlalchemy import ColumnElement, Select, String, case, cast, delete, func, 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from smartbell.domain.groups import REFUSAL_MESSAGES, membership_refusal
 from smartbell.domain.repro import (
     EPOCH,
     EventFact,
@@ -187,15 +188,18 @@ async def _check_bull_name(
 
 
 async def _check_group(
-    session: AsyncSession, ranch_id: uuid.UUID, group_id: uuid.UUID, loc: tuple[str, ...]
+    session: AsyncSession, animal: Animal, group_id: uuid.UUID, loc: tuple[str, ...]
 ) -> None:
-    selection = await session.scalar(
-        select(Group.selection).where(Group.id == group_id, Group.ranch_id == ranch_id)
+    group = await session.scalar(
+        select(Group).where(Group.id == group_id, Group.ranch_id == animal.ranch_id)
     )
-    if selection is None:
+    if group is None:
         raise _invalid((*loc, "group_id"), "group_not_found", "El potrero no existe")
-    if selection is GroupSelection.AUTO:  # Its rule picks its cows (groups card).
+    if group.selection is GroupSelection.AUTO:  # Its rule picks its cows (groups card).
         raise _invalid((*loc, "group_id"), "group_is_auto", "Ese potrero elige sus vacas solo")
+    refusal = membership_refusal(group.type, animal.kind, animal.bull_availability)
+    if refusal is not None:
+        raise _invalid((*loc, "group_id"), refusal, REFUSAL_MESSAGES[refusal])
 
 
 def _check_crossbreed(
@@ -332,8 +336,6 @@ async def _register(
     _check_past(body.birth_date, today, loc, "birth_date")
     _check_crossbreed(body.crossbreed_level, body.contributing_breed, loc)
     _check_stage(reg.sex, body.development_stage, loc)
-    if body.group_id is not None:
-        await _check_group(session, ctx.ranch_id, body.group_id, loc)
     await _check_control_id(session, ctx.ranch_id, body.control_id, loc)
     if body.siniiga is not None:
         await _check_siniiga(session, body.siniiga, loc)
@@ -380,6 +382,8 @@ async def _register(
     fact = EventFact(EventType.ALTA, today, alta, event.id, EPOCH)
     projection = project(animal_facts(animal), [fact], repro_settings(settings), today)
     write_projection(animal, projection)
+    if body.group_id is not None:  # After the projection: which groups fit depends on `kind`.
+        await _check_group(session, animal, body.group_id, loc)
     session.add(animal)
     session.add(event)
     await session.flush()
@@ -490,8 +494,12 @@ async def update_animal(
         await _check_siniiga(session, changes["siniiga"], (), exclude=animal.id)
     if animal.sex is Sex.MACHO and changes.get("name") not in (None, animal.name):
         await _check_bull_name(session, ctx.ranch_id, changes["name"], (), exclude=animal.id)
-    if changes.get("group_id") not in (None, animal.group_id):  # Staying put is fine.
-        await _check_group(session, ctx.ranch_id, changes["group_id"], ())
+    availability = changes.get("bull_availability", animal.bull_availability)
+    to_group = changes.pop("group_id", animal.group_id)
+    if to_group is not None and to_group != animal.group_id:  # Staying put is fine.
+        if availability is BullAvailability.SEMEN and animal.kind is AnimalKind.TORO:
+            raise _invalid(("group_id",), "bull_semen_only", REFUSAL_MESSAGES["bull_semen_only"])
+        await _check_group(session, animal, to_group, ())
     level = changes.get("crossbreed_level", animal.crossbreed_level)
     contributing = changes.get("contributing_breed", animal.contributing_breed)
     if level is CrossbreedLevel.FB and "contributing_breed" not in changes:
@@ -532,6 +540,16 @@ async def update_animal(
                 "El último parto debe ser al menos 660 días después del nacimiento",
             )
 
+    # A move is a GROUP_CHANGE on the bitácora, written before the new availability lands so a
+    # bull going semen-only still logs leaving his group. A cow sent to no group (General) keeps
+    # the old plain update.
+    from smartbell.services.events import move_to_group  # events imports this module
+
+    if availability is BullAvailability.SEMEN:
+        to_group = None
+    if to_group != animal.group_id and (to_group is not None or animal.kind is AnimalKind.TORO):
+        await move_to_group(session, ctx.ranch_id, ctx.user.id, animal, to_group, today)
+    animal.group_id = to_group
     for name, value in changes.items():
         setattr(animal, name, value)
     settings = await session.get_one(RanchSettings, ctx.ranch_id)

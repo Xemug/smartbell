@@ -89,6 +89,22 @@ TEMPLATES: dict[HistoryKey, HistoryTemplate] = {
         "Se cambiaron {n} vacas a potrero {to_group}",
     ),
     HistoryKey.GROUP_CREATED: _ganado(HistoryCard.B, "Se creó el potrero {group}"),
+    HistoryKey.GROUP_BULLS_MOVED: _ganado(
+        HistoryCard.A,
+        "Se cambió 1 toro de grupo {group} a grupo {to_group}",
+        "Se cambiaron {n} toros de grupo {group} a grupo {to_group}",
+    ),
+    HistoryKey.GROUP_BULLS_SENT: _ganado(
+        HistoryCard.A,
+        "Se cambió 1 toro a grupo {to_group}",
+        "Se cambiaron {n} toros a grupo {to_group}",
+    ),
+    HistoryKey.GROUP_BULLS_DELETED: _ganado(
+        HistoryCard.B, "Se eliminó el grupo {group} y los toros se enviaron a grupo {to_group}"
+    ),
+    HistoryKey.GROUP_BULLS_DELETED_OUT: _ganado(
+        HistoryCard.B, "Se eliminó el grupo {group} y sus toros quedaron sin grupo"
+    ),
     HistoryKey.USERS_ADDED: _usuarios("Se dio de alta 1 usuario", "Se dieron de alta {n} usuarios"),
     HistoryKey.USERS_REMOVED: _usuarios(
         "Se dio de baja 1 usuario", "Se dieron de baja {n} usuarios"

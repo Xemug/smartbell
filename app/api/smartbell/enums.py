@@ -138,6 +138,7 @@ class LactationState(_Name):
 class GroupType(_Name):
     PRESET = auto()
     CUSTOM = auto()
+    TORO = auto()  # A bull group: bulls on the ranch (EN_RANCHO or AMBOS) only, picked by hand.
 
 
 class GroupPreset(_Name):
@@ -484,6 +485,11 @@ class HistoryKey(_Name):
     # Con Ganado, not in §3.5: moves with no single source group, and creating a group.
     GROUP_ANIMALS_SENT = auto()
     GROUP_CREATED = auto()
+    # Con Ganado, not in §3.5: the same moves in bull groups, which hold bulls, not cows.
+    GROUP_BULLS_MOVED = auto()
+    GROUP_BULLS_SENT = auto()
+    GROUP_BULLS_DELETED = auto()
+    GROUP_BULLS_DELETED_OUT = auto()  # no other bull group picked: his bulls are in none
     # Con Usuarios
     USERS_ADDED = auto()
     USERS_REMOVED = auto()

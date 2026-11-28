@@ -9,6 +9,9 @@ Rules (docs/roadmap/groups.md):
   Animals can't be added to an AUTO group by hand: its rule decides.
 - Deleting a group sends its animals to General, or to the group the caller picks.
 - Heifer groups are computed from age and state, never stored.
+- Bull groups (type TORO) hold the bulls on the ranch, picked by hand. They have no General: a
+  bull with no group is in none, and deleting a bull group leaves its bulls out of any group
+  unless another bull group is picked. Kinds never mix (domain/groups.py).
 
 The caller commits, so a request is one transaction.
 """
@@ -23,6 +26,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from smartbell.domain.groups import membership_refusal, on_the_ranch
 from smartbell.domain.repro import PREGNANT_STATES
 from smartbell.enums import (
     AlertKind,
@@ -155,11 +159,13 @@ async def describe(
                 Animal.is_sick,
                 Animal.lactation_state,
                 Animal.last_calving_date,
+                Animal.kind,
+                Animal.bull_availability,
             ).where(
                 Animal.ranch_id == ranch_id,
                 Animal.status == AnimalStatus.ACTIVE,
-                # Potreros hold cows: heifers are grouped by age and bulls have none.
-                Animal.kind == AnimalKind.VACA,
+                # Potreros hold cows and bull groups hold bulls: heifers are grouped by age.
+                Animal.kind.in_((AnimalKind.VACA, AnimalKind.TORO)),
             )
         )
     ).all()
@@ -174,11 +180,16 @@ async def describe(
     )
     members: dict[uuid.UUID | None, list[Any]] = {}
     for row in rows:
-        members.setdefault(row.group_id or general_id, []).append(row)
+        if row.kind is AnimalKind.VACA:
+            members.setdefault(row.group_id or general_id, []).append(row)
+        elif on_the_ranch(row.kind, row.bull_availability) and row.group_id is not None:
+            members.setdefault(row.group_id, []).append(row)
 
     out = []
     for group in groups:
-        mine = members.get(group.id, [])
+        # Only the group's own kind counts (an old bull record may still point at a potrero).
+        wanted = AnimalKind.TORO if group.type is GroupType.TORO else AnimalKind.VACA
+        mine = [row for row in members.get(group.id, []) if row.kind is wanted]
         value: int | None = None
         match group.kpi_indicator:
             case GroupKpiIndicator.EN_CELO:
@@ -379,7 +390,7 @@ async def create_group(
         ranch_id=ranch_id,
         name=name,
         description=body.description or None,
-        type=GroupType.PRESET if body.preset else GroupType.CUSTOM,
+        type=GroupType.PRESET if body.preset else body.type,
         preset=body.preset,
         selection=body.selection,
         auto_filter=body.auto_filter.model_dump(mode="json") if body.auto_filter else None,
@@ -430,6 +441,10 @@ async def update_group(
     if "description" in changes:
         group.description = body.description or None
     if "kpi_indicator" in changes:
+        if group.type is GroupType.TORO and body.kpi_indicator is not None:
+            raise FieldError(
+                422, ("kpi_indicator",), "bull_group_no_kpi", "Un grupo de toros no tiene indicador"
+            )
         group.kpi_indicator = body.kpi_indicator
     rule_changed = False
     if "auto_filter" in changes:
@@ -460,20 +475,25 @@ async def delete_group(
     group_id: uuid.UUID,
     to_group_id: uuid.UUID | None,
     today: dt.date,
-) -> tuple[Group, int]:
-    """Sends the group's animals to `to_group_id` (General by default), then deletes it.
-    Returns where they went and how many active animals moved."""
+) -> tuple[Group | None, int]:
+    """Sends the group's animals to `to_group_id` (General by default; a bull group's go to no
+    group), then deletes it. Returns where they went and how many active animals moved."""
     group = await get_group(session, ranch_id, group_id)
     if group.preset is GroupPreset.GENERAL:
         raise GroupError(409, "general_not_deletable")
+    bulls = group.type is GroupType.TORO
+    target: Group | None
     if to_group_id is None:
-        target = await ensure_general(session, ranch_id)
+        target = None if bulls else await ensure_general(session, ranch_id)
     else:
         target = await get_group(session, ranch_id, to_group_id)
         if target.id == group.id:
             raise FieldError(422, ("to_group_id",), "same_group", "Elige otro potrero")
         if target.selection is GroupSelection.AUTO:
             raise GroupError(409, "group_is_auto")
+        if (target.type is GroupType.TORO) != bulls:
+            raise GroupError(409, "not_a_bull" if target.type is GroupType.TORO else "not_a_cow")
+    target_id = target.id if target else None
     animals = (
         await session.scalars(
             select(Animal)
@@ -485,16 +505,20 @@ async def delete_group(
     moved = 0
     for animal in animals:
         if animal.status is AnimalStatus.ACTIVE:
-            await events.move_to_group(session, ranch_id, user_id, animal, target.id, today)
+            await events.move_to_group(session, ranch_id, user_id, animal, target_id, today)
             moved += 1
         else:  # A baja has no new events; it just stops pointing at a group that's gone.
             animal.group_id = None
+    if bulls:
+        key = HistoryKey.GROUP_BULLS_DELETED if target else HistoryKey.GROUP_BULLS_DELETED_OUT
+    else:
+        key = HistoryKey.GROUP_DELETED
     await history.record(
         session,
         ranch_id,
         user_id,
-        HistoryKey.GROUP_DELETED,
-        HistoryRefs(group_id=target.id, group=group.name, to_group=target.name),
+        key,
+        HistoryRefs(group_id=target_id, group=group.name, to_group=target.name if target else None),
     )
     await events.name_moves_of_deleted_group(session, ranch_id, group.id, group.name)
     await session.flush()
@@ -530,7 +554,13 @@ async def move_animals(
         raise GroupError(404, "animal_not_found")
     if any(a.status is AnimalStatus.REMOVED for a in animals):
         raise GroupError(409, "animal_removed")
-    if any(a.kind is not AnimalKind.VACA for a in animals):  # Heifer groups go by age.
+    bulls = group.type is GroupType.TORO
+    if bulls:
+        refusals = [membership_refusal(group.type, a.kind, a.bull_availability) for a in animals]
+        refusal = next((r for r in refusals if r is not None), None)
+        if refusal is not None:
+            raise GroupError(409, refusal)
+    elif any(a.kind is not AnimalKind.VACA for a in animals):  # Heifer groups go by age.
         raise GroupError(409, "not_a_cow")
     moved: list[Animal] = []
     unchanged: list[uuid.UUID] = []
@@ -550,7 +580,7 @@ async def move_animals(
                 session,
                 ranch_id,
                 user_id,
-                HistoryKey.GROUP_ANIMALS_MOVED,
+                HistoryKey.GROUP_BULLS_MOVED if bulls else HistoryKey.GROUP_ANIMALS_MOVED,
                 HistoryRefs(animal_ids=ids, group_id=group.id, group=source, to_group=group.name),
                 n=len(ids),
             )
@@ -559,7 +589,7 @@ async def move_animals(
                 session,
                 ranch_id,
                 user_id,
-                HistoryKey.GROUP_ANIMALS_SENT,
+                HistoryKey.GROUP_BULLS_SENT if bulls else HistoryKey.GROUP_ANIMALS_SENT,
                 HistoryRefs(animal_ids=ids, group_id=group.id, to_group=group.name),
                 n=len(ids),
             )
