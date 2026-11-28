@@ -82,6 +82,8 @@ class Group(Base):
             postgresql_where=text("preset IS NOT NULL"),
             sqlite_where=text("preset IS NOT NULL"),
         ),
+        # Like services.groups._check_name: one name per ranch, ignoring case, presets included.
+        Index("uq_groups_ranch_id_lower_name", "ranch_id", text("lower(name)"), unique=True),
         CheckConstraint("(type = 'PRESET') = (preset IS NOT NULL)", name="preset_iff_type_preset"),
     )
 

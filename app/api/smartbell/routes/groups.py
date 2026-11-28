@@ -17,7 +17,7 @@ other refusals are `{"detail": "<code>"}`.
 import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -58,7 +58,11 @@ async def _writing(session: AsyncSession) -> AsyncIterator[None]:
         await session.commit()
     except FieldError as error:
         await session.rollback()
-        detail = [{"loc": ["body", *error.loc], "type": error.code, "msg": error.msg}]
+        detail: list[dict[str, Any]] = [
+            {"loc": ["body", *error.loc], "type": error.code, "msg": error.msg}
+        ]
+        if error.ctx:
+            detail[0]["ctx"] = error.ctx
         raise HTTPException(error.status, detail=detail) from error
     except GroupError as error:
         await session.rollback()
