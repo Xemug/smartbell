@@ -89,7 +89,7 @@ S. Docs only: one inventory note, 14 images, and a line added to five specs. The
 - [x] The 14 chart PNGs are in `docs/design-inventory/legacy-2019/graphs/` and every image link in the note resolves (`grep -o 'legacy-2019/graphs/[^)]*' docs/design-inventory/legacy-2019-web.md` lists only files that exist).
 - [x] The Inventory lines in `dashboard.md`, `history.md`, `kpi-engine.md`, `reports-overview.md` and `reports-kpi-detail.md` point to the matching section of the note.
 - [x] No 2019 source code or Firebase config is in the repo (`git grep -n "smartbell-master\|apiKey" -- docs/ ':!docs/roadmap/capture-the-2019-*'` returns nothing; this spec is excluded because it names the project and the pattern).
-- [ ] The "Founder decisions" section gives the heat split, Seguimiento preñez and the web donut, each next to its 2019 definition, and agrees with `dashboard.md` (human).
+- [x] The "Founder decisions" section gives the heat split, Seguimiento preñez and the web donut, each next to its 2019 definition, and agrees with `dashboard.md` (human; founder confirmed all three match on 2026-11-27).
 
 ## Verify
 
