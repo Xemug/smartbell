@@ -87,13 +87,14 @@ function FlowBody({
   requestClose: () => void;
   setBusy: (busy: boolean) => void;
 }) {
-  const mounted = useRef(true);
-  useEffect(
-    () => () => {
+  const mounted = useRef(false);
+  // Set in the effect, not the initial value: StrictMode runs the cleanup once on mount.
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
       mounted.current = false;
-    },
-    [],
-  );
+    };
+  }, []);
   // Set on the tap itself: `isPending` only shows on the next render, too late for a double tap.
   const inFlight = useRef(false);
   const save = useRecordEvent(animal, kind, {
